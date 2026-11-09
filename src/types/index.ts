@@ -8,6 +8,10 @@ export interface UserProfile {
   languagePreference: Language;
   avatarUrl?: string;
   isDemo?: boolean;
+  /** Supabase access token (for Edge Function auth) */
+  session?: {
+    access_token: string;
+  };
 }
 
 export interface Shop {
