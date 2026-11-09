@@ -18,8 +18,10 @@ import {
   SEEDED_CUSTOMERS, 
   SEEDED_EXPENSES, 
   SEEDED_BENCHMARKS,
-  SEEDED_SEASONAL_FORECASTS
+  SEEDED_SEASONAL_FORECASTS,
+  getBranchSeedData
 } from "@/lib/seedData";
+import liveWholesaleData from "@/data/live_wholesale_prices.json";
 
 export type ActiveTab = 
   | "landing" 
@@ -32,17 +34,46 @@ export type ActiveTab =
   | "history" 
   | "settings";
 
-const DEMO_SHOP: Shop = {
-  id: "shop-al-madina-01",
-  name: "Al-Madina Kiryana Store",
-  ownerName: "Haji Aslam",
-  currency: "PKR",
-  phone: "0300-9876543",
-  address: "Shop #4, Main Bazar, G-9/4, Islamabad",
-  lowStockThreshold: 8,
-  leadTimeDays: 2,
-  isDemo: true,
-};
+export const DEMO_SHOPS: Shop[] = [
+  {
+    id: "shop-al-madina-01",
+    name: "Al-Madina Kiryana (Main Branch)",
+    ownerName: "Haji Aslam",
+    currency: "PKR",
+    phone: "0300-9876543",
+    address: "Shop #4, Main Bazar, G-9/4",
+    city: "Islamabad",
+    lowStockThreshold: 8,
+    leadTimeDays: 2,
+    isDemo: true,
+  },
+  {
+    id: "shop-al-madina-02",
+    name: "Al-Madina Express (F-10 Branch)",
+    ownerName: "Haji Aslam",
+    currency: "PKR",
+    phone: "0302-5551234",
+    address: "Shop #12, F-10 Markaz",
+    city: "Islamabad",
+    lowStockThreshold: 6,
+    leadTimeDays: 1,
+    isDemo: true,
+  },
+  {
+    id: "shop-al-madina-03",
+    name: "Al-Madina Mart (Saddar Branch)",
+    ownerName: "Haji Aslam",
+    currency: "PKR",
+    phone: "0333-8889900",
+    address: "Haider Road, Saddar",
+    city: "Rawalpindi",
+    lowStockThreshold: 10,
+    leadTimeDays: 3,
+    isDemo: true,
+  },
+];
+
+const DEMO_SHOP: Shop = DEMO_SHOPS[0];
 
 const DEMO_USER: UserProfile = {
   id: "user-aslam-01",
@@ -52,60 +83,6 @@ const DEMO_USER: UserProfile = {
   languagePreference: "ur",
   isDemo: true,
 };
-
-const INITIAL_SALES: Sale[] = [
-  {
-    id: "sale-9841",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T08:30:00Z",
-    paymentType: "cash",
-    totalAmount: 1890,
-    items: [
-      { productId: "p1", productName: "Tapal Danedar Tea 450g", quantity: 2, unitPrice: 650, unitCost: 570 },
-      { productId: "p7", productName: "Dalda Cooking Oil 1L", quantity: 1, unitPrice: 540, unitCost: 480 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "sale-9842",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T09:15:00Z",
-    paymentType: "credit",
-    customerId: "c1",
-    customerName: "Asif Bhai (Makan #12)",
-    totalAmount: 2430,
-    items: [
-      { productId: "p11", productName: "Fine Wheat Flour (Aata) 10kg", quantity: 1, unitPrice: 1350, unitCost: 1240 },
-      { productId: "p7", productName: "Dalda Cooking Oil 1L", quantity: 2, unitPrice: 540, unitCost: 480 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "sale-9843",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T09:50:00Z",
-    paymentType: "cash",
-    totalAmount: 960,
-    items: [
-      { productId: "p20", productName: "MilkPak Dairy Milk 1L", quantity: 2, unitPrice: 290, unitCost: 260 },
-      { productId: "p37", productName: "Lux Beauty Bar Soap 140g", quantity: 2, unitPrice: 160, unitCost: 135 },
-      { productId: "p30", productName: "National Iodized Salt 800g", quantity: 1, unitPrice: 70, unitCost: 55 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "sale-9844",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T10:20:00Z",
-    paymentType: "cash",
-    totalAmount: 2470,
-    items: [
-      { productId: "p13", productName: "Super Kernel Basmati Rice 5kg", quantity: 1, unitPrice: 1800, unitCost: 1600 },
-      { productId: "p2", productName: "Lipton Yellow Label 400g", quantity: 1, unitPrice: 670, unitCost: 590 },
-    ],
-    status: "completed",
-  },
-];
 
 interface AppContextType {
   user: UserProfile | null;
@@ -121,6 +98,9 @@ interface AppContextType {
   purchases: Purchase[];
   expenses: Expense[];
   wholesaleBenchmarks: WholesalePriceBenchmark[];
+  lastWholesaleSyncDate: string;
+  updateWholesaleBenchmarks: (benchmarks: WholesalePriceBenchmark[]) => void;
+  triggerWholesaleScrape: () => Promise<WholesalePriceBenchmark[]>;
   seasonalForecasts: SeasonalForecast[];
   lastSaleUndo: Sale | null;
   undoSeconds: number;
@@ -129,7 +109,9 @@ interface AppContextType {
   openSeededDemoShop: () => void;
   exitDemoMode: () => void;
   switchShop: (shopId: string) => void;
-  createShop: (shopData: Omit<Shop, "id">) => void;
+  createShop: (shopData: Omit<Shop, "id">, template?: "grocery" | "empty") => void;
+  updateShop: (shopData: Shop) => void;
+  deleteShop: (shopId: string) => void;
   recordSale: (sale: Omit<Sale, "id" | "createdAt" | "status">) => void;
   undoSale: () => void;
   addProduct: (product: Omit<Product, "id">) => void;
@@ -143,13 +125,17 @@ interface AppContextType {
   // Modals & Drawers
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
+  isAddStoreModalOpen: boolean;
+  setIsAddStoreModalOpen: (open: boolean) => void;
+  isStoreManagementModalOpen: boolean;
+  setIsStoreManagementModalOpen: (open: boolean) => void;
   isAskTallynOpen: boolean;
   setIsAskTallynOpen: (open: boolean) => void;
   isKiryanaRadioOpen: boolean;
   setIsKiryanaRadioOpen: (open: boolean) => void;
   isBarcodeScannerOpen: boolean;
   setIsBarcodeScannerOpen: (open: boolean) => void;
-  login: (email: string, name?: string) => void;
+  login: (email: string, name?: string, initialShopName?: string) => void;
   loginWithGoogle: () => void;
   loginWithSocial: (provider: string) => void;
   logout: () => void;
@@ -158,17 +144,44 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const branch1 = getBranchSeedData("shop-al-madina-01");
   const [user, setUser] = useState<UserProfile | null>(null); // New visitors see landing page without pre-login
-  const [shop, setShop] = useState<Shop>(DEMO_SHOP);
-  const [shops, setShops] = useState<Shop[]>([DEMO_SHOP]);
+  const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
+  const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
   const [activeTab, setActiveTab] = useState<ActiveTab>("landing");
   const [language, setLangState] = useState<Language>("en");
-  const [products, setProducts] = useState<Product[]>(SEEDED_PRODUCTS);
-  const [customers, setCustomers] = useState<Customer[]>(SEEDED_CUSTOMERS);
-  const [sales, setSales] = useState<Sale[]>(INITIAL_SALES);
+  const [products, setProducts] = useState<Product[]>(branch1.products);
+  const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
+  const [sales, setSales] = useState<Sale[]>(branch1.sales);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>(SEEDED_EXPENSES);
-  const [wholesaleBenchmarks, setWholesaleBenchmarks] = useState<WholesalePriceBenchmark[]>(SEEDED_BENCHMARKS);
+  const [expenses, setExpenses] = useState<Expense[]>(branch1.expenses);
+  const [wholesaleBenchmarks, setWholesaleBenchmarks] = useState<WholesalePriceBenchmark[]>(
+    ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks as WholesalePriceBenchmark[]) || SEEDED_BENCHMARKS
+  );
+  const [lastWholesaleSyncDate, setLastWholesaleSyncDate] = useState<string>(
+    (liveWholesaleData as { metadata?: { lastScrapedAt?: string } })?.metadata?.lastScrapedAt || new Date().toISOString()
+  );
+
+  const triggerWholesaleScrape = async (): Promise<WholesalePriceBenchmark[]> => {
+    const timestamp = new Date().toISOString();
+    const current = (
+      ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks as WholesalePriceBenchmark[]) || SEEDED_BENCHMARKS
+    );
+    const refreshed: WholesalePriceBenchmark[] = current.map((b) => {
+      const delta = b.currentShopCost - b.benchmarkPrice;
+      const markupPercent = Number(((delta / b.benchmarkPrice) * 100).toFixed(1));
+      const isInflationFlagged = markupPercent > 10.0;
+      return {
+        ...b,
+        markupPercent,
+        isInflationFlagged,
+        scrapedAt: timestamp,
+      };
+    });
+    setWholesaleBenchmarks(refreshed);
+    setLastWholesaleSyncDate(timestamp);
+    return refreshed;
+  };
   const [seasonalForecasts, setSeasonalForecasts] = useState<SeasonalForecast[]>(SEEDED_SEASONAL_FORECASTS);
   const [lastSaleUndo, setLastSaleUndo] = useState<Sale | null>(null);
   const [undoSeconds, setUndoSeconds] = useState<number>(0);
@@ -176,6 +189,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Modals state
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAddStoreModalOpen, setIsAddStoreModalOpen] = useState(false);
+  const [isStoreManagementModalOpen, setIsStoreManagementModalOpen] = useState(false);
   const [isAskTallynOpen, setIsAskTallynOpen] = useState(false);
   const [isKiryanaRadioOpen, setIsKiryanaRadioOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
@@ -187,12 +202,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Centralized Button on Landing Page: Open Seeded Demo Account!
   const openSeededDemoShop = () => {
+    const branch1 = getBranchSeedData("shop-al-madina-01");
     setUser(DEMO_USER);
-    setShop(DEMO_SHOP);
-    setProducts(SEEDED_PRODUCTS);
-    setCustomers(SEEDED_CUSTOMERS);
-    setSales(INITIAL_SALES);
-    setExpenses(SEEDED_EXPENSES);
+    setShops(DEMO_SHOPS);
+    setShop(DEMO_SHOPS[0]);
+    setProducts(branch1.products);
+    setCustomers(branch1.customers);
+    setSales(branch1.sales);
+    setExpenses(branch1.expenses);
     setWholesaleBenchmarks(SEEDED_BENCHMARKS);
     setSeasonalForecasts(SEEDED_SEASONAL_FORECASTS);
     setIsDemoMode(true);
@@ -210,19 +227,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const s = shops.find((item) => item.id === shopId);
     if (s) {
       setShop(s);
+      // Load branch-specific seeded data only if currently in demo mode
+      if (isDemoMode) {
+        const branchData = getBranchSeedData(shopId);
+        setProducts(branchData.products);
+        setCustomers(branchData.customers);
+        setSales(branchData.sales);
+        setExpenses(branchData.expenses);
+      }
+      audio.playCashRegisterChime();
     }
   };
 
-  const createShop = (shopData: Omit<Shop, "id">) => {
+  const createShop = (shopData: Omit<Shop, "id">, template: "grocery" | "empty" = "grocery") => {
     const newShop: Shop = {
       ...shopData,
       id: "shop-" + Date.now(),
     };
     setShops((prev) => [...prev, newShop]);
     setShop(newShop);
+
+    if (template === "empty") {
+      setProducts([]);
+    } else {
+      setProducts(SEEDED_PRODUCTS);
+    }
+
+    if (!user) {
+      setUser({
+        id: "usr-" + Date.now(),
+        name: shopData.ownerName || "Retail Owner",
+        email: `${shopData.name.toLowerCase().replace(/[^a-z0-9]/g, "")}@tallyn.pk`,
+        role: "owner",
+        languagePreference: language,
+      });
+    }
+
+    setIsAddStoreModalOpen(false);
+    setIsStoreManagementModalOpen(false);
+    setActiveTab("dashboard");
+    audio.playCashRegisterChime();
   };
 
-  const login = (email: string, name: string = "Store Owner") => {
+  const updateShop = (updatedShop: Shop) => {
+    setShops((prev) => prev.map((s) => (s.id === updatedShop.id ? updatedShop : s)));
+    if (shop.id === updatedShop.id) {
+      setShop(updatedShop);
+    }
+  };
+
+  const deleteShop = (shopId: string) => {
+    if (shops.length <= 1) return;
+    const remaining = shops.filter((s) => s.id !== shopId);
+    setShops(remaining);
+    if (shop.id === shopId) {
+      setShop(remaining[0]);
+    }
+  };
+
+  const login = (email: string, name: string = "Store Owner", initialShopName?: string) => {
     const newUser: UserProfile = {
       id: "usr-" + Date.now(),
       name,
@@ -233,6 +296,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser(newUser);
     setIsDemoMode(false);
     setIsAuthModalOpen(false);
+
+    if (initialShopName && initialShopName.trim()) {
+      const newStore: Shop = {
+        id: "shop-" + Date.now(),
+        name: initialShopName.trim(),
+        ownerName: name,
+        currency: "PKR",
+        phone: "0300-0000000",
+        address: "Main Commercial Market",
+        city: "Islamabad",
+        lowStockThreshold: 8,
+        leadTimeDays: 2,
+      };
+      setShops((prev) => [...prev, newStore]);
+      setShop(newStore);
+    }
+
     setActiveTab("dashboard");
   };
 
@@ -435,6 +515,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchases,
         expenses,
         wholesaleBenchmarks,
+        lastWholesaleSyncDate,
+        updateWholesaleBenchmarks: setWholesaleBenchmarks,
+        triggerWholesaleScrape,
         seasonalForecasts,
         lastSaleUndo,
         undoSeconds,
@@ -443,6 +526,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exitDemoMode,
         switchShop,
         createShop,
+        updateShop,
+        deleteShop,
         recordSale,
         undoSale,
         addProduct,
@@ -455,6 +540,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addExpense,
         isAuthModalOpen,
         setIsAuthModalOpen,
+        isAddStoreModalOpen,
+        setIsAddStoreModalOpen,
+        isStoreManagementModalOpen,
+        setIsStoreManagementModalOpen,
         isAskTallynOpen,
         setIsAskTallynOpen,
         isKiryanaRadioOpen,

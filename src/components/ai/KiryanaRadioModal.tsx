@@ -1,73 +1,227 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
-import { audio } from "@/lib/audio";
 import { formatCurrency } from "@/lib/utils";
-import { X, Play, Square, Radio, Sparkles, Volume2 } from "lucide-react";
+import { X, Play, Square, Radio, Volume2, AlertTriangle, TrendingUp, Users } from "lucide-react";
+
+// ============================================================
+// Kiryana Radio: Store-specific morning briefing via TTS
+// Falls back through ur-PK → hi-IN → en-IN → en-US for audio
+// ============================================================
+
+function getBestUrduVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  // Priority ladder for Urdu/South Asian audio output
+  const preferredLangs = ["ur-PK", "ur", "hi-IN", "hi", "en-IN", "en-GB"];
+  for (const lang of preferredLangs) {
+    const v = voices.find((voice) => voice.lang.toLowerCase().startsWith(lang.toLowerCase()));
+    if (v) return v;
+  }
+  // Last resort: any voice
+  return voices[0] || null;
+}
+
+function speakWithFallback(text: string, lang: "ur" | "en"): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      resolve();
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+
+    const trySpeak = () => {
+      if (lang === "ur") {
+        const voice = getBestUrduVoice();
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = voice.lang;
+        } else {
+          // No voices available yet — use browser default with language hint
+          utterance.lang = "hi-IN"; // Hindi often shares phonemes with Urdu, produces understandable audio
+        }
+      } else {
+        const enVoice = window.speechSynthesis.getVoices().find(v => v.lang.startsWith("en"));
+        if (enVoice) {
+          utterance.voice = enVoice;
+        }
+        utterance.lang = "en-US";
+      }
+
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve();
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // Voices load asynchronously on some browsers
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        trySpeak();
+      };
+      // Kick it off anyway in case the event doesn't fire
+      setTimeout(trySpeak, 300);
+    } else {
+      trySpeak();
+    }
+  });
+}
 
 export const KiryanaRadioModal: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isUrdu = i18n.language === "ur";
-  const { isKiryanaRadioOpen, setIsKiryanaRadioOpen, sales, customers, products } = useApp();
+  const { isKiryanaRadioOpen, setIsKiryanaRadioOpen, sales, customers, products, shop } = useApp();
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentText, setCurrentText] = useState<string>("");
+  const [bars, setBars] = useState<number[]>(Array.from({ length: 14 }, (_, i) => [40, 70, 95, 60, 80, 50, 90, 65, 85, 45, 75, 55, 90, 60][i]));
+  const animFrameRef = useRef<number | null>(null);
 
   if (!isKiryanaRadioOpen) return null;
 
-  const totalRev = sales.reduce((s, x) => s + x.totalAmount, 0);
-  const overdueDebt = customers.filter((c) => (c.overdueDays || 0) > 7).reduce((s, c) => s + c.creditBalance, 0);
-  const lowStockCount = products.filter((p) => p.quantity <= p.minQuantity).length;
+  // ── Live branch-specific metrics ───────────────────────────────────────────
+  const totalRev = sales.filter(s => s.status === "completed").reduce((sum, x) => sum + x.totalAmount, 0);
+  const totalTransactions = sales.filter(s => s.status === "completed").length;
+  const totalUdhaar = customers.reduce((s, c) => s + c.creditBalance, 0);
+  const overdueCustomers = customers.filter(c => (c.overdueDays || 0) > 7);
+  const overdueDebt = overdueCustomers.reduce((s, c) => s + c.creditBalance, 0);
+  const topDebtor = [...customers].sort((a, b) => b.creditBalance - a.creditBalance)[0];
+  const lowStockItems = products.filter(p => p.quantity <= p.minQuantity);
+  const totalProducts = products.length;
 
-  const briefingTextUrdu = `السلام علیکم حاجی صاحب! آج صبح کا احوال یہ ہے کہ دکان پر کل فروخت ${formatCurrency(totalRev)} ریکارڈ ہوئی ہے۔ مارکیٹ میں پچھلے سات دنوں کا ادھار ${formatCurrency(overdueDebt)} واجب الوصول ہے، جن کے لئے شائستہ واٹس ایپ یاد دہانی تیار ہے۔ اس کے علاوہ گودام میں ${lowStockCount} اشیاء کا اسٹاک کم ہے جنہیں آج ہی سپلائر سے دوبارہ منگوا لیجئے۔ آپ کا دن بابرکت گزرے۔`;
+  // City-specific market reference
+  const city = shop.city || "Islamabad";
+  const cityMandiMap: Record<string, string> = {
+    "Islamabad": "Grain Market I-9, Islamabad",
+    "Rawalpindi": "Ganj Mandi, Rawalpindi",
+    "Lahore": "Akbari Mandi, Lahore",
+    "Karachi": "Jodia Bazar, Karachi",
+    "Faisalabad": "Ghalla Mandi, Faisalabad",
+  };
+  const mandiName = cityMandiMap[city] || `${city} Wholesale Mandi`;
 
-  const briefingTextEn = `Good morning Haji Aslam! Here is your daily Kiryana Radio briefing. Recorded sales stand at ${formatCurrency(totalRev)}. Overdue credit across neighbourhood accounts totals ${formatCurrency(overdueDebt)}, with one-click WhatsApp collection reminders ready. Additionally, ${lowStockCount} commodities are near depletion and require supplier restock today. Have a prosperous trading day.`;
+  // ── Branch-specific dynamic briefing text ─────────────────────────────────
+  const briefingTextUrdu = `بسم اللہ الرحمٰن الرحیم۔ السلام علیکم! آج کی صبح کی ریڈیو رپورٹ ${shop.name}، ${city}۔ 
+  آج کی مجموعی فروخت ${formatCurrency(totalRev)} ہے، کل ${totalTransactions} ٹرانزیکشن ریکارڈ ہوئے۔ 
+  ${lowStockItems.length > 0 
+    ? `گودام میں ${lowStockItems.length} اشیاء کا اسٹاک خطرناک سطح پر ہے۔ خاص طور پر ${lowStockItems.slice(0, 2).map(p => p.nameUr).join(" اور ")} کی فوری دوبارہ فراہمی ضروری ہے۔` 
+    : `ماشاءاللہ، تمام ${totalProducts} اشیاء کا اسٹاک تسلی بخش حالت میں ہے۔`
+  } 
+  مارکیٹ میں کل ادھار ${formatCurrency(totalUdhaar)} ہے۔ 
+  ${topDebtor ? `سب سے زیادہ ادھار ${topDebtor.name} کے ذمے ${formatCurrency(topDebtor.creditBalance)} ہے۔` : ""}
+  ${overdueCustomers.length > 0 ? `${overdueCustomers.length} گاہکوں کا ادھار سات دن سے زیادہ پرانا ہے۔ شائستہ یاد دہانی بھیجنے کا وقت آ گیا ہے۔` : ""}
+  ${mandiName} کی آج کی قیمتوں کا خیال رکھیں۔ آپ کا دن بابرکت گزرے۔ خدا حافظ۔`;
+
+  const briefingTextEn = `Bismillah! Good morning! This is your Kiryana Radio daily briefing for ${shop.name}, ${city}.
+  Today's recorded sales: ${formatCurrency(totalRev)} across ${totalTransactions} transactions.
+  ${lowStockItems.length > 0 
+    ? `STOCK ALERT: ${lowStockItems.length} items are critically low — especially ${lowStockItems.slice(0, 2).map(p => p.nameEn).join(" and ")}. Reorder from ${mandiName} today.`
+    : `Inventory is healthy — all ${totalProducts} products are above minimum thresholds.`
+  }
+  Total outstanding udhaar: ${formatCurrency(totalUdhaar)}.
+  ${topDebtor ? `Largest debtor: ${topDebtor.name} at ${formatCurrency(topDebtor.creditBalance)}.` : ""}
+  ${overdueCustomers.length > 0 ? `${overdueCustomers.length} customers have overdue credit past 7 days. Polite reminders recommended.` : ""}
+  Stay informed on today's ${mandiName} benchmark rates. Have a prosperous trading day!`;
+
+  // ── Animated waveform ─────────────────────────────────────────────────────
+  const startBarAnimation = () => {
+    const animate = () => {
+      setBars(prev => prev.map(() => Math.floor(Math.random() * 80) + 12));
+      animFrameRef.current = requestAnimationFrame(animate) as unknown as number;
+    };
+    animFrameRef.current = requestAnimationFrame(animate) as unknown as number;
+  };
+
+  const stopBarAnimation = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current as unknown as number);
+      animFrameRef.current = null;
+    }
+    setBars(Array(14).fill(8));
+  };
 
   const handlePlayAudio = async () => {
     setIsPlaying(true);
     const textToSpeak = isUrdu ? briefingTextUrdu : briefingTextEn;
-    const lang = isUrdu ? "ur" : "en";
-    await audio.speak(textToSpeak, lang);
+    setCurrentText(textToSpeak);
+    startBarAnimation();
+    await speakWithFallback(textToSpeak, isUrdu ? "ur" : "en");
+    stopBarAnimation();
     setIsPlaying(false);
   };
 
   const handleStopAudio = () => {
-    audio.stopSpeaking();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    stopBarAnimation();
     setIsPlaying(false);
+  };
+
+  const handleClose = () => {
+    handleStopAudio();
+    setIsKiryanaRadioOpen(false);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-md rounded-3xl bg-slate-900 text-white p-6 sm:p-8 shadow-2xl border border-slate-800">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-6">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-700/40">
               <Radio className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">{t("radio.title")}</h3>
-              <p className="text-xs text-slate-400">{t("radio.subtitle")}</p>
+              <h3 className="text-base font-black text-white">{t("radio.title")}</h3>
+              <p className="text-xs text-slate-400">{shop.name} • {city}</p>
             </div>
           </div>
           <button
-            onClick={() => {
-              handleStopAudio();
-              setIsKiryanaRadioOpen(false);
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+            onClick={handleClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Audio Visualizer Waves */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-center my-6">
-          <div className="flex items-center justify-center gap-1.5 h-16 mb-4">
-            {[40, 70, 95, 60, 80, 50, 90, 65, 85, 45, 75, 55, 90, 60].map((h, i) => (
+        {/* Live Branch Metrics Summary */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          <div className="bg-slate-800/60 rounded-xl p-2.5 text-center">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-400 mx-auto mb-1" />
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Today's Sales</p>
+            <p className="text-xs font-black text-emerald-300 font-mono">{formatCurrency(totalRev)}</p>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl p-2.5 text-center">
+            <Users className="h-3.5 w-3.5 text-amber-400 mx-auto mb-1" />
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Udhaar</p>
+            <p className="text-xs font-black text-amber-300 font-mono">{formatCurrency(totalUdhaar)}</p>
+          </div>
+          <div className={`rounded-xl p-2.5 text-center ${lowStockItems.length > 0 ? "bg-rose-950/50 border border-rose-800/40" : "bg-slate-800/60"}`}>
+            <AlertTriangle className={`h-3.5 w-3.5 mx-auto mb-1 ${lowStockItems.length > 0 ? "text-rose-400" : "text-slate-500"}`} />
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Low Stock</p>
+            <p className={`text-xs font-black font-mono ${lowStockItems.length > 0 ? "text-rose-300" : "text-slate-400"}`}>
+              {lowStockItems.length} items
+            </p>
+          </div>
+        </div>
+
+        {/* Audio Visualizer Waveform */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 text-center mb-5">
+          <div className="flex items-center justify-center gap-1.5 h-16 mb-3">
+            {bars.map((h, i) => (
               <span
                 key={i}
                 style={{
-                  height: isPlaying ? `${Math.max(12, Math.random() * h)}px` : "8px",
-                  transition: "height 150ms ease",
+                  height: isPlaying ? `${h}px` : "8px",
+                  transition: isPlaying ? "height 120ms ease" : "height 300ms ease",
                 }}
                 className={`w-1.5 rounded-full ${
                   isPlaying ? "bg-amber-400" : "bg-slate-700"
@@ -80,34 +234,57 @@ export const KiryanaRadioModal: React.FC = () => {
             {isPlaying ? (
               <span className="inline-flex items-center gap-1.5 text-amber-300 font-bold">
                 <Volume2 className="h-4 w-4 animate-bounce" />
-                Playing Daily Morning Executive Memo
+                Broadcasting Daily Briefing for {shop.name}
               </span>
             ) : (
-              "Tap play to listen to today's voice synthesized store briefing"
+              <span className="text-slate-400">
+                Tap play for your AI-generated daily briefing
+                <br />
+                <span className="text-[10px] text-slate-500">Data sourced from your live {city} store inventory</span>
+              </span>
             )}
           </p>
         </div>
 
-        {/* Action Controls */}
+        {/* Briefing Preview Text (truncated) */}
+        {!isPlaying && (
+          <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-3 mb-5 text-[11px] text-slate-300 leading-relaxed line-clamp-3 max-h-16 overflow-hidden">
+            {isUrdu ? briefingTextUrdu.trim().slice(0, 200) : briefingTextEn.trim().slice(0, 200)}...
+          </div>
+        )}
+
+        {/* Play / Stop Controls */}
         <div className="flex gap-3">
           {!isPlaying ? (
             <button
               onClick={handlePlayAudio}
-              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-amber-500 py-3.5 text-xs font-black text-slate-950 hover:bg-amber-400 transition-all shadow-md min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 py-3.5 text-xs font-black text-slate-950 transition-all shadow-md min-h-[48px]"
             >
               <Play className="h-4 w-4 fill-slate-950" />
-              <span>{t("radio.playBriefing")}</span>
+              <span>{t("radio.playBriefing") || "▶ Play Daily Briefing"}</span>
             </button>
           ) : (
             <button
               onClick={handleStopAudio}
-              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-rose-600 py-3.5 text-xs font-black text-white hover:bg-rose-500 transition-all shadow-md min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-rose-700 hover:bg-rose-600 py-3.5 text-xs font-black text-white transition-all shadow-md min-h-[48px]"
             >
               <Square className="h-4 w-4 fill-white" />
-              <span>{t("radio.stopAudio")}</span>
+              <span>Stop Broadcast</span>
             </button>
           )}
+          <button
+            onClick={handleClose}
+            className="rounded-2xl bg-slate-800 hover:bg-slate-700 px-5 text-xs font-bold text-slate-300 hover:text-white transition-colors min-h-[48px]"
+          >
+            {t("common.close") || "Close"}
+          </button>
         </div>
+
+        {/* TTS Info Note */}
+        <p className="text-center text-[10px] text-slate-500 mt-3 leading-relaxed">
+          🔊 Uses browser speech synthesis (Urdu/Hindi voice). 
+          No external TTS API required.
+        </p>
       </div>
     </div>
   );

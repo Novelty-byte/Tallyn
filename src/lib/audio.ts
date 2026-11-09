@@ -113,7 +113,7 @@ class AudioEngine {
     } catch {}
   }
 
-  // Speak text via browser SpeechSynthesis API
+  // Speak text via browser SpeechSynthesis API with robust voice loading and Urdu fallback
   speak(text: string, lang: "ur" | "en" = "ur"): Promise<void> {
     return new Promise((resolve) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -125,37 +125,50 @@ class AudioEngine {
       window.speechSynthesis.cancel(); // Stop any pending speech
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
+      utterance.rate = 0.9;
       utterance.pitch = 1.0;
-
-      // Select best voice
-      const voices = window.speechSynthesis.getVoices();
-      if (lang === "ur") {
-        const voice = voices.find(
-          (v) =>
-            v.lang.startsWith("ur") ||
-            v.lang.startsWith("hi") ||
-            v.lang.includes("Pakistan") ||
-            v.lang.includes("India")
-        );
-        if (voice) {
-          utterance.voice = voice;
-          utterance.lang = voice.lang;
-        } else {
-          utterance.lang = "ur-PK";
-        }
-      } else {
-        const voice = voices.find((v) => v.lang.startsWith("en"));
-        if (voice) {
-          utterance.voice = voice;
-        }
-        utterance.lang = "en-US";
-      }
-
       utterance.onend = () => resolve();
       utterance.onerror = () => resolve();
 
-      window.speechSynthesis.speak(utterance);
+      const selectVoiceAndSpeak = () => {
+        const voices = window.speechSynthesis.getVoices();
+
+        if (lang === "ur") {
+          // Priority ladder: ur-PK → ur → hi-IN → hi → en-IN → en-GB → any
+          const preferredLangs = ["ur-PK", "ur", "hi-IN", "hi", "en-IN", "en-GB"];
+          let chosen: SpeechSynthesisVoice | undefined;
+          for (const prefix of preferredLangs) {
+            chosen = voices.find(v => v.lang.toLowerCase().startsWith(prefix.toLowerCase()));
+            if (chosen) break;
+          }
+          if (chosen) {
+            utterance.voice = chosen;
+            utterance.lang = chosen.lang;
+          } else {
+            // No matching voice — browser will use system default; set hint
+            utterance.lang = "hi-IN";
+          }
+        } else {
+          const enVoice = voices.find(v => v.lang.startsWith("en"));
+          if (enVoice) utterance.voice = enVoice;
+          utterance.lang = "en-US";
+        }
+
+        window.speechSynthesis.speak(utterance);
+      };
+
+      // Voices load asynchronously in Chrome/Edge — wait for them
+      if (window.speechSynthesis.getVoices().length === 0) {
+        const originalHandler = window.speechSynthesis.onvoiceschanged;
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.onvoiceschanged = originalHandler;
+          selectVoiceAndSpeak();
+        };
+        // Safety fallback if the event doesn't fire
+        setTimeout(selectVoiceAndSpeak, 500);
+      } else {
+        selectVoiceAndSpeak();
+      }
     });
   }
 

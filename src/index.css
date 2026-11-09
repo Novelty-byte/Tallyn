@@ -42,3 +42,18 @@ html, body {
     scroll-behavior: auto !important;
   }
 }
+
+@keyframes mandi-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-mandi-marquee {
+  display: flex;
+  width: max-content;
+  animation: mandi-marquee 30s linear infinite;
+}

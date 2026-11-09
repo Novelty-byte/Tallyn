@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "version": "0.41.2",
+    "engine": "vercel-labs/agent-browser",
+    "cliCommand": "agent-browser.cmd",
+    "lastScrapedAt": "2026-11-09T07:30:49.876Z",
+    "status": "synced",
+    "marketRegion": "Islamabad & Rawalpindi Wholesale Corridor",
+    "exchangeSource": "Islamabad Sector I-11 & Rawalpindi Ganj Mandi Index"
+  },
+  "summary": {
+    "totalItemsTracked": 6,
+    "flaggedCount": 1,
+    "averageMarkup": 3.2,
+    "watchdogStatus": "ACTION_REQUIRED",
+    "statusMessage": "1 item exceeds safe wholesale threshold (+10%). Supplier negotiation advised."
+  },
+  "benchmarks": [
+    {
+      "id": "sugar-1kg",
+      "itemName": "White Refined Sugar 1kg",
+      "category": "staples",
+      "unit": "1kg",
+      "benchmarkPrice": 140,
+      "currentShopCost": 142,
+      "retailMrp": 155,
+      "markupPercent": 1.4,
+      "isInflationFlagged": false,
+      "trend": "stable",
+      "recommendation": "Fair wholesale price: +1.4% markup covers standard freight.",
+      "marketHub": "G-9 / I-11 Wholesale Mandi, Islamabad",
+      "scrapedAt": "2026-11-09T07:30:49.876Z"
+    },
+    {
+      "id": "ghee-1kg",
+      "itemName": "Dalda Banaspati Ghee 1kg",
+      "category": "dairy",
+      "unit": "1kg",
+      "benchmarkPrice": 510,
+      "currentShopCost": 535,
+      "retailMrp": 580,
+      "markupPercent": 4.9,
+      "isInflationFlagged": false,
+      "trend": "up",
+      "recommendation": "Fair wholesale price: +4.9% markup covers standard freight.",
+      "marketHub": "Rawalpindi Ganj Mandi",
+      "scrapedAt": "2026-11-09T07:30:49.876Z"
+    },
+    {
+      "id": "atta-10kg",
+      "itemName": "Fine Wheat Flour / Atta 10kg",
+      "category": "staples",
+      "unit": "10kg",
+      "benchmarkPrice": 1220,
+      "currentShopCost": 1425,
+      "retailMrp": 1500,
+      "markupPercent": 16.8,
+      "isInflationFlagged": true,
+      "trend": "up",
+      "recommendation": "⚠️ High inflation alert: Supplier is charging +16.8% above mandi rate. Renegotiate or source from alternate distributor.",
+      "marketHub": "Punjab Food Dept Wholesale Rate",
+      "scrapedAt": "2026-11-09T07:30:49.876Z"
+    },
+    {
+      "id": "rice-5kg",
+      "itemName": "Super Kernel Basmati Rice 5kg",
+      "category": "staples",
+      "unit": "5kg",
+      "benchmarkPrice": 1600,
+      "currentShopCost": 1600,
+      "retailMrp": 1800,
+      "markupPercent": 0,
+      "isInflationFlagged": false,
+      "trend": "stable",
+      "recommendation": "Fair wholesale price: +0% markup covers standard freight.",
+      "marketHub": "Hafizabad / Rawalpindi Mandi",
+      "scrapedAt": "2026-11-09T07:30:49.876Z"
+    },
+    {
+      "id": "tea-450g",
+      "itemName": "Tapal Danedar Tea 450g",
+      "category": "beverages",
+      "unit": "450g",
+      "benchmarkPrice": 580,
+      "currentShopCost": 570,
+      "retailMrp": 650,
+      "markupPercent": -1.7,
+      "isInflationFlagged": false,
+      "trend": "down",
+      "recommendation": "✅ Favorable purchase price: 1.7% below mandi benchmark rate.",
+      "marketHub": "Karachi Tea Traders Exchange / Islamabad Hub",
+      "scrapedAt": "2026-11-09T07:30:49.876Z"
+    },
+    {
+      "id": "oil-1l",
+      "itemName": "Dalda Cooking Oil 1L",
+      "category": "dairy",
+      "unit": "1L",
+      "benchmarkPrice": 490,
+      "currentShopCost": 480,
+      "retailMrp": 540,
+      "markupPercent": -2,
+      "isInflationFlagged": false,
+      "trend": "down",
+      "recommendation": "✅ Favorable purchase price: 2% below mandi benchmark rate.",
+      "marketHub": "Rawalpindi Ganj Mandi",
+      "scrapedAt": "2026-11-09T07:30:49.876Z"
+    }
+  ]
+}

@@ -1,114 +1,208 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
+import { askGeminiStoreAdvisor, StoreContextData } from "@/lib/gemini";
 import { 
   X, 
   Send, 
   Sparkles, 
   Bot, 
-  User as UserIcon, 
-  Store 
+  Loader2,
+  Store,
+  TrendingUp,
+  AlertTriangle,
+  Users,
+  Package
 } from "lucide-react";
 
 interface Message {
   sender: "user" | "tallyn";
   text: string;
+  isLoading?: boolean;
 }
 
 export const AskTallynDrawer: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isUrdu = i18n.language === "ur";
-  const { isAskTallynOpen, setIsAskTallynOpen, products, customers, sales } = useApp();
+  const { isAskTallynOpen, setIsAskTallynOpen, products, customers, sales, shop } = useApp();
 
   const [inputQuery, setInputQuery] = useState("");
+  const [isThinking, setIsThinking] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<{ role: "user" | "model"; text: string }[]>([]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Build live store context for Gemini
+  const storeContext: StoreContextData = {
+    shopName: shop.name,
+    shopCity: shop.city || "Pakistan",
+    shopAddress: shop.address,
+    totalProducts: products.length,
+    lowStockItems: products
+      .filter(p => p.quantity <= p.minQuantity)
+      .map(p => ({
+        name: isUrdu ? p.nameUr : p.nameEn,
+        stock: p.quantity,
+        unit: p.unit,
+        wholesalePrice: p.buyPrice
+      }))
+      .slice(0, 5),
+    topDebtors: [...customers]
+      .sort((a, b) => b.creditBalance - a.creditBalance)
+      .slice(0, 4)
+      .map(c => ({ name: c.name, balance: c.creditBalance, phone: c.phone })),
+    totalUdhaar: customers.reduce((s, c) => s + c.creditBalance, 0),
+    todaySalesCount: sales.filter(s => s.status === "completed").length,
+    todayRevenue: sales.filter(s => s.status === "completed").reduce((s, x) => s + x.totalAmount, 0),
+    recentSalesTotal: sales.reduce((s, x) => s + x.totalAmount, 0),
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "tallyn",
       text: isUrdu
-        ? "السلام علیکم حاجی صاحب! میں ٹیلن AI ہوں۔ آپ اپنی دکان کی فروخت، ادھار، یا اسٹاک کے بارے میں کچھ بھی پوچھ سکتے ہیں۔"
-        : "Hello Haji Aslam! I am your Ask Tallyn store assistant. Ask me anything about your daily sales, inventory levels, or credit ledger.",
+        ? `السلام علیکم! میں ٹیلن AI ہوں، آپ کا ذہین دکان مشیر۔ مَیں ${shop.name} (${shop.city}) کے تمام ریکارڈ لائیو مانیٹر کر رہا ہوں۔ آپ اسٹاک، ادھار، فروخت، یا مارکیٹ قیمتوں کے بارے میں کچھ بھی پوچھ سکتے ہیں۔`
+        : `Assalam-o-Alaikum! I'm Tallyn AI, your autonomous Kiryana retail advisor. I'm monitoring **${shop.name}** (${shop.city}) live — ${products.length} SKUs, ${formatCurrency(storeContext.totalUdhaar)} udhaar outstanding, ${storeContext.todaySalesCount} transactions today.\n\nAsk me anything about your store!`,
     },
   ]);
 
+  // Keep messages ref for scroll
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Reset greeting on shop change
+  useEffect(() => {
+    setMessages([{
+      sender: "tallyn",
+      text: `Assalam-o-Alaikum! Switched to **${shop.name}** (${shop.city}). Monitoring ${products.length} products, ${formatCurrency(customers.reduce((s, c) => s + c.creditBalance, 0))} udhaar. Ask anything!`,
+    }]);
+    setConversationHistory([]);
+  }, [shop.id]);
+
   if (!isAskTallynOpen) return null;
 
-  const handleSend = (queryToSend?: string) => {
+  const handleSend = async (queryToSend?: string) => {
     const q = (queryToSend || inputQuery).trim();
-    if (!q) return;
+    if (!q || isThinking) return;
 
+    // Add user message
     const userMsg: Message = { sender: "user", text: q };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages(prev => [...prev, userMsg]);
     setInputQuery("");
+    setIsThinking(true);
 
-    // Generate accurate, deterministic response based on live data
-    setTimeout(() => {
-      let reply = "";
-      const lower = q.toLowerCase();
+    // Show thinking indicator
+    const thinkingMsg: Message = { sender: "tallyn", text: "...", isLoading: true };
+    setMessages(prev => [...prev, thinkingMsg]);
 
-      if (lower.includes("debt") || lower.includes("udhaar") || lower.includes("ادھار") || lower.includes("balance")) {
-        const topDebtor = [...customers].sort((a, b) => b.creditBalance - a.creditBalance)[0];
-        const totalDebt = customers.reduce((s, c) => s + c.creditBalance, 0);
-        reply = isUrdu
-          ? `کل مارکیٹ میں ادھار ${formatCurrency(totalDebt)} ہے۔ سب سے زیادہ رقم ${topDebtor.name} کے ذمے ہے (${formatCurrency(topDebtor.creditBalance)}) جو کہ ${topDebtor.overdueDays} دن سے واجب الادا ہے۔`
-          : `Total outstanding credit across all accounts is ${formatCurrency(totalDebt)}. The largest debtor is ${topDebtor.name} with ${formatCurrency(topDebtor.creditBalance)} outstanding (${topDebtor.overdueDays} days overdue).`;
-      } else if (lower.includes("stock") || lower.includes("low") || lower.includes("اسٹاک") || lower.includes("کم")) {
-        const lowStock = products.filter((p) => p.quantity <= p.minQuantity);
-        if (lowStock.length > 0) {
-          reply = isUrdu
-            ? `اس وقت دکان میں ${lowStock.length} اشیاء کا اسٹاک کم ہے۔ سب سے پہلے "${lowStock[0].nameUr}" ختم ہو رہی ہے، صرف ${lowStock[0].quantity} رہ گئی ہیں۔ فوری سپلائر سے آرڈر کریں۔`
-            : `There are ${lowStock.length} items running low on stock. Specifically, "${lowStock[0].nameEn}" only has ${lowStock[0].quantity} units left. Recommend reordering today.`;
-        } else {
-          reply = isUrdu ? "ماشاءاللہ تمام ضروری اشیاء کا اسٹاک تسلی بخش ہے۔" : "All product inventory levels are currently healthy and above minimum thresholds.";
-        }
-      } else if (lower.includes("profit") || lower.includes("sale") || lower.includes("منافع") || lower.includes("فروخت")) {
-        const totalRev = sales.reduce((s, x) => s + x.totalAmount, 0);
-        reply = isUrdu
-          ? `آج کی مجموعی فروخت ${formatCurrency(totalRev)} ہے۔ آپ کا تخمینی مجموعی منافع تقریباً 18.5% مارجن کے حساب سے چل رہا ہے۔`
-          : `Total recorded sales stand at ${formatCurrency(totalRev)} across ${sales.length} transactions, operating at approximately 18.5% gross profit margin.`;
-      } else {
-        reply = isUrdu
-          ? "المدینہ کریانہ اسٹور کا سسٹم بالکل اپ ٹو ڈیٹ ہے۔ آپ مجھ سے ادھار کی تفصیل، اسٹاک کی حالت، یا منافع کا پوچھ سکتے ہیں۔"
-          : "Al-Madina Kiryana Store system is fully synchronized. You can ask about customer debts, low stock items, or today's profit breakdown.";
-      }
+    try {
+      const aiResponse = await askGeminiStoreAdvisor(q, storeContext, conversationHistory);
 
-      setMessages((prev) => [...prev, { sender: "tallyn", text: reply }]);
-    }, 600);
+      // Replace thinking indicator with real response
+      setMessages(prev => {
+        const withoutLoader = prev.filter(m => !m.isLoading);
+        return [...withoutLoader, { sender: "tallyn", text: aiResponse }];
+      });
+
+      // Maintain conversation history for context
+      setConversationHistory(prev => [
+        ...prev.slice(-6), // Keep last 6 turns max
+        { role: "user", text: q },
+        { role: "model", text: aiResponse }
+      ]);
+    } catch (err) {
+      setMessages(prev => {
+        const withoutLoader = prev.filter(m => !m.isLoading);
+        return [...withoutLoader, {
+          sender: "tallyn",
+          text: `I'm having trouble connecting to the AI right now. Based on live data: **${storeContext.lowStockItems.length}** items low on stock, **${formatCurrency(storeContext.totalUdhaar)}** udhaar outstanding across **${customers.length}** customers in **${shop.name}**.`
+        }];
+      });
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
+  const quickChips = isUrdu 
+    ? [
+        "سب سے زیادہ ادھار کس پر ہے؟",
+        "کون سا سامان ختم ہو رہا ہے؟",
+        "آج کی فروخت کتنی ہے؟",
+        "منافع بڑھانے کا مشورہ دیں",
+      ]
+    : [
+        "Who has the most udhaar?",
+        "Which items are low on stock?",
+        "What was today's total revenue?",
+        "Give me profit tips for this season",
+      ];
+
+  // Simple markdown-to-JSX renderer for bold and bullets
+  const renderMarkdown = (text: string) => {
+    const lines = text.split("\n");
+    return lines.map((line, i) => {
+      // Bold (** or ##)
+      const boldLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      const isHeading = line.startsWith("### ");
+      const isBullet = line.startsWith("• ") || line.startsWith("- ");
+      const cleanLine = boldLine.replace(/^(###|##|#)\s/, "").replace(/^[•\-]\s/, "");
+
+      if (isHeading) return <p key={i} className="font-black text-emerald-800 text-xs mt-2 mb-1" dangerouslySetInnerHTML={{ __html: cleanLine }} />;
+      if (isBullet) return <div key={i} className="flex gap-1.5 mb-0.5"><span className="text-emerald-600 shrink-0">•</span><span dangerouslySetInnerHTML={{ __html: cleanLine }} /></div>;
+      if (line.trim() === "") return <div key={i} className="h-1.5" />;
+      return <p key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+    });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/50 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col justify-between">
+        
         {/* Drawer Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-950 text-white">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-950 to-emerald-900 text-white shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-emerald-800 text-amber-300 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-xl bg-emerald-700 text-amber-300 flex items-center justify-center shadow-inner">
               <Bot className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold">{t("ai.title")}</h3>
-              <p className="text-[11px] text-emerald-300">Live Read-Only Store Intelligence</p>
+              <h3 className="text-sm font-black">{t("ai.title")}</h3>
+              <p className="text-[11px] text-emerald-300">
+                Live AI Retail Advisor • {shop.name}
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => setIsAskTallynOpen(false)}
-            className="h-8 w-8 rounded-lg bg-emerald-900/80 flex items-center justify-center text-slate-300 hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Live Stats Chips */}
+            <div className="hidden sm:flex gap-1.5 text-[10px]">
+              <span className="bg-emerald-800/50 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1 text-emerald-200">
+                <Package className="h-3 w-3" />
+                {products.length} SKUs
+              </span>
+              {storeContext.lowStockItems.length > 0 && (
+                <span className="bg-rose-900/50 border border-rose-700 px-2 py-1 rounded-full flex items-center gap-1 text-rose-200">
+                  <AlertTriangle className="h-3 w-3" />
+                  {storeContext.lowStockItems.length} Low
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setIsAskTallynOpen(false)}
+              className="h-8 w-8 rounded-lg bg-emerald-900/80 flex items-center justify-center text-slate-300 hover:text-white hover:bg-emerald-800 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Quick Suggestion Chips */}
-        <div className="p-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto text-[11px] scrollbar-none">
-          {[
-            isUrdu ? "سب سے زیادہ ادھار کس پر ہے؟" : "Who owes the most debt?",
-            isUrdu ? "کون سا سامان ختم ہو رہا ہے؟" : "Which item is running low?",
-            isUrdu ? "آج کا منافع کتنا ہے؟" : "What is today's profit?",
-          ].map((chip, idx) => (
+        <div className="p-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto text-[11px] scrollbar-none shrink-0">
+          {quickChips.map((chip, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(chip)}
-              className="whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-emerald-900 hover:bg-emerald-50 transition-colors font-medium shrink-0"
+              disabled={isThinking}
+              className="whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-emerald-900 hover:bg-emerald-50 transition-colors font-medium shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {chip}
             </button>
@@ -123,8 +217,12 @@ export const AskTallynDrawer: React.FC = () => {
               className={`flex gap-2.5 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
             >
               {m.sender === "tallyn" && (
-                <div className="h-7 w-7 rounded-lg bg-emerald-800 text-amber-300 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-3.5 w-3.5" />
+                <div className="h-7 w-7 rounded-lg bg-emerald-800 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                  {m.isLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
                 </div>
               )}
               <div
@@ -132,16 +230,28 @@ export const AskTallynDrawer: React.FC = () => {
                   m.sender === "user"
                     ? "bg-slate-900 text-white rounded-tr-xs"
                     : "bg-slate-100 text-slate-900 rounded-tl-xs"
-                }`}
+                } ${m.isLoading ? "opacity-60" : ""}`}
               >
-                {m.text}
+                {m.isLoading ? (
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <span className="animate-bounce">●</span>
+                    <span className="animate-bounce delay-100">●</span>
+                    <span className="animate-bounce delay-200">●</span>
+                    <span className="ms-1 text-[10px] font-semibold">Tallyn AI is thinking...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {renderMarkdown(m.text)}
+                  </div>
+                )}
               </div>
             </div>
           ))}
+          <div ref={chatEndRef} />
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 border-t border-slate-200 bg-white">
+        <div className="p-3 border-t border-slate-200 bg-white shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -153,16 +263,25 @@ export const AskTallynDrawer: React.FC = () => {
               type="text"
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
-              placeholder={t("ai.placeholder")}
-              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs focus:border-emerald-600 focus:outline-hidden"
+              placeholder={isThinking ? "Tallyn AI is thinking..." : (t("ai.placeholder") || "Ask about your store...")}
+              disabled={isThinking}
+              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs focus:border-emerald-600 focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-400"
             />
             <button
               type="submit"
-              className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-200 flex items-center justify-center hover:bg-emerald-900 transition-colors shrink-0 shadow-xs"
+              disabled={isThinking || !inputQuery.trim()}
+              className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-200 flex items-center justify-center hover:bg-emerald-900 transition-colors shrink-0 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Send className="h-4 w-4 rtl:rotate-180" />
+              {isThinking ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 rtl:rotate-180" />
+              )}
             </button>
           </form>
+          <p className="text-center text-[10px] text-slate-400 mt-1.5">
+            Powered by Gemini AI • Live {shop.name} Context Loaded
+          </p>
         </div>
       </div>
     </div>

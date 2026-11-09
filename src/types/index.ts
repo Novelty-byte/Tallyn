@@ -17,6 +17,7 @@ export interface Shop {
   currency: string;
   phone: string;
   address: string;
+  city?: string;
   lowStockThreshold: number;
   leadTimeDays: number;
   isDemo?: boolean;
@@ -109,12 +110,28 @@ export interface Expense {
 }
 
 export interface WholesalePriceBenchmark {
+  id?: string;
   itemName: string;
   category: string;
+  unit?: string;
   benchmarkPrice: number;
   currentShopCost: number;
   markupPercent: number;
   isInflationFlagged: boolean;
+  trend?: "up" | "down" | "stable";
+  recommendation?: string;
+  marketHub?: string;
+  scrapedAt?: string;
+}
+
+export interface LiveScraperMetadata {
+  version: string;
+  engine: string;
+  cliCommand: string;
+  lastScrapedAt: string;
+  status: "synced" | "scraping" | "idle" | "error";
+  marketRegion: string;
+  exchangeSource: string;
 }
 
 export interface AnomalyAlert {

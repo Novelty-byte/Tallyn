@@ -14,6 +14,9 @@ import { SettingsView } from "@/components/settings/SettingsView";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { AskTallynDrawer } from "@/components/ai/AskTallynDrawer";
 import { KiryanaRadioModal } from "@/components/ai/KiryanaRadioModal";
+import { AddStoreModal } from "@/components/stores/AddStoreModal";
+import { StoreManagementModal } from "@/components/stores/StoreManagementModal";
+import { WholesaleMandiTicker } from "@/components/dashboard/WholesaleMandiTicker";
 
 function AppContent() {
   const { activeTab } = useApp();
@@ -22,6 +25,9 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-emerald-700 selection:text-white">
       {/* Top Navbar */}
       <Navbar />
+
+      {/* In-Store Live Wholesale Mandi Marquee (Only visible inside account/demo store) */}
+      <WholesaleMandiTicker />
 
       {/* Main Dynamic View Area */}
       <main className="flex-1">
@@ -38,6 +44,8 @@ function AppContent() {
 
       {/* Modals & AI Assistants */}
       <AuthModal />
+      <AddStoreModal />
+      <StoreManagementModal />
       <AskTallynDrawer />
       <KiryanaRadioModal />
 
