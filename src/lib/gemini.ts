@@ -6,7 +6,7 @@
 const GEMINI_API_KEY = 
   import.meta.env.VITE_GEMINI_API_KEY || 
   import.meta.env.GEMINI_API_KEY || 
-  "AQ.Ab8RN6L2wkFEmwn8hWXG4IfE9S8kKUKPPpWQ9zJH57rdXCisaA";
+  "";
 
 const PRIMARY_MODEL = "gemini-3.7-flash";
 const FALLBACK_MODEL = "gemini-3.8-flash";
@@ -92,6 +92,9 @@ Advisor Behavior Guidelines:
 }
 
 async function callGeminiModel(model: string, contents: any[]): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set in environment variables");
+  }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   
   const res = await fetch(url, {
