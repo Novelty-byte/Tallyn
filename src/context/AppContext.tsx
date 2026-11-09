@@ -1,38 +1,24 @@
-import React, { createContext, useContext, useState } from "react";
-import { 
-  UserProfile, 
-  Shop, 
-  Product, 
-  Customer, 
-  Sale, 
-  Purchase, 
-  Expense,
-  WholesalePriceBenchmark,
-  SeasonalForecast,
-  Language 
+import React, {
+  createContext, useContext, useState, useEffect, useRef, ReactNode,
+} from "react";
+import type {
+  UserProfile, Shop, Product, Customer, Sale, Purchase, Expense,
+  WholesalePriceBenchmark, SeasonalForecast, Language,
 } from "@/types";
 import { audio } from "@/lib/audio";
 import { switchLanguage } from "@/i18n";
-import { 
-  SEEDED_PRODUCTS, 
-  SEEDED_CUSTOMERS, 
-  SEEDED_EXPENSES, 
-  SEEDED_BENCHMARKS,
-  SEEDED_SEASONAL_FORECASTS,
-  getBranchSeedData
+import {
+  SEEDED_PRODUCTS, SEEDED_BENCHMARKS, SEEDED_SEASONAL_FORECASTS,
+  getBranchSeedData,
 } from "@/lib/seedData";
 import liveWholesaleData from "@/data/live_wholesale_prices.json";
+import {
+  db, ensureProfile, mapProduct, mapCustomer, mapSale, mapPurchase, mapExpense,
+} from "@/services/supabase";
 
-export type ActiveTab = 
-  | "landing" 
-  | "pos" 
-  | "dashboard" 
-  | "insights" 
-  | "inventory" 
-  | "udhaar" 
-  | "purchases" 
-  | "history" 
-  | "settings";
+export type ActiveTab =
+  | "landing" | "pos" | "dashboard" | "insights"
+  | "inventory" | "udhaar" | "purchases" | "history" | "settings";
 
 export const DEMO_SHOPS: Shop[] = [
   {
@@ -73,8 +59,6 @@ export const DEMO_SHOPS: Shop[] = [
   },
 ];
 
-const DEMO_SHOP: Shop = DEMO_SHOPS[0];
-
 const DEMO_USER: UserProfile = {
   id: "user-aslam-01",
   name: "Haji Aslam",
@@ -105,7 +89,8 @@ interface AppContextType {
   lastSaleUndo: Sale | null;
   undoSeconds: number;
   isDemoMode: boolean;
-  // Core Actions
+
+  // Actions
   openSeededDemoShop: () => void;
   exitDemoMode: () => void;
   switchShop: (shopId: string) => void;
@@ -122,7 +107,8 @@ interface AppContextType {
   recordCreditPayment: (customerId: string, amount: number) => void;
   recordSupplierPurchase: (purchase: Omit<Purchase, "id" | "date">) => void;
   addExpense: (expense: Omit<Expense, "id">) => void;
-  // Modals & Drawers
+
+  // Modals
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   isAddStoreModalOpen: boolean;
@@ -135,6 +121,7 @@ interface AppContextType {
   setIsKiryanaRadioOpen: (open: boolean) => void;
   isBarcodeScannerOpen: boolean;
   setIsBarcodeScannerOpen: (open: boolean) => void;
+
   login: (email: string, name?: string, initialShopName?: string) => void;
   loginWithGoogle: () => void;
   loginWithSocial: (provider: string) => void;
@@ -143,9 +130,10 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const branch1 = getBranchSeedData("shop-al-madina-01");
-  const [user, setUser] = useState<UserProfile | null>(null); // New visitors see landing page without pre-login
+
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
   const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
   const [activeTab, setActiveTab] = useState<ActiveTab>("landing");
@@ -153,41 +141,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [products, setProducts] = useState<Product[]>(branch1.products);
   const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
   const [sales, setSales] = useState<Sale[]>(branch1.sales);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>(branch1.purchases ?? []);
   const [expenses, setExpenses] = useState<Expense[]>(branch1.expenses);
   const [wholesaleBenchmarks, setWholesaleBenchmarks] = useState<WholesalePriceBenchmark[]>(
-    ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks as WholesalePriceBenchmark[]) || SEEDED_BENCHMARKS
+    ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks) || SEEDED_BENCHMARKS
   );
   const [lastWholesaleSyncDate, setLastWholesaleSyncDate] = useState<string>(
-    (liveWholesaleData as { metadata?: { lastScrapedAt?: string } })?.metadata?.lastScrapedAt || new Date().toISOString()
+    ((liveWholesaleData as { metadata?: { lastScrapedAt?: string } })?.metadata?.lastScrapedAt) || new Date().toISOString()
   );
-
-  const triggerWholesaleScrape = async (): Promise<WholesalePriceBenchmark[]> => {
-    const timestamp = new Date().toISOString();
-    const current = (
-      ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks as WholesalePriceBenchmark[]) || SEEDED_BENCHMARKS
-    );
-    const refreshed: WholesalePriceBenchmark[] = current.map((b) => {
-      const delta = b.currentShopCost - b.benchmarkPrice;
-      const markupPercent = Number(((delta / b.benchmarkPrice) * 100).toFixed(1));
-      const isInflationFlagged = markupPercent > 10.0;
-      return {
-        ...b,
-        markupPercent,
-        isInflationFlagged,
-        scrapedAt: timestamp,
-      };
-    });
-    setWholesaleBenchmarks(refreshed);
-    setLastWholesaleSyncDate(timestamp);
-    return refreshed;
-  };
-  const [seasonalForecasts, setSeasonalForecasts] = useState<SeasonalForecast[]>(SEEDED_SEASONAL_FORECASTS);
+  const [seasonalForecasts] = useState<SeasonalForecast[]>(SEEDED_SEASONAL_FORECASTS);
   const [lastSaleUndo, setLastSaleUndo] = useState<Sale | null>(null);
   const [undoSeconds, setUndoSeconds] = useState<number>(0);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
-  // Modals state
+  // Modal flags
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAddStoreModalOpen, setIsAddStoreModalOpen] = useState(false);
   const [isStoreManagementModalOpen, setIsStoreManagementModalOpen] = useState(false);
@@ -195,72 +162,193 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isKiryanaRadioOpen, setIsKiryanaRadioOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
 
+  // Unique undo timer reference (prevents old intervals from undoing new sales)
+  const undoIntervalRef = useRef<number | null>(null);
+
+  const clearUndoTimer = () => {
+    if (undoIntervalRef.current !== null) {
+      window.clearInterval(undoIntervalRef.current);
+      undoIntervalRef.current = null;
+    }
+  };
+
+  /* ---------------------- Supabase live sync loader ---------------------- */
+
+  const refreshLiveShopData = async (activeShopId: string) => {
+    try {
+      const [prods, custs, sls, slItems, pmts, purchs, exps] = await Promise.all([
+        db.getProducts(activeShopId),
+        db.getCustomers(activeShopId),
+        db.getSales(activeShopId),
+        db.getSaleItems(activeShopId),
+        db.getPayments(activeShopId),
+        db.getPurchases(activeShopId),
+        db.getExpenses(activeShopId),
+      ]);
+
+      const mappedProds = prods.map(mapProduct);
+      const mappedCusts = custs.map((c) => mapCustomer(c, sls, pmts));
+      const mappedSales = sls.map((s) => mapSale(s, slItems.filter((i) => i.sale_id === s.id)));
+      const mappedPurchs = purchs.map(mapPurchase);
+      const mappedExps = exps.map(mapExpense);
+
+      setProducts(mappedProds);
+      setCustomers(mappedCusts);
+      setSales(mappedSales);
+      setPurchases(mappedPurchs);
+      setExpenses(mappedExps);
+    } catch (err) {
+      console.warn("Failed to fetch live shop data from Supabase, staying on state:", err);
+    }
+  };
+
+  // Subscribe to Supabase Auth state change on mount
+  useEffect(() => {
+    const { data: listener } = db.onAuthChange(async (event, session) => {
+      if (session?.user) {
+        const u = session.user;
+        const profileName = (u.user_metadata?.full_name as string) || u.email?.split("@")[0] || "Owner";
+        await ensureProfile(u.id, profileName, u.email || "");
+
+        setUser({
+          id: u.id,
+          name: profileName,
+          email: u.email || "",
+          role: "owner",
+          languagePreference: language,
+          isDemo: false,
+        });
+        setIsDemoMode(false);
+
+        // Fetch live user's shops
+        try {
+          const userShops = await db.getShops(u.id);
+          if (userShops.length > 0) {
+            const mappedShops: Shop[] = userShops.map((s) => ({
+              id: s.id,
+              name: s.name,
+              ownerName: profileName,
+              currency: s.currency,
+              phone: "",
+              address: "",
+              lowStockThreshold: s.low_stock_threshold,
+              leadTimeDays: s.lead_time_days,
+            }));
+            setShops(mappedShops);
+            setShop(mappedShops[0]);
+            await refreshLiveShopData(mappedShops[0].id);
+          }
+        } catch {
+          // ignore if DB is offline
+        }
+      }
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  /* ------------------------------ Language ------------------------------- */
+
   const setLanguage = (lang: Language) => {
     setLangState(lang);
     switchLanguage(lang);
   };
 
-  // Centralized Button on Landing Page: Open Seeded Demo Account!
+  /* ------------------------------- Actions ------------------------------- */
+
   const openSeededDemoShop = () => {
-    const branch1 = getBranchSeedData("shop-al-madina-01");
+    clearUndoTimer();
+    const b1 = getBranchSeedData("shop-al-madina-01");
     setUser(DEMO_USER);
     setShops(DEMO_SHOPS);
     setShop(DEMO_SHOPS[0]);
-    setProducts(branch1.products);
-    setCustomers(branch1.customers);
-    setSales(branch1.sales);
-    setExpenses(branch1.expenses);
+    setProducts(b1.products);
+    setCustomers(b1.customers);
+    setSales(b1.sales);
+    setPurchases(b1.purchases ?? []);
+    setExpenses(b1.expenses);
     setWholesaleBenchmarks(SEEDED_BENCHMARKS);
-    setSeasonalForecasts(SEEDED_SEASONAL_FORECASTS);
     setIsDemoMode(true);
     setActiveTab("dashboard");
     audio.playCashRegisterChime();
   };
 
   const exitDemoMode = () => {
+    clearUndoTimer();
     setUser(null);
     setIsDemoMode(false);
     setActiveTab("landing");
   };
 
-  const switchShop = (shopId: string) => {
+  const switchShop = async (shopId: string) => {
     const s = shops.find((item) => item.id === shopId);
-    if (s) {
-      setShop(s);
-      // Load branch-specific seeded data only if currently in demo mode
-      if (isDemoMode) {
-        const branchData = getBranchSeedData(shopId);
-        setProducts(branchData.products);
-        setCustomers(branchData.customers);
-        setSales(branchData.sales);
-        setExpenses(branchData.expenses);
-      }
-      audio.playCashRegisterChime();
+    if (!s) return;
+    setShop(s);
+
+    if (isDemoMode) {
+      const branchData = getBranchSeedData(shopId);
+      setProducts(branchData.products);
+      setCustomers(branchData.customers);
+      setSales(branchData.sales);
+      setPurchases(branchData.purchases ?? []);
+      setExpenses(branchData.expenses);
+    } else if (user) {
+      await refreshLiveShopData(shopId);
     }
+    audio.playCashRegisterChime();
   };
 
-  const createShop = (shopData: Omit<Shop, "id">, template: "grocery" | "empty" = "grocery") => {
-    const newShop: Shop = {
-      ...shopData,
-      id: "shop-" + Date.now(),
-    };
-    setShops((prev) => [...prev, newShop]);
-    setShop(newShop);
+  const createShop = async (shopData: Omit<Shop, "id">, template: "grocery" | "empty" = "grocery") => {
+    if (user && !isDemoMode) {
+      try {
+        const created = await db.createShop(user.id, shopData.name, shopData.currency || "PKR");
+        const newS: Shop = {
+          id: created.id,
+          name: created.name,
+          ownerName: user.name,
+          currency: created.currency,
+          phone: shopData.phone,
+          address: shopData.address,
+          city: shopData.city,
+          lowStockThreshold: created.low_stock_threshold,
+          leadTimeDays: created.lead_time_days,
+        };
+        setShops((prev) => [...prev, newS]);
+        setShop(newS);
 
-    if (template === "empty") {
-      setProducts([]);
+        if (template === "grocery") {
+          const starterRows = SEEDED_PRODUCTS.map((p) => ({
+            name: p.nameEn,
+            name_ur: p.nameUr,
+            category: p.category,
+            quantity: p.quantity,
+            buy_price: p.buyPrice,
+            sell_price: p.sellPrice,
+            min_quantity: p.minQuantity,
+            barcode: p.barcode,
+          }));
+          await db.insertProducts(created.id, starterRows);
+        }
+        await refreshLiveShopData(created.id);
+      } catch (err) {
+        console.warn("DB shop creation failed, falling back to local:", err);
+      }
     } else {
-      setProducts(SEEDED_PRODUCTS);
-    }
-
-    if (!user) {
-      setUser({
-        id: "usr-" + Date.now(),
-        name: shopData.ownerName || "Retail Owner",
-        email: `${shopData.name.toLowerCase().replace(/[^a-z0-9]/g, "")}@tallyn.pk`,
-        role: "owner",
-        languagePreference: language,
-      });
+      const newShop: Shop = { ...shopData, id: "shop-" + Date.now() };
+      setShops((prev) => [...prev, newShop]);
+      setShop(newShop);
+      setProducts(template === "empty" ? [] : SEEDED_PRODUCTS);
+      if (!user) {
+        setUser({
+          id: "usr-" + Date.now(),
+          name: shopData.ownerName || "Retail Owner",
+          email: `${shopData.name.toLowerCase().replace(/[^a-z0-9]/g, "")}@tallyn.pk`,
+          role: "owner",
+          languagePreference: language,
+        });
+      }
     }
 
     setIsAddStoreModalOpen(false);
@@ -271,76 +359,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateShop = (updatedShop: Shop) => {
     setShops((prev) => prev.map((s) => (s.id === updatedShop.id ? updatedShop : s)));
-    if (shop.id === updatedShop.id) {
-      setShop(updatedShop);
-    }
+    if (shop.id === updatedShop.id) setShop(updatedShop);
   };
 
-  const deleteShop = (shopId: string) => {
+  const deleteShop = async (shopId: string) => {
     if (shops.length <= 1) return;
+    if (user && !isDemoMode) {
+      try { await db.deleteShop(shopId); } catch { /* ignore */ }
+    }
     const remaining = shops.filter((s) => s.id !== shopId);
     setShops(remaining);
-    if (shop.id === shopId) {
-      setShop(remaining[0]);
-    }
+    if (shop.id === shopId) setShop(remaining[0]);
   };
 
-  const login = (email: string, name: string = "Store Owner", initialShopName?: string) => {
-    const newUser: UserProfile = {
-      id: "usr-" + Date.now(),
-      name,
-      email,
-      role: "owner",
-      languagePreference: language,
-    };
-    setUser(newUser);
-    setIsDemoMode(false);
-    setIsAuthModalOpen(false);
+  /* -------------------------- Atomic Record Sale -------------------------- */
 
-    if (initialShopName && initialShopName.trim()) {
-      const newStore: Shop = {
-        id: "shop-" + Date.now(),
-        name: initialShopName.trim(),
-        ownerName: name,
-        currency: "PKR",
-        phone: "0300-0000000",
-        address: "Main Commercial Market",
-        city: "Islamabad",
-        lowStockThreshold: 8,
-        leadTimeDays: 2,
-      };
-      setShops((prev) => [...prev, newStore]);
-      setShop(newStore);
+  const recordSale = async (saleData: Omit<Sale, "id" | "createdAt" | "status">) => {
+    // Check stock block (prevent negative)
+    for (const item of saleData.items) {
+      const p = products.find((x) => x.id === item.productId);
+      if (p && p.quantity < item.quantity) {
+        alert(`Insufficient stock for ${p.nameEn}. Available: ${p.quantity}, requested: ${item.quantity}`);
+        return;
+      }
     }
 
-    setActiveTab("dashboard");
-  };
+    let createdSaleId = "sale-" + Date.now();
 
-  const loginWithGoogle = () => {
-    login("retailer@gmail.com", "Google Retailer");
-  };
+    if (user && !isDemoMode) {
+      try {
+        const rpcRes = await db.rpcRecordSale(
+          shop.id,
+          saleData.paymentType,
+          saleData.items.map((i) => ({ product_id: i.productId, quantity: i.quantity, unit_price: i.unitPrice })),
+          saleData.customerId,
+        );
+        createdSaleId = rpcRes.sale_id;
+        await refreshLiveShopData(shop.id);
+      } catch (err) {
+        console.warn("RPC record_sale failed, mutating state locally:", err);
+      }
+    }
 
-  const loginWithSocial = (provider: string) => {
-    login(`user@${provider.toLowerCase()}.com`, `${provider} Retailer`);
-  };
-
-  const logout = () => {
-    setUser(null);
-    setIsDemoMode(false);
-    setActiveTab("landing");
-  };
-
-  // Atomic Record Sale
-  const recordSale = (saleData: Omit<Sale, "id" | "createdAt" | "status">) => {
-    const saleId = "sale-" + Date.now();
+    // Local state optimistic mirror
     const newSale: Sale = {
       ...saleData,
-      id: saleId,
+      id: createdSaleId,
       createdAt: new Date().toISOString(),
       status: "completed",
     };
 
-    // 1. Decrement inventory atomically
     setProducts((prev) =>
       prev.map((p) => {
         const item = saleData.items.find((i) => i.productId === p.id);
@@ -348,57 +416,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    // 2. If credit, update customer debt balance
     if (saleData.paymentType === "credit" && saleData.customerId) {
       setCustomers((prev) =>
         prev.map((c) =>
           c.id === saleData.customerId
-            ? { 
-                ...c, 
-                creditBalance: c.creditBalance + saleData.totalAmount, 
+            ? {
+                ...c,
+                creditBalance: c.creditBalance + saleData.totalAmount,
                 lastPurchaseDate: new Date().toISOString().split("T")[0],
                 history: [
                   {
                     id: "h-" + Date.now(),
                     date: new Date().toISOString().split("T")[0],
-                    description: `Credit Sale #${saleId.slice(-6)} (${saleData.items.length} items)`,
+                    description: `Credit Sale (${saleData.items.length} items)`,
                     amount: saleData.totalAmount,
                     type: "credit_purchase",
                   },
                   ...(c.history || []),
-                ]
+                ],
               }
             : c
         )
       );
     }
 
-    // 3. Play cash register sound
     audio.playCashRegisterChime();
-
-    // 4. Update sales log & activate 10-second undo window
     setSales((prev) => [newSale, ...prev]);
     setLastSaleUndo(newSale);
     setUndoSeconds(10);
 
-    // Countdown timer
-    const interval = setInterval(() => {
+    // Reset & bind unique undo interval
+    clearUndoTimer();
+    const interval = window.setInterval(() => {
       setUndoSeconds((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
+          clearUndoTimer();
           setLastSaleUndo(null);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+    undoIntervalRef.current = interval;
   };
 
-  // Undo Sale
-  const undoSale = () => {
+  const undoSale = async () => {
     if (!lastSaleUndo) return;
 
-    // Restore inventory
+    if (user && !isDemoMode) {
+      try {
+        await db.rpcUndoSale(lastSaleUndo.id, shop.id);
+        await refreshLiveShopData(shop.id);
+      } catch (err) {
+        console.warn("RPC undo_sale failed, un-doing locally:", err);
+      }
+    }
+
     setProducts((prev) =>
       prev.map((p) => {
         const item = lastSaleUndo.items.find((i) => i.productId === p.id);
@@ -406,7 +479,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    // If credit, rollback customer debt
     if (lastSaleUndo.paymentType === "credit" && lastSaleUndo.customerId) {
       setCustomers((prev) =>
         prev.map((c) =>
@@ -417,46 +489,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
     }
 
-    // Mark sale as undone in ledger
-    setSales((prev) =>
-      prev.map((s) => (s.id === lastSaleUndo.id ? { ...s, status: "undone" } : s))
-    );
-
+    setSales((prev) => prev.map((s) => (s.id === lastSaleUndo.id ? { ...s, status: "undone" } : s)));
     audio.playUndoSound();
+    clearUndoTimer();
     setLastSaleUndo(null);
     setUndoSeconds(0);
   };
 
-  const addProduct = (p: Omit<Product, "id">) => {
-    const newProduct: Product = { ...p, id: "p-" + Date.now() };
-    setProducts((prev) => [newProduct, ...prev]);
+  /* ------------------------------- Inventory ------------------------------ */
+
+  const addProduct = async (p: Omit<Product, "id">) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.insertProducts(shop.id, [{
+          name: p.nameEn,
+          name_ur: p.nameUr,
+          category: p.category,
+          quantity: p.quantity,
+          buy_price: p.buyPrice,
+          sell_price: p.sellPrice,
+          min_quantity: p.minQuantity,
+          barcode: p.barcode,
+        }]);
+        await refreshLiveShopData(shop.id);
+        return;
+      } catch (err) {
+        console.warn("insertProducts failed, applying local fallback:", err);
+      }
+    }
+    const newP: Product = { ...p, id: "p-" + Date.now() };
+    setProducts((prev) => [newP, ...prev]);
   };
 
-  const updateProduct = (p: Product) => {
+  const updateProduct = async (p: Product) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.updateProduct(p.id, {
+          name: p.nameEn, name_ur: p.nameUr, category: p.category,
+          quantity: p.quantity, buy_price: p.buyPrice, sell_price: p.sellPrice,
+          min_quantity: p.minQuantity, barcode: p.barcode,
+        });
+        await refreshLiveShopData(shop.id);
+        return;
+      } catch { /* ignore */ }
+    }
     setProducts((prev) => prev.map((item) => (item.id === p.id ? p : item)));
   };
 
-  const deleteProduct = (productId: string) => {
+  const deleteProduct = async (productId: string) => {
+    if (user && !isDemoMode) {
+      try { await db.deleteProduct(productId); } catch { /* ignore */ }
+    }
     setProducts((prev) => prev.filter((item) => item.id !== productId));
   };
 
-  const updateStock = (productId: string, delta: number) => {
+  const updateStock = async (productId: string, delta: number) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.rpcAdjustStock(shop.id, productId, delta, delta < 0 ? "Spillage/Damage" : "Recount");
+        await refreshLiveShopData(shop.id);
+        return;
+      } catch { /* ignore */ }
+    }
     setProducts((prev) =>
       prev.map((p) => (p.id === productId ? { ...p, quantity: Math.max(p.quantity + delta, 0) } : p))
     );
   };
 
-  const addCustomer = (c: Omit<Customer, "id" | "creditBalance">) => {
+  /* ------------------------------- Customers ------------------------------ */
+
+  const addCustomer = async (c: Omit<Customer, "id" | "creditBalance">) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.insertCustomer(shop.id, c.name, c.phone);
+        await refreshLiveShopData(shop.id);
+        return;
+      } catch { /* ignore */ }
+    }
     const newCust: Customer = { ...c, id: "c-" + Date.now(), creditBalance: 0, history: [] };
     setCustomers((prev) => [...prev, newCust]);
   };
 
-  const recordCreditPayment = (customerId: string, amount: number) => {
+  const recordCreditPayment = async (customerId: string, amount: number) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.rpcRecordCreditPayment(shop.id, customerId, amount);
+        await refreshLiveShopData(shop.id);
+        audio.playCashRegisterChime();
+        return;
+      } catch { /* ignore */ }
+    }
     setCustomers((prev) =>
       prev.map((c) =>
-        c.id === customerId 
-          ? { 
-              ...c, 
+        c.id === customerId
+          ? {
+              ...c,
               creditBalance: Math.max(c.creditBalance - amount, 0),
               history: [
                 {
@@ -467,36 +594,117 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   type: "payment",
                 },
                 ...(c.history || []),
-              ]
-            } 
+              ],
+            }
           : c
       )
     );
     audio.playCashRegisterChime();
   };
 
-  const recordSupplierPurchase = (purchase: Omit<Purchase, "id" | "date">) => {
+  /* ------------------------------- Purchases ------------------------------ */
+
+  const recordSupplierPurchase = async (purchase: Omit<Purchase, "id" | "date">) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.rpcRecordPurchase(
+          shop.id,
+          purchase.supplierName,
+          purchase.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
+          purchase.items.map((i) => ({ product_id: i.productId, quantity: i.quantity, unit_cost: i.unitCost })),
+        );
+        await refreshLiveShopData(shop.id);
+        audio.playCashRegisterChime();
+        return;
+      } catch { /* ignore */ }
+    }
+
     const newPurchase: Purchase = {
       ...purchase,
       id: "pur-" + Date.now(),
       date: new Date().toISOString().split("T")[0],
     };
-
-    // Increment inventory stock & update buyPrice
     setProducts((prev) =>
       prev.map((p) => {
         const item = purchase.items.find((i) => i.productId === p.id);
         return item ? { ...p, quantity: p.quantity + item.quantity, buyPrice: item.unitCost } : p;
       })
     );
-
     setPurchases((prev) => [newPurchase, ...prev]);
     audio.playCashRegisterChime();
   };
 
-  const addExpense = (exp: Omit<Expense, "id">) => {
+  /* -------------------------------- Expenses ------------------------------- */
+
+  const addExpense = async (exp: Omit<Expense, "id">) => {
+    if (user && !isDemoMode) {
+      try {
+        await db.insertExpense(shop.id, exp.title, exp.amount, exp.category, exp.date);
+        await refreshLiveShopData(shop.id);
+        return;
+      } catch { /* ignore */ }
+    }
     const newExp: Expense = { ...exp, id: "exp-" + Date.now() };
     setExpenses((prev) => [newExp, ...prev]);
+  };
+
+  const triggerWholesaleScrape = async (): Promise<WholesalePriceBenchmark[]> => {
+    const timestamp = new Date().toISOString();
+    const current =
+      ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks) || SEEDED_BENCHMARKS;
+    const refreshed: WholesalePriceBenchmark[] = current.map((b) => {
+      const delta = b.currentShopCost - b.benchmarkPrice;
+      const markupPercent = Number(((delta / b.benchmarkPrice) * 100).toFixed(1));
+      return {
+        ...b,
+        markupPercent,
+        isInflationFlagged: markupPercent > 10.0,
+        scrapedAt: timestamp,
+      };
+    });
+    setWholesaleBenchmarks(refreshed);
+    setLastWholesaleSyncDate(timestamp);
+    return refreshed;
+  };
+
+  /* --------------------------------- Auth --------------------------------- */
+
+  const login = async (email: string, name = "Store Owner") => {
+    try {
+      await db.signInWithOtp(email);
+    } catch {
+      /* ignore */
+    }
+    setUser({
+      id: "usr-" + Date.now(),
+      name,
+      email,
+      role: "owner",
+      languagePreference: language,
+    });
+    setIsDemoMode(false);
+    setIsAuthModalOpen(false);
+    setActiveTab("dashboard");
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      await db.signInWithGoogle();
+    } catch {
+      login("retailer@gmail.com", "Google Retailer");
+    }
+  };
+
+  const loginWithSocial = (provider: string) => {
+    login(`user@${provider.toLowerCase()}.com`, `${provider} Retailer`);
+  };
+
+  const logout = async () => {
+    clearUndoTimer();
+    try { await db.signOut(); } catch { /* ignore */ }
+    setUser(null);
+    setIsDemoMode(false);
+    setActiveTab("landing");
   };
 
   return (

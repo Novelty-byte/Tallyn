@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
-import { X, Mail, Lock, Store, Sparkles, Check, ArrowRight } from "lucide-react";
+import { db } from "@/services/supabase";
+import { X, Mail, Lock, Store, Check } from "lucide-react";
 
 export const AuthModal: React.FC = () => {
   const { t } = useTranslation();
@@ -12,28 +13,64 @@ export const AuthModal: React.FC = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [shopName, setShopName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [sentMagicLink, setSentMagicLink] = useState(false);
 
   if (!isAuthModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    login(email, name || "Retailer");
+    if (!email.trim() || !password.trim()) return;
+
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      if (mode === "login") {
+        const { error } = await db.signInWithPassword(email.trim(), password);
+        if (error) throw error;
+        // onAuthChange listener in AppContext picks up the session and loads live data.
+        setIsAuthModalOpen(false);
+      } else {
+        const { data, error } = await db.signUp(email.trim(), password);
+        if (error) throw error;
+        if (data.session) {
+          // Email confirmation disabled → session returned directly.
+          setIsAuthModalOpen(false);
+        } else {
+          setSentMagicLink(true);
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Authentication failed. Please check credentials.";
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSendMagicLink = () => {
+  const handleSendMagicLink = async () => {
     if (!email.trim()) return;
-    setSentMagicLink(true);
-    setTimeout(() => {
-      login(email, name || "Retailer");
-      setSentMagicLink(false);
-    }, 1500);
+
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      const { error } = await db.signInWithOtp(email.trim());
+      if (error) throw error;
+      setSentMagicLink(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send the magic link.";
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
-      <div 
+      <div
         className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200"
         role="dialog"
       >
@@ -57,6 +94,13 @@ export const AuthModal: React.FC = () => {
             {t("auth.signInSubtitle")}
           </p>
         </div>
+
+        {/* Error message */}
+        {errorMsg && (
+          <div className="mb-4 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs font-semibold text-rose-800">
+            {errorMsg}
+          </div>
+        )}
 
         {/* Google Sign In Button */}
         <button
@@ -144,18 +188,20 @@ export const AuthModal: React.FC = () => {
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors min-h-[44px]"
+              disabled={isLoading}
+              className="flex-1 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors min-h-[44px] disabled:opacity-50"
             >
-              {mode === "login" ? t("auth.loginBtn") : t("auth.createOne")}
+              {isLoading ? "..." : mode === "login" ? t("auth.loginBtn") : t("auth.createOne")}
             </button>
             <button
               type="button"
               onClick={handleSendMagicLink}
-              className="flex-1 rounded-xl border border-slate-300 bg-white py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors min-h-[44px]"
+              disabled={isLoading}
+              className="flex-1 rounded-xl border border-slate-300 bg-white py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors min-h-[44px] disabled:opacity-50"
             >
               {sentMagicLink ? (
                 <span className="flex items-center justify-center gap-1 text-emerald-700">
-                  <Check className="h-3.5 w-3.5" /> Sent!
+                  <Check className="h-3.5 w-3.5" /> {t("auth.magicLinkBtn")}
                 </span>
               ) : (
                 t("auth.magicLinkBtn")
@@ -166,7 +212,7 @@ export const AuthModal: React.FC = () => {
 
         {/* Toggle Mode */}
         <div className="mt-5 text-center text-xs text-slate-500">
-          <span>{mode === "login" ? t("auth.noAccount") : "Already have an account?"}</span>{" "}
+          <span>{mode === "login" ? t("auth.noAccount") : t("auth.signInTitle")}</span>{" "}
           <button
             type="button"
             onClick={() => setMode(mode === "login" ? "register" : "login")}
