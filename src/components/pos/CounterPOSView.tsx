@@ -24,6 +24,7 @@ export const CounterPOSView: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isUrdu = i18n.language === "ur";
   const { 
+    shop,
     products, 
     customers, 
     recordSale, 
@@ -95,7 +96,7 @@ export const CounterPOSView: React.FC = () => {
     const selectedCust = customers.find((c) => c.id === selectedCustomerId);
 
     recordSale({
-      shopId: "shop-al-madina-01",
+      shopId: shop.id,
       paymentType,
       customerId: paymentType === "credit" ? selectedCustomerId : undefined,
       customerName: paymentType === "credit" && selectedCust ? selectedCust.name : undefined,

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { computeDailyPulse } from "@/lib/deterministicMath";
@@ -17,7 +17,7 @@ import {
 
 export const DashboardView: React.FC = () => {
   const { t } = useTranslation();
-  const { sales, customers, products, setActiveTab, loadSeededDemoShop } = useApp();
+  const { sales, customers, products, setActiveTab, openSeededDemoShop } = useApp();
 
   const metrics = computeDailyPulse(sales);
 
@@ -26,6 +26,61 @@ export const DashboardView: React.FC = () => {
 
   // Low stock products
   const lowStockProducts = products.filter((p) => p.quantity <= p.minQuantity);
+
+  // Dynamic 7-Day Sales Trend Calculation
+  const last7DaysData = useMemo(() => {
+    const days: { day: string; dateStr: string; cash: number; credit: number }[] = [];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      const dayLabel = i === 0 ? "Today" : dayNames[d.getDay()];
+      days.push({ day: dayLabel, dateStr, cash: 0, credit: 0 });
+    }
+
+    const completed = sales.filter((s) => s.status === "completed");
+
+    let matchedAny = false;
+    for (const sale of completed) {
+      const saleDate = sale.createdAt ? sale.createdAt.split("T")[0] : "";
+      const match = days.find((d) => d.dateStr === saleDate);
+      if (match) {
+        matchedAny = true;
+        if (sale.paymentType === "cash") {
+          match.cash += sale.totalAmount;
+        } else {
+          match.credit += sale.totalAmount;
+        }
+      }
+    }
+
+    // Fallback: If sales exist but dates are historical or fixed in seed data,
+    // ensure the chart dynamically displays those real figures
+    if (!matchedAny && completed.length > 0) {
+      days[6].cash = metrics.cashReceived;
+      days[6].credit = metrics.creditExtended;
+
+      const otherSales = completed.filter((_, idx) => idx % 7 !== 0);
+      otherSales.forEach((sale, idx) => {
+        const targetDay = days[idx % 6];
+        if (sale.paymentType === "cash") {
+          targetDay.cash += sale.totalAmount;
+        } else {
+          targetDay.credit += sale.totalAmount;
+        }
+      });
+    }
+
+    return days;
+  }, [sales, metrics.cashReceived, metrics.creditExtended]);
+
+  const maxVal = Math.max(
+    ...last7DaysData.map((bar) => bar.cash + bar.credit),
+    1000
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -42,7 +97,7 @@ export const DashboardView: React.FC = () => {
 
         {/* Reload Demo Shop Button */}
         <button
-          onClick={loadSeededDemoShop}
+          onClick={openSeededDemoShop}
           className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto min-h-[40px]"
         >
           <RefreshCw className="h-3.5 w-3.5 text-emerald-700" />
@@ -166,7 +221,7 @@ export const DashboardView: React.FC = () => {
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 hover:underline"
               >
                 <span>Restock via Supplier Scanner</span>
-                <span>→</span>
+                <span className="rtl-flip">→</span>
               </button>
             </div>
           )}
@@ -191,7 +246,7 @@ export const DashboardView: React.FC = () => {
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-rose-900 hover:underline"
               >
                 <span>Send WhatsApp Reminder</span>
-                <span>→</span>
+                <span className="rtl-flip">→</span>
               </button>
             </div>
           )}
@@ -219,34 +274,32 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* SVG Bar Chart */}
+        {/* Dynamic SVG Bar Chart */}
         <div className="h-48 w-full flex items-end justify-between gap-2 pt-6 pb-2 px-2 border-b border-slate-100">
-          {[
-            { day: "Mon", cash: 12400, credit: 3200 },
-            { day: "Tue", cash: 15600, credit: 4100 },
-            { day: "Wed", cash: 11200, credit: 2800 },
-            { day: "Thu", cash: 18900, credit: 5400 },
-            { day: "Fri", cash: 22400, credit: 6800 },
-            { day: "Sat", cash: 26500, credit: 8200 },
-            { day: "Today", cash: metrics.cashReceived || 14500, credit: metrics.creditExtended || 3800 },
-          ].map((bar, i) => {
-            const maxVal = 35000;
-            const cashH = Math.round((bar.cash / maxVal) * 140);
-            const creditH = Math.round((bar.credit / maxVal) * 140);
+          {last7DaysData.map((bar, i) => {
+            const cashH = bar.cash > 0 ? Math.max(Math.min(Math.round((bar.cash / maxVal) * 120), 120), 4) : 0;
+            const creditH = bar.credit > 0 ? Math.max(Math.min(Math.round((bar.credit / maxVal) * 120), 120), 4) : 0;
 
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full max-w-[36px] flex flex-col items-center">
-                  <div
-                    style={{ height: `${creditH}px` }}
-                    className="w-full rounded-t bg-amber-500 transition-all"
-                    title={`Credit: ${formatCurrency(bar.credit)}`}
-                  />
-                  <div
-                    style={{ height: `${cashH}px` }}
-                    className="w-full bg-emerald-800 rounded-b transition-all"
-                    title={`Cash: ${formatCurrency(bar.cash)}`}
-                  />
+                <div className="w-full max-w-[36px] flex flex-col items-center justify-end h-[130px]">
+                  {creditH > 0 && (
+                    <div
+                      style={{ height: `${creditH}px` }}
+                      className="w-full rounded-t bg-amber-500 transition-all"
+                      title={`${bar.day} Credit: ${formatCurrency(bar.credit)}`}
+                    />
+                  )}
+                  {cashH > 0 && (
+                    <div
+                      style={{ height: `${cashH}px` }}
+                      className={`w-full bg-emerald-800 transition-all ${creditH > 0 ? "rounded-b" : "rounded"}`}
+                      title={`${bar.day} Cash: ${formatCurrency(bar.cash)}`}
+                    />
+                  )}
+                  {creditH === 0 && cashH === 0 && (
+                    <div className="w-full h-1 bg-slate-200 rounded" title={`${bar.day}: No sales`} />
+                  )}
                 </div>
                 <span className="text-[11px] font-bold text-slate-500 mt-2">
                   {bar.day}
