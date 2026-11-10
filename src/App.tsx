@@ -12,6 +12,9 @@ import { PurchasesView } from "@/components/purchases/PurchasesView";
 import { InsightsView } from "@/components/insights/InsightsView";
 import { SalesHistoryView } from "@/components/history/SalesHistoryView";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { LoginPage } from "@/components/auth/LoginPage";
+import { RegisterPage } from "@/components/auth/RegisterPage";
+import { StoreOnboardingPage } from "@/components/stores/StoreOnboardingPage";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { AskTallynDrawer } from "@/components/ai/AskTallynDrawer";
 import { KiryanaRadioModal } from "@/components/ai/KiryanaRadioModal";
@@ -29,6 +32,12 @@ const ROUTE_TAB_MAP: Record<string, ActiveTab> = {
   "/purchases": "purchases",
   "/history": "history",
   "/settings": "settings",
+  "/login": "login",
+  "/signin": "login",
+  "/register": "register",
+  "/signup": "register",
+  "/onboarding": "onboarding",
+  "/register-store": "onboarding",
 };
 
 const TAB_ROUTE_MAP: Record<ActiveTab, string> = {
@@ -41,6 +50,9 @@ const TAB_ROUTE_MAP: Record<ActiveTab, string> = {
   purchases: "/purchases",
   history: "/history",
   settings: "/settings",
+  login: "/login",
+  register: "/register",
+  onboarding: "/onboarding",
 };
 
 function RouteSync() {
@@ -90,6 +102,12 @@ function AppContent() {
           <Route path="/purchases" element={<PurchasesView />} />
           <Route path="/history" element={<SalesHistoryView />} />
           <Route path="/settings" element={<SettingsView />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signin" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/signup" element={<RegisterPage />} />
+          <Route path="/onboarding" element={<StoreOnboardingPage />} />
+          <Route path="/register-store" element={<StoreOnboardingPage />} />
           {/* Fallback to home */}
           <Route path="*" element={<LandingView />} />
         </Routes>

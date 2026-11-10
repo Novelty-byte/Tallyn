@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { audio } from "@/lib/audio";
@@ -51,6 +52,7 @@ interface PhoneCartItem {
 }
 
 export const LandingView: React.FC = () => {
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isUrdu = i18n.language === "ur";
   const { 
@@ -146,7 +148,7 @@ export const LandingView: React.FC = () => {
   const handleQuickRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (!signUpEmail.trim()) return;
-    login(signUpEmail, signUpShopName || "New Retailer");
+    navigate(`/register?email=${encodeURIComponent(signUpEmail.trim())}`);
   };
 
   const phoneSubtotal = phoneCart.reduce((sum, item) => sum + item.price * item.qty, 0);

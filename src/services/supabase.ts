@@ -191,20 +191,34 @@ export const db = {
   async signInWithPassword(email: string, password: string) {
     return supabase.auth.signInWithPassword({ email, password });
   },
-  async signUp(email: string, password: string) {
-    return supabase.auth.signUp({ email, password });
+  async signUp(email: string, password: string, name?: string) {
+    return supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          full_name: name || email.split("@")[0],
+        }
+      }
+    });
   },
   async signInWithOtp(email: string) {
     return supabase.auth.signInWithOtp({ email });
   },
-  async signInWithGoogle() {
+  async signInWithGoogle(redirectTo?: string) {
     return supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: { redirectTo: redirectTo || `${window.location.origin}/dashboard` },
     });
   },
   async signOut() {
     return supabase.auth.signOut();
+  },
+  async updateProfile(userId: string, name: string) {
+    return supabase
+      .from("profiles")
+      .update({ name })
+      .eq("id", userId);
   },
   onAuthChange(cb: Parameters<typeof supabase.auth.onAuthStateChange>[0]) {
     return supabase.auth.onAuthStateChange(cb);
@@ -217,10 +231,20 @@ export const db = {
     if (error) throw error;
     return (data ?? []) as ShopRow[];
   },
-  async createShop(ownerId: string, name: string, currency: string): Promise<ShopRow> {
+  async createShop(
+    ownerId: string, 
+    name: string, 
+    currency: string = "PKR",
+    lowStockThreshold?: number,
+    leadTimeDays?: number
+  ): Promise<ShopRow> {
+    const insertPayload: Record<string, unknown> = { owner_id: ownerId, name, currency };
+    if (lowStockThreshold !== undefined) insertPayload.low_stock_threshold = lowStockThreshold;
+    if (leadTimeDays !== undefined) insertPayload.lead_time_days = leadTimeDays;
+
     const { data, error } = await supabase
       .from("shops")
-      .insert({ owner_id: ownerId, name, currency })
+      .insert(insertPayload)
       .select().single();
     if (error) throw error;
     return data as ShopRow;

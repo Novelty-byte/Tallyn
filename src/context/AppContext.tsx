@@ -18,7 +18,8 @@ import {
 
 export type ActiveTab =
   | "landing" | "pos" | "dashboard" | "insights"
-  | "inventory" | "udhaar" | "purchases" | "history" | "settings";
+  | "inventory" | "udhaar" | "purchases" | "history" | "settings"
+  | "login" | "register" | "onboarding";
 
 export const DEMO_SHOPS: Shop[] = [
   {
@@ -95,6 +96,7 @@ interface AppContextType {
   exitDemoMode: () => void;
   switchShop: (shopId: string) => void;
   createShop: (shopData: Omit<Shop, "id">, template?: "grocery" | "empty") => void;
+  createMultipleShops: (branches: Array<{ shopData: Omit<Shop, "id">; template?: "grocery" | "empty" }>) => Promise<void>;
   updateShop: (shopData: Shop) => void;
   deleteShop: (shopId: string) => void;
   recordSale: (sale: Omit<Sale, "id" | "createdAt" | "status">) => void;
@@ -303,7 +305,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const createShop = async (shopData: Omit<Shop, "id">, template: "grocery" | "empty" = "grocery") => {
     if (user && !isDemoMode) {
       try {
-        const created = await db.createShop(user.id, shopData.name, shopData.currency || "PKR");
+        const created = await db.createShop(
+          user.id, 
+          shopData.name, 
+          shopData.currency || "PKR",
+          shopData.lowStockThreshold,
+          shopData.leadTimeDays
+        );
         const newS: Shop = {
           id: created.id,
           name: created.name,
@@ -315,7 +323,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           lowStockThreshold: created.low_stock_threshold,
           leadTimeDays: created.lead_time_days,
         };
-        setShops((prev) => [...prev, newS]);
+        setShops((prev) => [...prev.filter((s) => s.id !== created.id), newS]);
         setShop(newS);
 
         if (template === "grocery") {
@@ -355,6 +363,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsStoreManagementModalOpen(false);
     setActiveTab("dashboard");
     audio.playCashRegisterChime();
+  };
+
+  const createMultipleShops = async (
+    branches: Array<{ shopData: Omit<Shop, "id">; template?: "grocery" | "empty" }>
+  ) => {
+    if (branches.length === 0) return;
+    for (const b of branches) {
+      await createShop(b.shopData, b.template || "grocery");
+    }
+    setActiveTab("dashboard");
   };
 
   const updateShop = (updatedShop: Shop) => {
@@ -734,6 +752,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         exitDemoMode,
         switchShop,
         createShop,
+        createMultipleShops,
         updateShop,
         deleteShop,
         recordSale,

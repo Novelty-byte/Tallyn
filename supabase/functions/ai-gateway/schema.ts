@@ -48,7 +48,7 @@ export const LowStockItemSchema = z
     name: ShortText,
     stock: z.number().finite().nonnegative().max(100_000),
     unit: z.string().trim().max(12),
-    wholesalePrice: Money,
+    wholesalePrice: Money.optional(),
   })
   .strict();
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useApp, ActiveTab } from "@/context/AppContext";
 import { 
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 export const Navbar: React.FC = () => {
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isUrdu = i18n.language === "ur";
   const { 
@@ -435,8 +437,8 @@ export const Navbar: React.FC = () => {
 
               {/* Register Store CTA */}
               <button
-                onClick={() => setIsAddStoreModalOpen(true)}
-                className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold px-3 py-2 text-xs transition-colors min-h-[38px]"
+                onClick={() => navigate("/register")}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold px-3 py-2 text-xs transition-colors min-h-[38px] cursor-pointer"
               >
                 <Store className="h-3.5 w-3.5 text-emerald-700" />
                 <span>{t("nav.register")}</span>
@@ -444,8 +446,8 @@ export const Navbar: React.FC = () => {
 
               {/* Sign In CTA */}
               <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 px-3.5 py-2 text-xs font-bold text-amber-100 transition-colors shadow-xs min-h-[38px]"
+                onClick={() => navigate("/login")}
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 px-3.5 py-2 text-xs font-bold text-amber-100 transition-colors shadow-xs min-h-[38px] cursor-pointer"
               >
                 <User className="h-3.5 w-3.5" />
                 <span>{t("nav.signIn")}</span>
@@ -454,8 +456,8 @@ export const Navbar: React.FC = () => {
           ) : (
             /* Inside App but not logged in (e.g. anonymous counter demo) */
             <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-800 px-3.5 py-2 text-xs font-bold text-amber-100 hover:bg-emerald-900 transition-colors shadow-xs min-h-[38px]"
+              onClick={() => navigate("/login")}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-800 px-3.5 py-2 text-xs font-bold text-amber-100 hover:bg-emerald-900 transition-colors shadow-xs min-h-[38px] cursor-pointer"
             >
               <User className="h-3.5 w-3.5" />
               <span>{t("nav.signIn")}</span>
@@ -476,8 +478,8 @@ export const Navbar: React.FC = () => {
               <span>{t("nav.launchDemo")}</span>
             </button>
             <button
-              onClick={() => setIsAddStoreModalOpen(true)}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-800 text-white px-3 py-1.5 text-xs font-bold min-h-[34px]"
+              onClick={() => navigate("/register")}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-800 text-white px-3 py-1.5 text-xs font-bold min-h-[34px] cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>{t("nav.register")}</span>
