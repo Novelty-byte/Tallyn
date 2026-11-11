@@ -52,6 +52,12 @@ export const StoreOnboardingPage: React.FC = () => {
   const [hasMultipleStores, setHasMultipleStores] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isLoadingAccount, setIsLoadingAccount] = useState(!user);
+
+  // Wait for Supabase auth session to populate the user profile before creating shops.
+  useEffect(() => {
+    if (user) setIsLoadingAccount(false);
+  }, [user]);
 
   // Single Store State
   const [singleStore, setSingleStore] = useState<BranchFormState>({
@@ -127,6 +133,12 @@ export const StoreOnboardingPage: React.FC = () => {
     setErrorMsg("");
 
     try {
+      if (!user) {
+        setErrorMsg("Account session not ready yet. Please wait a moment and try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
       if (!hasMultipleStores) {
         // Single store submission
         if (!singleStore.name.trim()) {

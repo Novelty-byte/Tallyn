@@ -624,12 +624,12 @@ export const LandingView: React.FC = () => {
           {activeFeatureTab === 4 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 5: Market Price Scraper</span>
+                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 5: Mahngai Watchdog</span>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-                  Mahngai Watchdog & Wholesale Comparison
+                  Wholesale Benchmark Comparison
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Powered by `agent-browser`, Tallyn scrapes wholesale commodity portals for staple rates (sugar, flour, cooking oil, rice) and alerts you whenever a distributor attempts to overcharge your store by more than 15%.
+                  Tallyn compares your supplier purchase costs against curated wholesale mandi benchmark rates (sugar, flour, cooking oil, rice) and flags whenever a distributor charges your store above the fair market band.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button

@@ -67,9 +67,12 @@ export const RegisterPage: React.FC = () => {
 
   const handleGoogleSignUp = async () => {
     try {
-      await db.signInWithGoogle(`${window.location.origin}/onboarding`);
+      const { error } = await db.signInWithGoogle(`${window.location.origin}/dashboard`);
+      if (error) throw error;
+      // On success, Supabase's onAuthChange listener sets the real user and
+      // onboarding (store registration) happens next via /onboarding route.
     } catch (err) {
-      setErrorMsg("Google authentication failed. Please try with email/password.");
+      setErrorMsg("Google sign-up is not configured. Please sign up with email & password instead.");
     }
   };
 

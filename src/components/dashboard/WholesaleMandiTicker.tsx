@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus, RefreshCw, MapPin, Sparkles, AlertTriangle, ShieldCheck } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, MapPin, Sparkles } from "lucide-react";
 
 interface MandiBenchmarkItem {
   id: string;
@@ -20,8 +20,6 @@ export const WholesaleMandiTicker: React.FC = () => {
   const isUrdu = i18n.language === "ur";
   const { shop, products, activeTab } = useApp();
 
-  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeItemDetail, setActiveItemDetail] = useState<MandiBenchmarkItem | null>(null);
 
   // Determine city-specific wholesale mandi hub
@@ -294,37 +292,6 @@ export const WholesaleMandiTicker: React.FC = () => {
     });
   }, [products, masterMandiRates]);
 
-  // 24-Hour live benchmark sync handling
-  useEffect(() => {
-    const cacheKey = `tallyn_mandi_sync_${city}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      const parsedDate = new Date(cached);
-      const now = new Date();
-      // Check if 24 hours have passed
-      const diffHours = (now.getTime() - parsedDate.getTime()) / (1000 * 60 * 60);
-      if (diffHours < 24) {
-        setLastSyncTime(parsedDate);
-        return;
-      }
-    }
-    // Set fresh timestamp
-    const now = new Date();
-    localStorage.setItem(cacheKey, now.toISOString());
-    setLastSyncTime(now);
-  }, [city]);
-
-  const handleManualRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      const now = new Date();
-      const cacheKey = `tallyn_mandi_sync_${city}`;
-      localStorage.setItem(cacheKey, now.toISOString());
-      setLastSyncTime(now);
-      setIsRefreshing(false);
-    }, 600);
-  };
-
   // If user is on landing page, NEVER show this component (requirement 2)
   if (activeTab === "landing") {
     return null;
@@ -406,21 +373,9 @@ export const WholesaleMandiTicker: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Status & Refresh Action */}
-        <div className="flex items-center gap-2 shrink-0 ps-3 sm:ps-4 border-s border-slate-800/80 z-10 bg-slate-950/90 py-1">
-          <div className="hidden lg:flex items-center gap-1.5 text-[10px] text-slate-400">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            <span>24h Benchmark Cycle Active</span>
-          </div>
-          <button
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-1 rounded-md bg-slate-800 hover:bg-slate-700 px-2 py-1 text-[10px] font-bold text-slate-300 hover:text-white transition-colors"
-            title="Fetch Fresh Daily Benchmark"
-          >
-            <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin text-emerald-400" : ""}`} />
-            <span className="hidden sm:inline">24h Sync</span>
-          </button>
+        {/* Right Status Indicator */}
+        <div className="flex items-center gap-2 shrink-0 ps-3 sm:ps-4 border-s border-slate-800/80 z-10 bg-slate-950/90 py-1 text-[10px] text-slate-400">
+          <span className="hidden sm:inline">Daily Wholesale Mandi Feed</span>
         </div>
 
       </div>

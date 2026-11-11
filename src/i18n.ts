@@ -262,19 +262,32 @@ export const resources = {
   },
 };
 
+const savedLang = (typeof window !== "undefined" && localStorage.getItem("tallyn_lang")) || "en";
+
 i18n.use(initReactI18next).init({
   resources,
-  lng: "en",
+  lng: savedLang === "ur" ? "ur" : "en",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false,
   },
 });
 
+// Set initial document attributes
+if (typeof document !== "undefined") {
+  document.documentElement.dir = savedLang === "ur" ? "rtl" : "ltr";
+  document.documentElement.lang = savedLang;
+}
+
 export function switchLanguage(lang: "en" | "ur") {
   i18n.changeLanguage(lang);
   document.documentElement.dir = lang === "ur" ? "rtl" : "ltr";
   document.documentElement.lang = lang;
+  try {
+    localStorage.setItem("tallyn_lang", lang);
+  } catch {
+    /* ignore */
+  }
 }
 
 export default i18n;

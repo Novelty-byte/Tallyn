@@ -211,6 +211,12 @@ export const db = {
       options: { redirectTo: redirectTo || `${window.location.origin}/dashboard` },
     });
   },
+  async signInWithOAuthProvider(provider: string, redirectTo?: string) {
+    return supabase.auth.signInWithOAuth({
+      provider: provider as any,
+      options: { redirectTo: redirectTo || `${window.location.origin}/dashboard` },
+    });
+  },
   async signOut() {
     return supabase.auth.signOut();
   },

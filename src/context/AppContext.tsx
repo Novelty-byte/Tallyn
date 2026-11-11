@@ -3,7 +3,7 @@ import React, {
 } from "react";
 import type {
   UserProfile, Shop, Product, Customer, Sale, Purchase, Expense,
-  WholesalePriceBenchmark, SeasonalForecast, Language,
+  SeasonalForecast, Language,
 } from "@/types";
 import { audio } from "@/lib/audio";
 import { switchLanguage } from "@/i18n";
@@ -11,7 +11,6 @@ import {
   SEEDED_PRODUCTS, SEEDED_BENCHMARKS, SEEDED_SEASONAL_FORECASTS,
   getBranchSeedData,
 } from "@/lib/seedData";
-import liveWholesaleData from "@/data/live_wholesale_prices.json";
 import {
   db, ensureProfile, mapProduct, mapCustomer, mapSale, mapPurchase, mapExpense,
 } from "@/services/supabase";
@@ -83,15 +82,10 @@ interface AppContextType {
   purchases: Purchase[];
   expenses: Expense[];
   wholesaleBenchmarks: WholesalePriceBenchmark[];
-  lastWholesaleSyncDate: string;
-  updateWholesaleBenchmarks: (benchmarks: WholesalePriceBenchmark[]) => void;
-  triggerWholesaleScrape: () => Promise<WholesalePriceBenchmark[]>;
   seasonalForecasts: SeasonalForecast[];
   lastSaleUndo: Sale | null;
   undoSeconds: number;
   isDemoMode: boolean;
-
-  // Actions
   openSeededDemoShop: () => void;
   exitDemoMode: () => void;
   switchShop: (shopId: string) => void;
@@ -139,18 +133,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
   const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
   const [activeTab, setActiveTab] = useState<ActiveTab>("landing");
-  const [language, setLangState] = useState<Language>("en");
+  const [language, setLangState] = useState<Language>(
+    (typeof window !== "undefined" && localStorage.getItem("tallyn_lang") as Language) || "en"
+  );
   const [products, setProducts] = useState<Product[]>(branch1.products);
   const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
   const [sales, setSales] = useState<Sale[]>(branch1.sales);
   const [purchases, setPurchases] = useState<Purchase[]>(branch1.purchases ?? []);
   const [expenses, setExpenses] = useState<Expense[]>(branch1.expenses);
-  const [wholesaleBenchmarks, setWholesaleBenchmarks] = useState<WholesalePriceBenchmark[]>(
-    ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks) || SEEDED_BENCHMARKS
-  );
-  const [lastWholesaleSyncDate, setLastWholesaleSyncDate] = useState<string>(
-    ((liveWholesaleData as { metadata?: { lastScrapedAt?: string } })?.metadata?.lastScrapedAt) || new Date().toISOString()
-  );
+  const [wholesaleBenchmarks] = useState(SEEDED_BENCHMARKS);
   const [seasonalForecasts] = useState<SeasonalForecast[]>(SEEDED_SEASONAL_FORECASTS);
   const [lastSaleUndo, setLastSaleUndo] = useState<Sale | null>(null);
   const [undoSeconds, setUndoSeconds] = useState<number>(0);
@@ -287,6 +278,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const switchShop = async (shopId: string) => {
     const s = shops.find((item) => item.id === shopId);
     if (!s) return;
+    clearUndoTimer();
+    setLastSaleUndo(null);
+    setUndoSeconds(0);
     setShop(s);
 
     if (isDemoMode) {
@@ -341,9 +335,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         await refreshLiveShopData(created.id);
       } catch (err) {
-        console.warn("DB shop creation failed, falling back to local:", err);
+        console.warn("DB shop creation failed:", err);
+        throw err;
       }
     } else {
+      // No authenticated user: local-only fallback for demo / offline use.
       const newShop: Shop = { ...shopData, id: "shop-" + Date.now() };
       setShops((prev) => [...prev, newShop]);
       setShop(newShop);
@@ -666,55 +662,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setExpenses((prev) => [newExp, ...prev]);
   };
 
-  const triggerWholesaleScrape = async (): Promise<WholesalePriceBenchmark[]> => {
-    const timestamp = new Date().toISOString();
-    const current =
-      ((liveWholesaleData as { benchmarks?: WholesalePriceBenchmark[] })?.benchmarks) || SEEDED_BENCHMARKS;
-    const refreshed: WholesalePriceBenchmark[] = current.map((b) => {
-      const delta = b.currentShopCost - b.benchmarkPrice;
-      const markupPercent = Number(((delta / b.benchmarkPrice) * 100).toFixed(1));
-      return {
-        ...b,
-        markupPercent,
-        isInflationFlagged: markupPercent > 10.0,
-        scrapedAt: timestamp,
-      };
-    });
-    setWholesaleBenchmarks(refreshed);
-    setLastWholesaleSyncDate(timestamp);
-    return refreshed;
-  };
-
   /* --------------------------------- Auth --------------------------------- */
 
   const login = async (email: string, name = "Store Owner") => {
-    try {
-      await db.signInWithOtp(email);
-    } catch {
-      /* ignore */
-    }
-    setUser({
-      id: "usr-" + Date.now(),
-      name,
-      email,
-      role: "owner",
-      languagePreference: language,
-    });
-    setIsDemoMode(false);
-    setIsAuthModalOpen(false);
-    setActiveTab("dashboard");
+    const { error } = await db.signInWithOtp(email);
+    if (error) throw error;
+    // Magic-link sign-in: the Supabase onAuthChange listener will set the real
+    // user and load their shops once the session is established.
   };
 
   const loginWithGoogle = async () => {
-    try {
-      await db.signInWithGoogle();
-    } catch {
-      login("retailer@gmail.com", "Google Retailer");
-    }
+    const { error } = await db.signInWithGoogle();
+    if (error) throw error;
+    // On success, the Supabase onAuthChange listener (mounted above) sets the
+    // real user, loads their shops, and switches out of demo mode.
   };
 
-  const loginWithSocial = (provider: string) => {
-    login(`user@${provider.toLowerCase()}.com`, `${provider} Retailer`);
+  const loginWithSocial = async (provider: string) => {
+    const { error } = await db.signInWithOAuthProvider(provider);
+    if (error) throw error;
   };
 
   const logout = async () => {
@@ -741,9 +707,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         purchases,
         expenses,
         wholesaleBenchmarks,
-        lastWholesaleSyncDate,
-        updateWholesaleBenchmarks: setWholesaleBenchmarks,
-        triggerWholesaleScrape,
         seasonalForecasts,
         lastSaleUndo,
         undoSeconds,
