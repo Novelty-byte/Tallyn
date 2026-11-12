@@ -183,7 +183,7 @@ export const UdhaarView: React.FC = () => {
                             <button
                               onClick={() => sendWhatsAppReminder(c)}
                               className="rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 px-2.5 py-1 text-[11px] font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1"
-                              title="Send respectful Urdu WhatsApp reminder"
+                              title="Send respectful WhatsApp reminder"
                             >
                               <MessageSquare className="h-3 w-3 text-emerald-700" />
                               <span>WhatsApp</span>

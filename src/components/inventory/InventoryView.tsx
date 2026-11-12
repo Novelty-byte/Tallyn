@@ -66,7 +66,7 @@ export const InventoryView: React.FC = () => {
 
   const filteredProducts = products.filter((p) => {
     const matchesCat = selectedCategory === "all" || p.category === selectedCategory;
-    const name = isUrdu ? p.name : p.nameEn;
+    const name = p.name || p.nameEn;
     const matchesSearch =
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -182,7 +182,7 @@ export const InventoryView: React.FC = () => {
                   <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-slate-900">
                       <div>
-                        <p>{isUrdu ? p.name : p.nameEn}</p>
+                        <p>{p.name || p.nameEn}</p>
                         <p className="text-[10px] text-slate-400 font-normal">
                           {p.barcode ? `Barcode: ${p.barcode}` : p.unit}
                         </p>
@@ -237,9 +237,8 @@ export const InventoryView: React.FC = () => {
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 mb-4">{t("inventory.addProduct")}</h3>
             <form onSubmit={handleAddSubmit} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Product Name (English)</label>
+              <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Product Name</label>
                   <input
                     type="text"
                     required
@@ -249,18 +248,6 @@ export const InventoryView: React.FC = () => {
                     className="w-full rounded-xl border border-slate-200 p-2.5 text-xs"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Product Name (اردو)</label>
-                  <input
-                    type="text"
-                    value={nameUr}
-                    onChange={(e) => setNameUr(e.target.value)}
-                    placeholder="مثال: باسمتی چاول 5 کلو"
-                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs"
-                    dir="rtl"
-                  />
-                </div>
-              </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>

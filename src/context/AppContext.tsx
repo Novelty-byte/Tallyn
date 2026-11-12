@@ -122,13 +122,38 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const getInitialActiveTab = (): ActiveTab => {
+  if (typeof window !== "undefined") {
+    const path = window.location.pathname.toLowerCase().replace(/\/$/, "");
+    const map: Record<string, ActiveTab> = {
+      "": "landing",
+      "/pos": "pos",
+      "/dashboard": "dashboard",
+      "/insights": "insights",
+      "/inventory": "inventory",
+      "/udhaar": "udhaar",
+      "/purchases": "purchases",
+      "/history": "history",
+      "/settings": "settings",
+      "/login": "login",
+      "/signin": "login",
+      "/register": "register",
+      "/signup": "register",
+      "/onboarding": "onboarding",
+      "/register-store": "onboarding",
+    };
+    if (map[path]) return map[path];
+  }
+  return "landing";
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const branch1 = getBranchSeedData("shop-al-madina-01");
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
   const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("landing");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(getInitialActiveTab);
   const [products, setProducts] = useState<Product[]>(branch1.products);
   const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
   const [sales, setSales] = useState<Sale[]>(branch1.sales);

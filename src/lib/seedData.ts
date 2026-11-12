@@ -314,9 +314,10 @@ export const BRANCH_03_EXPENSES: Expense[] = [
 // Helper function to get branch seed data
 // ==========================================
 export function getBranchSeedData(shopId: string) {
+  const enrichProducts = (list: Product[]) => list.map(p => ({ ...p, name: p.name || p.nameEn }));
   if (shopId === "shop-al-madina-02") {
     return {
-      products: BRANCH_02_PRODUCTS,
+      products: enrichProducts(BRANCH_02_PRODUCTS),
       customers: BRANCH_02_CUSTOMERS,
       sales: BRANCH_02_SALES,
       expenses: BRANCH_02_EXPENSES,
@@ -324,7 +325,7 @@ export function getBranchSeedData(shopId: string) {
   }
   if (shopId === "shop-al-madina-03") {
     return {
-      products: BRANCH_03_PRODUCTS,
+      products: enrichProducts(BRANCH_03_PRODUCTS),
       customers: BRANCH_03_CUSTOMERS,
       sales: BRANCH_03_SALES,
       expenses: BRANCH_03_EXPENSES,
@@ -332,7 +333,7 @@ export function getBranchSeedData(shopId: string) {
   }
   // Default to Branch 01 (Main G-9/4)
   return {
-    products: BRANCH_01_PRODUCTS,
+    products: enrichProducts(BRANCH_01_PRODUCTS),
     customers: BRANCH_01_CUSTOMERS,
     sales: BRANCH_01_SALES,
     expenses: BRANCH_01_EXPENSES,
@@ -340,7 +341,7 @@ export function getBranchSeedData(shopId: string) {
 }
 
 // Global default fallbacks
-export const SEEDED_PRODUCTS = BRANCH_01_PRODUCTS;
+export const SEEDED_PRODUCTS = BRANCH_01_PRODUCTS.map(p => ({ ...p, name: p.name || p.nameEn }));
 export const SEEDED_CUSTOMERS = BRANCH_01_CUSTOMERS;
 export const SEEDED_EXPENSES = BRANCH_01_EXPENSES;
 

@@ -59,6 +59,7 @@ function RouteSync() {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeTab, setActiveTab } = useApp();
+  const isMount = React.useRef(true);
 
   // Sync route -> activeTab on route change
   useEffect(() => {
@@ -70,6 +71,10 @@ function RouteSync() {
 
   // Sync activeTab -> route on tab change
   useEffect(() => {
+    if (isMount.current) {
+      isMount.current = false;
+      return;
+    }
     const targetRoute = TAB_ROUTE_MAP[activeTab];
     if (targetRoute && location.pathname !== targetRoute) {
       navigate(targetRoute);

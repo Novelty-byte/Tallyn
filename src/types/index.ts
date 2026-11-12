@@ -29,7 +29,7 @@ export type ProductCategory = "staples" | "beverages" | "dairy" | "spices" | "ho
 export interface Product {
   id: string;
   name: string;
-  nameEn?: string;
+  nameEn: string;
   nameUr?: string;
   category: ProductCategory;
   quantity: number;
@@ -123,17 +123,6 @@ export interface WholesalePriceBenchmark {
   trend?: "up" | "down" | "stable";
   recommendation?: string;
   marketHub?: string;
-  scrapedAt?: string;
-}
-
-export interface LiveScraperMetadata {
-  version: string;
-  engine: string;
-  cliCommand: string;
-  lastScrapedAt: string;
-  status: "synced" | "scraping" | "idle" | "error";
-  marketRegion: string;
-  exchangeSource: string;
 }
 
 export interface AnomalyAlert {

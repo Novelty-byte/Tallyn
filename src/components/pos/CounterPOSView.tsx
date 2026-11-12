@@ -86,7 +86,7 @@ export const CounterPOSView: React.FC = () => {
       const p = products.find((item) => item.id === productId)!;
       return {
         productId,
-        productName: p.name,
+        productName: p.name || p.nameEn || "Item",
         quantity,
         unitPrice: p.sellPrice,
         unitCost: p.buyPrice,
@@ -110,12 +110,12 @@ export const CounterPOSView: React.FC = () => {
   // Real Audio Voice POS simulation with speech synthesis
   const handleSimulateVoice = async () => {
     setIsSpeakingVoice(true);
-    const spokenTextUrdu = "دو چائے اور ایک گھی ادھار آصف بھائی";
-    const spokenNotice = "$2";
+    const spokenText = "Two tea and one cooking oil credit to Asif";
+    const spokenNotice = 'Simulating Voice POS: "Two tea and one cooking oil credit to Asif"';
     setVoiceNotice(spokenNotice);
 
     // Speak aloud with SpeechSynthesis
-    await audio.speak(spokenTextUrdu, "ur");
+    await audio.speak(spokenText, "en");
 
     // Populate cart automatically
     setCart({
@@ -144,11 +144,13 @@ export const CounterPOSView: React.FC = () => {
 
   const filteredProducts = products.filter((p) => {
     const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
-    const name = p.name;
+    const name = (p.name || p.nameEn || "").toLowerCase();
+    const nameEn = (p.nameEn || "").toLowerCase();
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(searchQuery));
+      name.includes(query) ||
+      nameEn.includes(query) ||
+      (p.barcode ? p.barcode.includes(searchQuery) : false);
     return matchesCategory && matchesSearch;
   });
 
@@ -333,7 +335,7 @@ export const CounterPOSView: React.FC = () => {
                     <div>
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
-                          {p.name}
+                          {p.name || p.nameEn}
                         </p>
                         {inCartQty > 0 && (
                           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-extrabold text-white">
@@ -394,7 +396,7 @@ export const CounterPOSView: React.FC = () => {
                         className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs"
                       >
                         <span className="font-medium text-slate-800 truncate max-w-[140px]">
-                          {isUrdu ? item.name : item.nameEn}
+                          {item.name || item.nameEn}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-900">

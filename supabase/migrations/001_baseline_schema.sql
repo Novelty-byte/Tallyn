@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS public.stock_adjustments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 11. Wholesale Market Prices Table (Feature 9: agent-browser scraper)
+-- 11. Wholesale Market Prices Table (Feature 9: Wholesale Price Benchmarks)
 CREATE TABLE IF NOT EXISTS public.wholesale_prices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     item_name TEXT NOT NULL,

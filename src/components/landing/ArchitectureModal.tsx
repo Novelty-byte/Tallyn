@@ -99,13 +99,12 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 </div>
                 <h4 className="text-sm font-bold text-white">Single-Handed Mobile Touch & Voice</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  React 19 & Tailwind v4 with full logical RTL mirroring. Native Web Speech API and Web Audio synthesizer for zero-latency audio confirmation without cloud roundtrips.
+                  React 19 & Tailwind v4 with optimized single-handed mobile UX. Native Web Speech API and Web Audio synthesizer for zero-latency audio confirmation without cloud roundtrips.
                 </p>
                 <div className="pt-2 flex flex-wrap gap-1.5 text-[10px] text-slate-300">
                   <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">Offline Local Storage</span>
                   <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">10s Undo Window</span>
-                  <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">RTL Logic</span>
-                </div>
+                                  </div>
               </div>
 
               {/* Tier 2 */}
@@ -165,11 +164,11 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 </div>
                 <h4 className="text-sm font-bold text-white">Gemini 3.7 Vision, Voice & Language</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Powers multimodal paper bill OCR, conversational Urdu voice parsing, and culturally respectful Urdu WhatsApp reminders. Responses enforce strict JSON schemas before ingestion.
+                  Powers multimodal paper bill OCR, conversational voice parsing, and culturally respectful WhatsApp reminders. Responses enforce strict JSON schemas before ingestion.
                 </p>
                 <div className="pt-2 flex flex-wrap gap-1.5 text-[10px] text-slate-300">
                   <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">Structured JSON Schema</span>
-                  <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">Roman Urdu NLP</span>
+                  <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">Voice POS NLP</span>
                   <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">Paper Bill OCR</span>
                 </div>
               </div>
@@ -210,8 +209,8 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 },
                 {
                   id: "04",
-                  title: "Bilingual & RTL from Day 1",
-                  desc: "Urdu (اردو) is a first-class citizen. CSS logical properties mirror touch targets, sliders, modals, and tables seamlessly with zero clipping on compact mobile screens.",
+                  title: "Single-Handed 390px Mobile UX",
+                  desc: "Optimized specifically for 390px smartphone screens with large 44px+ tap targets, zero horizontal scrolling, and instant counter usability.",
                   badge: "Cultural Native"
                 },
                 {

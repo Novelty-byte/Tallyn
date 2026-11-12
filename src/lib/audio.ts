@@ -114,7 +114,7 @@ class AudioEngine {
   }
 
   // Speak text via browser SpeechSynthesis API with robust voice loading and Urdu fallback
-  speak(text: string, lang: "ur" | "en" = "ur"): Promise<void> {
+  speak(text: string, lang: string = "en"): Promise<void> {
     return new Promise((resolve) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) {
         console.warn("SpeechSynthesis not supported on this browser");
@@ -132,27 +132,9 @@ class AudioEngine {
 
       const selectVoiceAndSpeak = () => {
         const voices = window.speechSynthesis.getVoices();
-
-        if (lang === "ur") {
-          // Priority ladder: ur-PK → ur → hi-IN → hi → en-IN → en-GB → any
-          const preferredLangs = ["ur-PK", "ur", "hi-IN", "hi", "en-IN", "en-GB"];
-          let chosen: SpeechSynthesisVoice | undefined;
-          for (const prefix of preferredLangs) {
-            chosen = voices.find(v => v.lang.toLowerCase().startsWith(prefix.toLowerCase()));
-            if (chosen) break;
-          }
-          if (chosen) {
-            utterance.voice = chosen;
-            utterance.lang = chosen.lang;
-          } else {
-            // No matching voice — browser will use system default; set hint
-            utterance.lang = "hi-IN";
-          }
-        } else {
-          const enVoice = voices.find(v => v.lang.startsWith("en"));
-          if (enVoice) utterance.voice = enVoice;
-          utterance.lang = "en-US";
-        }
+        const enVoice = voices.find(v => v.lang.startsWith("en"));
+        if (enVoice) utterance.voice = enVoice;
+        utterance.lang = "en-US";
 
         window.speechSynthesis.speak(utterance);
       };

@@ -9,63 +9,36 @@ import { X, Play, Square, Radio, Volume2, AlertTriangle, TrendingUp, Users } fro
 // Falls back through ur-PK → hi-IN → en-IN → en-US for audio
 // ============================================================
 
-function getBestUrduVoice(): SpeechSynthesisVoice | null {
+function getBestVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
-
-  // Priority ladder for Urdu/South Asian audio output
-  const preferredLangs = ["ur-PK", "ur", "hi-IN", "hi", "en-IN", "en-GB"];
-  for (const lang of preferredLangs) {
-    const v = voices.find((voice) => voice.lang.toLowerCase().startsWith(lang.toLowerCase()));
-    if (v) return v;
-  }
-  // Last resort: any voice
-  return voices[0] || null;
+  const enVoice = voices.find((v) => v.lang.toLowerCase().startsWith("en"));
+  return enVoice || voices[0] || null;
 }
 
-function speakWithFallback(text: string, lang: "ur" | "en"): Promise<void> {
+function speakWithFallback(text: string): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       resolve();
       return;
     }
-
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
-
     const trySpeak = () => {
-      if (lang === "ur") {
-        const voice = getBestUrduVoice();
-        if (voice) {
-          utterance.voice = voice;
-          utterance.lang = voice.lang;
-        } else {
-          // No voices available yet — use browser default with language hint
-          utterance.lang = "hi-IN"; // Hindi often shares phonemes with Urdu, produces understandable audio
-        }
-      } else {
-        const enVoice = window.speechSynthesis.getVoices().find(v => v.lang.startsWith("en"));
-        if (enVoice) {
-          utterance.voice = enVoice;
-        }
-        utterance.lang = "en-US";
-      }
-
+      const voice = getBestVoice();
+      if (voice) utterance.voice = voice;
+      utterance.lang = "en-US";
       utterance.onend = () => resolve();
       utterance.onerror = () => resolve();
       window.speechSynthesis.speak(utterance);
     };
-
-    // Voices load asynchronously on some browsers
     if (window.speechSynthesis.getVoices().length === 0) {
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.onvoiceschanged = null;
         trySpeak();
       };
-      // Kick it off anyway in case the event doesn't fire
       setTimeout(trySpeak, 300);
     } else {
       trySpeak();
@@ -107,17 +80,6 @@ export const KiryanaRadioModal: React.FC = () => {
   const mandiName = cityMandiMap[city] || `${city} Wholesale Mandi`;
 
   // ── Branch-specific dynamic briefing text ─────────────────────────────────
-  const briefingTextUrdu = `بسم اللہ الرحمٰن الرحیم۔ السلام علیکم! آج کی صبح کی ریڈیو رپورٹ ${shop.name}، ${city}۔ 
-  آج کی مجموعی فروخت ${formatCurrency(totalRev)} ہے، کل ${totalTransactions} ٹرانزیکشن ریکارڈ ہوئے۔ 
-  ${lowStockItems.length > 0 
-    ? `گودام میں ${lowStockItems.length} اشیاء کا اسٹاک خطرناک سطح پر ہے۔ خاص طور پر ${lowStockItems.slice(0, 2).map(p => p.name).join(" اور ")} کی فوری دوبارہ فراہمی ضروری ہے۔` 
-    : `ماشاءاللہ، تمام ${totalProducts} اشیاء کا اسٹاک تسلی بخش حالت میں ہے۔`
-  } 
-  مارکیٹ میں کل ادھار ${formatCurrency(totalUdhaar)} ہے۔ 
-  ${topDebtor ? `سب سے زیادہ ادھار ${topDebtor.name} کے ذمے ${formatCurrency(topDebtor.creditBalance)} ہے۔` : ""}
-  ${overdueCustomers.length > 0 ? `${overdueCustomers.length} گاہکوں کا ادھار سات دن سے زیادہ پرانا ہے۔ شائستہ یاد دہانی بھیجنے کا وقت آ گیا ہے۔` : ""}
-  ${mandiName} کی آج کی قیمتوں کا خیال رکھیں۔ آپ کا دن بابرکت گزرے۔ خدا حافظ۔`;
-
   const briefingTextEn = `Bismillah! Good morning! This is your Kiryana Radio daily briefing for ${shop.name}, ${city}.
   Today's recorded sales: ${formatCurrency(totalRev)} across ${totalTransactions} transactions.
   ${lowStockItems.length > 0 
@@ -151,7 +113,7 @@ export const KiryanaRadioModal: React.FC = () => {
     const textToSpeak = briefingTextEn;
     setCurrentText(textToSpeak);
     startBarAnimation();
-    await speakWithFallback(textToSpeak, "en");
+    await speakWithFallback(textToSpeak);
     stopBarAnimation();
     setIsPlaying(false);
   };
@@ -249,7 +211,7 @@ export const KiryanaRadioModal: React.FC = () => {
         {/* Briefing Preview Text (truncated) */}
         {!isPlaying && (
           <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-3 mb-5 text-[11px] text-slate-300 leading-relaxed line-clamp-3 max-h-16 overflow-hidden">
-            {isUrdu ? briefingTextUrdu.trim().slice(0, 200) : briefingTextEn.trim().slice(0, 200)}...
+            {briefingTextEn.trim().slice(0, 200)}...
           </div>
         )}
 
@@ -282,7 +244,7 @@ export const KiryanaRadioModal: React.FC = () => {
 
         {/* TTS Info Note */}
         <p className="text-center text-[10px] text-slate-500 mt-3 leading-relaxed">
-          🔊 Uses browser speech synthesis (Urdu/Hindi voice). 
+          🔊 Uses browser speech synthesis  
           No external TTS API required.
         </p>
       </div>

@@ -132,7 +132,7 @@ export const InsightsView: React.FC = () => {
                 return (
                   <tr key={idx} className="hover:bg-slate-50/70">
                     <td className="py-3.5 px-4 font-bold text-slate-900">
-                      {isUrdu ? item.product.nameUr : item.product.nameEn}
+                      {item.product.name || item.product.nameEn}
                     </td>
                     <td className="py-3.5 px-4 text-end font-semibold text-slate-800">
                       {item.product.quantity} {item.product.unit}

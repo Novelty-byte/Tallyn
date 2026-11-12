@@ -124,10 +124,8 @@ export const AskTallynDrawer: React.FC = () => {
       const highest = topDebtors[0];
       const top3 = topDebtors.slice(0, 3).map(c => `• **${c.name}**: ${formatCurrency(c.creditBalance)} (${c.overdueDays || 0} days overdue, Tel: ${c.phone})`).join("\n");
 
-      if (isUrdu) {
-        return `مارکیٹ میں کل ادھار **${formatCurrency(context.totalUdhaar)}** ہے۔\n\nسب سے زیادہ ادھار **${highest.name}** کے ذمے **${formatCurrency(highest.creditBalance)}** ہے (${highest.overdueDays || 0} دن سے واجب الادا)۔\n\nاہم کھاتے:\n${top3}\n\nمشورہ: آپ ادھار اسکرین سے 1-کلک واٹس ایپ شائستہ یاد دہانی بھیج سکتے ہیں۔`;
-      }
-      return `Total outstanding udhaar across your neighbourhood accounts is **${formatCurrency(context.totalUdhaar)}**.\n\nThe highest debtor is **${highest.name}** owing **${formatCurrency(highest.creditBalance)}** (${highest.overdueDays || 0} days overdue, Tel: ${highest.phone}).\n\nTop active balances:\n${top3}\n\nTip: You can send a 1-click polite Urdu WhatsApp reminder directly from the Udhaar screen!`;
+      
+      return `Total outstanding udhaar across your neighbourhood accounts is **${formatCurrency(context.totalUdhaar)}**.\n\nThe highest debtor is **${highest.name}** owing **${formatCurrency(highest.creditBalance)}** (${highest.overdueDays || 0} days overdue, Tel: ${highest.phone}).\n\nTop active balances:\n${top3}\n\nTip: You can send a 1-click polite WhatsApp reminder directly from the Udhaar screen!`;
     }
 
     // 3. Low stock / Restocking
@@ -390,7 +388,7 @@ export const AskTallynDrawer: React.FC = () => {
               {isThinking ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-4 w-4 rtl:rotate-180" />
+                <Send className="h-4 w-4 " />
               )}
             </button>
           </form>

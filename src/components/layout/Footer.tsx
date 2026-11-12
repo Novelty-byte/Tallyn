@@ -19,7 +19,7 @@ export const Footer: React.FC = () => {
               className="h-10 w-auto object-contain"
             />
             <p className="text-xs text-slate-500 max-w-sm text-center md:text-start">
-              Zero-typing counter checkout, deterministic profit math, Urdu voice POS, and smart inventory for neighbourhood retail.
+              Zero-typing counter checkout, deterministic profit math, voice POS, and smart inventory for neighbourhood retail.
             </p>
           </div>
 

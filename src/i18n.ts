@@ -90,7 +90,7 @@ export const resources = {
         activeAccounts: "Active Credit Customers",
         overdueAccounts: "Overdue Accounts (>7 Days)",
         recordPayment: "Record Debt Payment",
-        sendWhatsApp: "Send Urdu Reminder",
+        sendWhatsApp: "Send WhatsApp Reminder",
         customerName: "Customer Name",
         phone: "Phone Number",
         balance: "Outstanding Debt",

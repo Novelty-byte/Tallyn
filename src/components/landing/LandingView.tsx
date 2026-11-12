@@ -103,11 +103,11 @@ export const LandingView: React.FC = () => {
   const handlePhoneVoicePOS = async () => {
     setPhoneVoiceActive(true);
     setPhoneSaleCompleted(false);
-    const spokenUrdu = "دو چائے اور ایک گھی ادھار آصف بھائی";
-    setPhoneVoiceNotice("$2");
+    const spokenText = "Two tea and one cooking oil credit to Asif";
+    setPhoneVoiceNotice('Voice Input: "Two tea and one cooking oil credit to Asif"');
     
     // Web Speech API execution
-    await audio.speak(spokenUrdu, "ur");
+    await audio.speak(spokenText, "en");
 
     // Add items deterministically
     setPhoneCart([
@@ -191,7 +191,7 @@ export const LandingView: React.FC = () => {
 
           {/* Subtitle */}
           <p className="mt-5 max-w-3xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
-            Multi-store retail operating system built for single-handed 390px mobile phone screens. Pure deterministic profit & stock calculations. Multimodal AI eliminates counter typing, parses crumpled paper supplier invoices, and drafts culturally respectful Urdu WhatsApp debt collection reminders.
+            Multi-store retail operating system built for single-handed 390px mobile phone screens. Pure deterministic profit & stock calculations. Multimodal AI eliminates counter typing, parses crumpled paper supplier invoices, and drafts culturally respectful WhatsApp debt collection reminders.
           </p>
 
           {/* --- THE CENTRALIZED BIG SEEDED DEMO BUTTON --- */}
@@ -228,7 +228,7 @@ export const LandingView: React.FC = () => {
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> 8 Customer Credit Accounts
               </span>
               <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200">
-                <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> Live Urdu Voice Audio
+                <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> Live Voice Audio
               </span>
               <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200">
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> Multi-Store Switching Ready
@@ -242,7 +242,7 @@ export const LandingView: React.FC = () => {
               <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-full border border-emerald-300">
                 <Smartphone className="h-3.5 w-3.5" /> Interactive 390px Counter Phone Simulator
               </span>
-              <p className="text-xs text-slate-500 mt-1">Tap commodities to test real Web Audio beeps, Urdu speech, and instant checkout</p>
+              <p className="text-xs text-slate-500 mt-1">Tap commodities to test real Web Audio beeps, voice speech, and instant checkout</p>
             </div>
 
             {/* Mobile Handset Bezel */}
@@ -274,15 +274,15 @@ export const LandingView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Urdu Voice Trigger inside phone */}
+                {/* Voice POS Trigger inside phone */}
                 <button
                   onClick={handlePhoneVoicePOS}
                   disabled={phoneVoiceActive}
-                  aria-label="Test Urdu Voice POS in Phone Simulator"
+                  aria-label="Test Voice POS in Phone Simulator"
                   className="flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-2.5 py-1.5 text-[11px] font-black transition-all active:scale-95 shadow-sm"
                 >
                   <Mic className="h-3.5 w-3.5" />
-                  <span>{phoneVoiceActive ? "سن رہے ہیں..." : "Urdu Voice"}</span>
+                  <span>{phoneVoiceActive ? "Listening..." : "Voice POS"}</span>
                   {phoneVoiceActive && <Volume2 className="h-3.5 w-3.5 animate-ping" />}
                 </button>
               </div>
@@ -353,7 +353,7 @@ export const LandingView: React.FC = () => {
 
                 {phoneCart.length === 0 ? (
                   <p className="text-[11px] text-slate-500 py-3 text-center italic">
-                    Cart empty. Tap a product above or speak in Urdu!
+                    Cart empty. Tap a product above or click Voice POS!
                   </p>
                 ) : (
                   <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-none pr-1">
@@ -418,7 +418,7 @@ export const LandingView: React.FC = () => {
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-black py-2.5 text-xs shadow-lg transition-all active:scale-95 cursor-pointer"
                 >
                   <Coins className="h-4 w-4" />
-                  <span>Record Sale / نقد وصولی ({formatCurrency(phoneSubtotal)})</span>
+                  <span>Record Sale ({formatCurrency(phoneSubtotal)})</span>
                 </button>
               </div>
 
@@ -493,10 +493,10 @@ export const LandingView: React.FC = () => {
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 1: Conversational POS</span>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-                  Say-It: Urdu Speech-to-Cart Voice Checkout
+                  Say-It: Speech-to-Cart Voice Checkout
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  During peak evening hours, typing on a small counter phone is impossible. Simply speak naturally in Urdu or Roman Urdu: <i>"2 chai, 1 ghee udhaar Asif"</i>. Tallyn's speech pipeline extracts the products, quantities, and debtor name into a structured cart payload ready for 1-tap confirmation.
+                  During peak evening hours, typing on a small counter phone is impossible. Simply speak naturally: <i>"2 chai, 1 ghee udhaar Asif"</i>. Tallyn's speech pipeline extracts the products, quantities, and debtor name into a structured cart payload ready for 1-tap confirmation.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
@@ -513,7 +513,7 @@ export const LandingView: React.FC = () => {
                   <span>Speech Transcription Stream:</span>
                 </div>
                 <p className="text-base font-bold text-white italic">
-                  "دو ٹپال دانیدار چائے، ایک ڈالڈا آئل، ادھار آصف بھائی مکان بارہ"
+                  "2 Tapal Danedar tea, 1 Dalda oil, credit to Asif Bhai house 12"
                 </p>
                 <div className="mt-4 pt-3 border-t border-emerald-800/80 space-y-1.5 text-xs text-emerald-200">
                   <p>✓ Extracted: 2x Tapal Danedar Tea (Rs. 1,300)</p>
@@ -567,10 +567,10 @@ export const LandingView: React.FC = () => {
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 3: Spoken Executive Audio</span>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-                  Kiryana Radio (صبح کا احوال)
+                  Kiryana Radio (Morning Memo)
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Every morning at 8:00 AM, tap one button to hear a warm 3-sentence executive audio brief in natural Urdu: yesterday's cash vs credit revenue, who owes overdue debt, and which commodities need ordering before evening rush.
+                  Every morning at 8:00 AM, tap one button to hear a warm 3-sentence executive audio brief in natural voice: yesterday's cash vs credit revenue, who owes overdue debt, and which commodities need ordering before evening rush.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
@@ -586,7 +586,7 @@ export const LandingView: React.FC = () => {
                 <Radio className="h-10 w-10 text-amber-400 mx-auto mb-2 animate-pulse" />
                 <p className="text-xs font-bold text-amber-300">Spoken Memo Synthesizer</p>
                 <p className="text-[11px] text-slate-400 mt-1 italic">
-                  "السلام علیکم حاجی صاحب! آج دکان کی کل فروخت 18,900 روپے رہی..."
+                  "Good morning Haji Aslam! Today's recorded store revenue is Rs 18,900..."
                 </p>
               </div>
             </div>
@@ -600,7 +600,7 @@ export const LandingView: React.FC = () => {
                   Culturally Respectful WhatsApp Udhaar Reminders
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Collecting debt in neighbourhood culture requires immense respect and tact. Tallyn generates respectful, warm Urdu reminder drafts and opens `wa.me` deep links directly on your phone with zero paid API costs.
+                  Collecting debt in neighbourhood culture requires immense respect and tact. Tallyn generates respectful, warm reminder drafts and opens `wa.me` deep links directly on your phone with zero paid API costs.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
@@ -614,7 +614,7 @@ export const LandingView: React.FC = () => {
               <div className="bg-emerald-50 border border-emerald-300 p-5 rounded-2xl text-xs text-emerald-950 text-start shadow-inner">
                 <p className="font-bold text-emerald-900 mb-2">WhatsApp Pre-Composed Template:</p>
                 <p className="italic leading-relaxed">
-                  "محترم جناب آصف صاحب، السلام علیکم۔ امید ہے آپ خیریت سے ہوں گے۔ المدینہ کریانہ اسٹور کی طرف سے آپ کے کھاتے کی کل باقی رقم 3,400 روپے واجب الادا ہے۔ سہولت کے مطابق تشریف لا کر حساب کلیئر فرما دیجئے۔ جزاک اللہ۔"
+                  "Dear Asif Sahib, greetings. Hope you are well. Al-Madina Kiryana Store would like to remind you that a total of Rs. 3,400 is due on your account. Please clear your balance at your convenience. Thank you."
                 </p>
               </div>
             </div>
@@ -805,7 +805,7 @@ export const LandingView: React.FC = () => {
               name: "Haji Aslam",
               shop: "Al-Madina Traders",
               location: "Main Bazar, G-9 Islamabad",
-              quote: "Since switching to Tallyn's Say-It Voice POS, my counter wait times dropped by 70%. Customers are amazed when their Urdu bill speaks back to them!",
+              quote: "Since switching to Tallyn's Say-It Voice POS, my counter wait times dropped by 70%. Customers are amazed when their bill speaks back to them!",
               badge: "Voice POS User",
               initials: "HA"
             },
@@ -813,7 +813,7 @@ export const LandingView: React.FC = () => {
               name: "Tariq Mehmood",
               shop: "Mehmood General Store",
               location: "Anarkali Bazar, Lahore",
-              quote: "The WhatsApp Udhaar reminder alone collected Rs. 45,000 of stuck credit in the first week without any awkward phone calls. The polite Urdu tone preserves neighbourhood relationships.",
+              quote: "The WhatsApp Udhaar reminder alone collected Rs. 45,000 of stuck credit in the first week without any awkward phone calls. The polite tone preserves neighbourhood relationships.",
               badge: "Udhaar Ledger",
               initials: "TM"
             },
@@ -892,13 +892,13 @@ export const LandingView: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {[
                   { name: "390px Single-Handed Counter Operation", paper: false, generic: false, tallyn: true },
-                  { name: "Urdu Voice POS ('Say-It') with Real Speech", paper: false, generic: false, tallyn: true },
+                  { name: "Voice POS ('Say-It') with Real Speech", paper: false, generic: false, tallyn: true },
                   { name: "Paper Wholesale Bill Vision Scanner", paper: false, generic: false, tallyn: true },
                   { name: "Zero Hallucinated Numbers (Strict Code Math)", paper: false, generic: true, tallyn: true },
                   { name: "10-Second Instant Undo Sale Window", paper: false, generic: false, tallyn: true },
-                  { name: "Culturally Polite Urdu WhatsApp Debt Reminders", paper: false, generic: false, tallyn: true },
+                  { name: "Culturally Polite WhatsApp Debt Reminders", paper: false, generic: false, tallyn: true },
                   { name: "Spoken Kiryana Radio Morning Briefing", paper: false, generic: false, tallyn: true },
-                  { name: "Live Wholesale Market Scraper & Inflation Alert", paper: false, generic: false, tallyn: true },
+                  { name: "Wholesale Market Price Inflation Alert & Benchmarking", paper: false, generic: false, tallyn: true },
                   { name: "Multi-Store Branch Switching & Consolidated P&L", paper: false, generic: true, tallyn: true },
                 ].map((row, i) => (
                   <tr key={i}>
@@ -936,7 +936,7 @@ export const LandingView: React.FC = () => {
               { num: "01", title: "Zero Hallucinated Numbers", desc: "AI never computes profit, stock quantities, or balances. Numbers are computed in pure TypeScript or PostgreSQL stored procedures." },
               { num: "02", title: "Atomic Data Mutations", desc: "Stock decrements, credit balances, and purchases execute inside single database transactional RPCs with FOR UPDATE row locks." },
               { num: "03", title: "Multi-Tenant RLS per Shop", desc: "Every database query is strictly scoped to authenticated shop_id using Supabase Postgres Row-Level Security." },
-              { num: "04", title: "Bilingual & RTL from Day 1", desc: "CSS logical properties mirror the entire counter layout naturally when Urdu is active with zero layout bugs." },
+              { num: "04", title: "Single-Handed 390px Mobile UX", desc: "Designed specifically for 390px smartphone screens with 44px+ tap targets, compact viewport bounds, and zero counter clutter." },
               { num: "05", title: "Fail-Open Graceful Degradation", desc: "If AI models drop or rate limit, manual counter POS, barcoding, and tabular ledgers work without interruption." },
             ].map((rule, idx) => (
               <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between">

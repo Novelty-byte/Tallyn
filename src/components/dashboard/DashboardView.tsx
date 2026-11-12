@@ -221,7 +221,7 @@ export const DashboardView: React.FC = () => {
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 hover:underline"
               >
                 <span>Restock via Supplier Scanner</span>
-                <span className="rtl-flip">→</span>
+                <span >→</span>
               </button>
             </div>
           )}
@@ -238,7 +238,7 @@ export const DashboardView: React.FC = () => {
                   {overdueCustomers[0].name} owes {formatCurrency(overdueCustomers[0].creditBalance)}
                 </p>
                 <p className="text-xs text-slate-600 mt-1">
-                  Payment is {overdueCustomers[0].overdueDays} days overdue. 1-click respectful Urdu reminder ready.
+                  Payment is {overdueCustomers[0].overdueDays} days overdue. 1-click respectful WhatsApp reminder ready.
                 </p>
               </div>
               <button
@@ -246,7 +246,7 @@ export const DashboardView: React.FC = () => {
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-rose-900 hover:underline"
               >
                 <span>Send WhatsApp Reminder</span>
-                <span className="rtl-flip">→</span>
+                <span >→</span>
               </button>
             </div>
           )}
