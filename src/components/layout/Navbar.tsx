@@ -46,7 +46,6 @@ export const Navbar: React.FC = () => {
   const isLandingView = activeTab === "landing";
 
   const operationalNavLinks: { id: ActiveTab; label: string }[] = [
-    { id: "landing", label: t("nav.home") },
     { id: "pos", label: t("nav.pos") },
     { id: "dashboard", label: t("nav.dashboard") },
     { id: "insights", label: t("nav.insights") },

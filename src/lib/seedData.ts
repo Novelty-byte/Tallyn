@@ -311,6 +311,26 @@ export const BRANCH_03_EXPENSES: Expense[] = [
 
 
 // ==========================================
+// Helper: returns an ISO timestamp N days ago from now
+// ==========================================
+function daysAgo(n: number, timeStr = "09:00:00"): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.toISOString().split("T")[0]}T${timeStr}Z`;
+}
+
+// Patch sale dates so they always fall within the last 7 days window
+function patchSaleDates<T extends { createdAt?: string }>(
+  sales: T[],
+  offsets: number[]
+): T[] {
+  return sales.map((s, i) => ({
+    ...s,
+    createdAt: daysAgo(offsets[i] ?? 0),
+  }));
+}
+
+// ==========================================
 // Helper function to get branch seed data
 // ==========================================
 export function getBranchSeedData(shopId: string) {
@@ -319,7 +339,7 @@ export function getBranchSeedData(shopId: string) {
     return {
       products: enrichProducts(BRANCH_02_PRODUCTS),
       customers: BRANCH_02_CUSTOMERS,
-      sales: BRANCH_02_SALES,
+      sales: patchSaleDates(BRANCH_02_SALES, [4, 2]),
       expenses: BRANCH_02_EXPENSES,
     };
   }
@@ -327,7 +347,7 @@ export function getBranchSeedData(shopId: string) {
     return {
       products: enrichProducts(BRANCH_03_PRODUCTS),
       customers: BRANCH_03_CUSTOMERS,
-      sales: BRANCH_03_SALES,
+      sales: patchSaleDates(BRANCH_03_SALES, [4, 1]),
       expenses: BRANCH_03_EXPENSES,
     };
   }
@@ -335,7 +355,7 @@ export function getBranchSeedData(shopId: string) {
   return {
     products: enrichProducts(BRANCH_01_PRODUCTS),
     customers: BRANCH_01_CUSTOMERS,
-    sales: BRANCH_01_SALES,
+    sales: patchSaleDates(BRANCH_01_SALES, [4, 4, 2]),
     expenses: BRANCH_01_EXPENSES,
   };
 }

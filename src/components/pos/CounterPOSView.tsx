@@ -107,26 +107,108 @@ export const CounterPOSView: React.FC = () => {
     clearCart();
   };
 
-  // Real Audio Voice POS simulation with speech synthesis
-  const handleSimulateVoice = async () => {
+  // Parse a spoken transcript into cart items via keyword matching
+  const parseVoiceToCart = (transcript: string) => {
+    const lc = transcript.toLowerCase();
+
+    // Quantity word map (English + Roman Urdu)
+    const qtyWords: Record<string, number> = {
+      one: 1, two: 2, three: 3, four: 4, five: 5,
+      six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+      ek: 1, do: 2, teen: 3, char: 4, paanch: 5,
+      chhe: 6, saat: 7, aath: 8, nau: 9, das: 10,
+    };
+
+    // Detect quantity mentioned anywhere near a product keyword
+    const extractQty = (before: string): number => {
+      for (const [word, num] of Object.entries(qtyWords)) {
+        if (before.includes(word)) return num;
+      }
+      const numMatch = before.match(/\b(\d+)\b/);
+      return numMatch ? parseInt(numMatch[1], 10) : 1;
+    };
+
+    const newCartItems: { [id: string]: number } = {};
+
+    for (const p of products) {
+      // Build keyword list from product name parts
+      const names = [p.name, p.nameEn].filter(Boolean) as string[];
+      const keywords = names
+        .flatMap(n => n.toLowerCase().split(/[\s\-\/,()]+/))
+        .filter(k => k.length >= 3);
+
+      const matched = keywords.some(kw => lc.includes(kw));
+      if (matched) {
+        // Find quantity: scan the substring before this keyword occurrence
+        let qty = 1;
+        for (const kw of keywords) {
+          const idx = lc.indexOf(kw);
+          if (idx !== -1) {
+            const before = lc.slice(Math.max(0, idx - 20), idx);
+            qty = extractQty(before || lc);
+            break;
+          }
+        }
+        newCartItems[p.id] = Math.max(1, qty);
+      }
+    }
+
+    if (Object.keys(newCartItems).length > 0) {
+      setCart(prev => ({ ...prev, ...newCartItems }));
+      const names = Object.keys(newCartItems)
+        .map(id => products.find(p => p.id === id)?.name || id)
+        .join(", ");
+      setVoiceNotice(`✅ Added: ${names}`);
+      // Auto-detect credit/udhaar intent
+      if (lc.includes("udhaar") || lc.includes("credit") || lc.includes("baad mein") || lc.includes("later")) {
+        setPaymentType("credit");
+      }
+    } else {
+      setVoiceNotice("❌ No products recognised. Try saying product names clearly (e.g. \"two tea one oil\").");
+    }
+    setTimeout(() => setVoiceNotice(null), 7000);
+  };
+
+  // Real microphone voice POS using Web Speech API
+  const handleVoicePOS = () => {
+    const SpeechRecognitionCtor =
+      (window as unknown as Record<string, unknown>).SpeechRecognition as (new () => SpeechRecognition) | undefined ||
+      (window as unknown as Record<string, unknown>).webkitSpeechRecognition as (new () => SpeechRecognition) | undefined;
+
+    if (!SpeechRecognitionCtor) {
+      setVoiceNotice("⚠️ Voice input requires Chrome or Edge. Please switch browsers.");
+      setTimeout(() => setVoiceNotice(null), 6000);
+      return;
+    }
+
     setIsSpeakingVoice(true);
-    const spokenText = "Two tea and one cooking oil credit to Asif";
-    const spokenNotice = 'Simulating Voice POS: "Two tea and one cooking oil credit to Asif"';
-    setVoiceNotice(spokenNotice);
+    setVoiceNotice("🎙 Listening… speak the order now");
 
-    // Speak aloud with SpeechSynthesis
-    await audio.speak(spokenText, "en");
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "en-PK";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
-    // Populate cart automatically
-    setCart({
-      p1: 2, // 2 Tapal Tea
-      p7: 1, // 1 Dalda Oil
-    });
-    setPaymentType("credit");
-    setSelectedCustomerId("c1");
-    setIsSpeakingVoice(false);
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setVoiceNotice(`🎙 Heard: "${transcript}"`);
+      parseVoiceToCart(transcript);
+      setIsSpeakingVoice(false);
+    };
 
-    setTimeout(() => setVoiceNotice(null), 5000);
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      const msg =
+        event.error === "not-allowed"
+          ? "⚠️ Microphone access denied. Allow mic permission and try again."
+          : `⚠️ Voice error: ${event.error}`;
+      setVoiceNotice(msg);
+      setIsSpeakingVoice(false);
+      setTimeout(() => setVoiceNotice(null), 6000);
+    };
+
+    recognition.onend = () => setIsSpeakingVoice(false);
+    recognition.start();
   };
 
   const handleAddNewCustomer = (e: React.FormEvent) => {
@@ -246,12 +328,12 @@ export const CounterPOSView: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={handleSimulateVoice}
+                onClick={handleVoicePOS}
                 disabled={isSpeakingVoice}
                 className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400 transition-colors shrink-0 shadow-xs min-h-[40px] flex items-center gap-1.5"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{isSpeakingVoice ? "Speaking..." : t("pos.simulateVoice")}</span>
+                <Mic className="h-3.5 w-3.5" />
+                <span>{isSpeakingVoice ? "Listening…" : "🎙 Speak Order"}</span>
               </button>
             </div>
 
