@@ -77,45 +77,57 @@ const APP_FEATURE_GUIDE = `
 `;
 
 // ─── Direct Gemini API call (browser-side) ─────────────────────────────────
+async function tryGeminiModel(
+  apiKey: string,
+  model: string,
+  contents: unknown[]
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents,
+      generationConfig: { temperature: 0.7, topP: 0.95, maxOutputTokens: 600 },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`Gemini ${res.status} [${model}]: ${err.slice(0, 200)}`);
+  }
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error(`Gemini [${model}] returned empty response`);
+  return text as string;
+}
+
 async function callGeminiDirect(
   apiKey: string,
   systemPrompt: string,
   history: { role: "user" | "model"; parts: { text: string }[] }[],
   userMessage: string
 ): Promise<string> {
-  const model = "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
   const contents = [
-    // System instruction as first user turn (Gemini REST API style)
     { role: "user", parts: [{ text: systemPrompt }] },
     { role: "model", parts: [{ text: "Understood. I am Tallyn AI, ready to help." }] },
     ...history,
     { role: "user", parts: [{ text: userMessage }] },
   ];
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.95,
-        maxOutputTokens: 600,
-      },
-    }),
-  });
+  // Try primary model, fall back to secondary on any error
+  const models = ["gemini-3.5-flash", "gemini-3.6-flash"];
+  let lastError = "";
 
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
-    throw new Error(`Gemini ${res.status}: ${err.slice(0, 200)}`);
+  for (const model of models) {
+    try {
+      return await tryGeminiModel(apiKey, model, contents);
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`[Tallyn AI] ${lastError} — trying next model...`);
+    }
   }
 
-  const json = await res.json();
-  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Gemini returned empty response");
-  return text as string;
+  throw new Error(lastError || "All Gemini models failed");
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
