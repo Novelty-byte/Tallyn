@@ -53,14 +53,13 @@ interface PhoneCartItem {
 
 export const LandingView: React.FC = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
-  const { 
-    openSeededDemoShop, 
-    setIsAuthModalOpen, 
-    loginWithGoogle, 
+  const { t } = useTranslation();
+  const {
+    openSeededDemoShop,
+    setIsAuthModalOpen,
+    loginWithGoogle,
     login,
-    setIsKiryanaRadioOpen 
+    setIsKiryanaRadioOpen
   } = useApp();
 
   // Tab & Modal States
@@ -105,7 +104,7 @@ export const LandingView: React.FC = () => {
     setPhoneVoiceActive(true);
     setPhoneSaleCompleted(false);
     const spokenUrdu = "دو چائے اور ایک گھی ادھار آصف بھائی";
-    setPhoneVoiceNotice(isUrdu ? "بولا گیا: '2 چائے، 1 گھی ادھار آصف بھائی'" : "Spoken: '2 Tapal Tea, 1 Dalda Ghee credit Asif Bhai'");
+    setPhoneVoiceNotice("$2");
     
     // Web Speech API execution
     await audio.speak(spokenUrdu, "ur");

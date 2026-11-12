@@ -75,7 +75,7 @@ function speakWithFallback(text: string, lang: "ur" | "en"): Promise<void> {
 
 export const KiryanaRadioModal: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  
   const { isKiryanaRadioOpen, setIsKiryanaRadioOpen, sales, customers, products, shop } = useApp();
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,7 +110,7 @@ export const KiryanaRadioModal: React.FC = () => {
   const briefingTextUrdu = `بسم اللہ الرحمٰن الرحیم۔ السلام علیکم! آج کی صبح کی ریڈیو رپورٹ ${shop.name}، ${city}۔ 
   آج کی مجموعی فروخت ${formatCurrency(totalRev)} ہے، کل ${totalTransactions} ٹرانزیکشن ریکارڈ ہوئے۔ 
   ${lowStockItems.length > 0 
-    ? `گودام میں ${lowStockItems.length} اشیاء کا اسٹاک خطرناک سطح پر ہے۔ خاص طور پر ${lowStockItems.slice(0, 2).map(p => p.nameUr).join(" اور ")} کی فوری دوبارہ فراہمی ضروری ہے۔` 
+    ? `گودام میں ${lowStockItems.length} اشیاء کا اسٹاک خطرناک سطح پر ہے۔ خاص طور پر ${lowStockItems.slice(0, 2).map(p => p.name).join(" اور ")} کی فوری دوبارہ فراہمی ضروری ہے۔` 
     : `ماشاءاللہ، تمام ${totalProducts} اشیاء کا اسٹاک تسلی بخش حالت میں ہے۔`
   } 
   مارکیٹ میں کل ادھار ${formatCurrency(totalUdhaar)} ہے۔ 
@@ -148,10 +148,10 @@ export const KiryanaRadioModal: React.FC = () => {
 
   const handlePlayAudio = async () => {
     setIsPlaying(true);
-    const textToSpeak = isUrdu ? briefingTextUrdu : briefingTextEn;
+    const textToSpeak = briefingTextEn;
     setCurrentText(textToSpeak);
     startBarAnimation();
-    await speakWithFallback(textToSpeak, isUrdu ? "ur" : "en");
+    await speakWithFallback(textToSpeak, "en");
     stopBarAnimation();
     setIsPlaying(false);
   };

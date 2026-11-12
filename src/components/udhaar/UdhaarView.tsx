@@ -48,10 +48,10 @@ export const UdhaarView: React.FC = () => {
     setIsAddCustomerOpen(false);
   };
 
-  // 1-Click WhatsApp Reminder with culturally polite Urdu text
+  // 1-Click WhatsApp Reminder with culturally polite English text
   const sendWhatsAppReminder = (c: Customer) => {
-    const urduMessage = `محترم جناب ${c.name} صاحب، السلام علیکم۔ المدینہ کریانہ اسٹور کی طرف سے آپ کے کھاتے کی کل باقی رقم ${formatCurrency(c.creditBalance)} واجب الادا ہے۔ سہولت کے مطابق تشریف لا کر حساب کلیئر فرما دیجئے۔ شکریہ۔`;
-    const encoded = encodeURIComponent(urduMessage);
+    const englishMessage = `Dear ${c.name}, greetings. Al-Madina Kiryana Store would like to remind you that a total of ${formatCurrency(c.creditBalance)} is due on your account. Please clear your balance at your convenience. Thank you.`;
+    const encoded = encodeURIComponent(englishMessage);
     const cleanPhone = c.phone.replace(/[^0-9]/g, "");
     const waUrl = `https://wa.me/92${cleanPhone.slice(-10)}?text=${encoded}`;
     window.open(waUrl, "_blank");

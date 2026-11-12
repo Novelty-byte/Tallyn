@@ -22,7 +22,7 @@ import {
 
 export const CounterPOSView: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  
   const { 
     shop,
     products, 
@@ -86,7 +86,7 @@ export const CounterPOSView: React.FC = () => {
       const p = products.find((item) => item.id === productId)!;
       return {
         productId,
-        productName: isUrdu ? p.nameUr : p.nameEn,
+        productName: p.name,
         quantity,
         unitPrice: p.sellPrice,
         unitCost: p.buyPrice,
@@ -111,7 +111,7 @@ export const CounterPOSView: React.FC = () => {
   const handleSimulateVoice = async () => {
     setIsSpeakingVoice(true);
     const spokenTextUrdu = "دو چائے اور ایک گھی ادھار آصف بھائی";
-    const spokenNotice = isUrdu ? "بولا گیا: '2 چائے اور 1 گھی ادھار آصف'" : "Spoken: '2 Tapal Tea, 1 Dalda Oil credit Asif'";
+    const spokenNotice = "$2";
     setVoiceNotice(spokenNotice);
 
     // Speak aloud with SpeechSynthesis
@@ -144,7 +144,7 @@ export const CounterPOSView: React.FC = () => {
 
   const filteredProducts = products.filter((p) => {
     const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
-    const name = isUrdu ? p.nameUr : p.nameEn;
+    const name = p.name;
     const matchesSearch =
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -333,7 +333,7 @@ export const CounterPOSView: React.FC = () => {
                     <div>
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
-                          {isUrdu ? p.nameUr : p.nameEn}
+                          {p.name}
                         </p>
                         {inCartQty > 0 && (
                           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-extrabold text-white">
@@ -394,7 +394,7 @@ export const CounterPOSView: React.FC = () => {
                         className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs"
                       >
                         <span className="font-medium text-slate-800 truncate max-w-[140px]">
-                          {isUrdu ? item.nameUr : item.nameEn}
+                          {isUrdu ? item.name : item.nameEn}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-900">

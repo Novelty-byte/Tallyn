@@ -25,7 +25,7 @@ interface Message {
 
 export const AskTallynDrawer: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  
   const {
     isAskTallynOpen,
     setIsAskTallynOpen,
@@ -49,7 +49,7 @@ export const AskTallynDrawer: React.FC = () => {
     lowStockItems: products
       .filter(p => p.quantity <= p.minQuantity)
       .map(p => ({
-        name: isUrdu ? p.nameUr : p.nameEn,
+        name: p.name,
         stock: p.quantity,
         unit: p.unit,
         wholesalePrice: p.buyPrice || 0,
@@ -72,9 +72,7 @@ export const AskTallynDrawer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "tallyn",
-      text: isUrdu
-        ? `السلام علیکم! میں ٹیلن AI ہوں، آپ کا ذہین دکان مشیر۔ مَیں ${shop.name} (${shop.city}) کے تمام ریکارڈ لائیو مانیٹر کر رہا ہوں۔ آپ اسٹاک، ادھار، فروخت، یا مارکیٹ قیمتوں کے بارے میں کچھ بھی پوچھ سکتے ہیں۔`
-        : `Assalam-o-Alaikum! I'm Tallyn AI, your autonomous Kiryana retail advisor. I'm monitoring **${shop.name}** (${shop.city}) live — ${products.length} SKUs, ${formatCurrency(storeContext.totalUdhaar)} udhaar outstanding, ${storeContext.todaySalesCount} transactions today.\n\nAsk me anything about your store!`,
+      text: `Assalam-o-Alaikum! I'm Tallyn AI, your autonomous Kiryana retail advisor. I'm monitoring **${shop.name}** (${shop.city}) live — ${products.length} SKUs, ${formatCurrency(storeContext.totalUdhaar)} udhaar outstanding, ${storeContext.todaySalesCount} transactions today.\n\nAsk me anything about your store!`,
     },
   ]);
 
@@ -87,9 +85,7 @@ export const AskTallynDrawer: React.FC = () => {
   useEffect(() => {
     setMessages([{
       sender: "tallyn",
-      text: isUrdu
-        ? `السلام علیکم! ${shop.name} میں آپ کی سلامتی۔ میں ${products.length} محصولات اور ${formatCurrency(customers.reduce((s, c) => s + c.creditBalance, 0))} مجموعی ادھار کے ساتھ حال حاضری حفظ کر رہا ہوں۔`
-        : `Assalam-o-Alaikum! Monitoring ${shop.name} (${shop.city}). ${products.length} products, ${formatCurrency(customers.reduce((s, c) => s + c.creditBalance, 0))} total udhaar outstanding.`,
+      text: `Assalam-o-Alaikum! Monitoring ${shop.name} (${shop.city}). ${products.length} products, ${formatCurrency(customers.reduce((s, c) => s + c.creditBalance, 0))} total udhaar outstanding.`,
     }]);
     setConversationHistory([]);
   }, [shop.id]);
@@ -108,9 +104,6 @@ export const AskTallynDrawer: React.FC = () => {
       q.includes("assalam") || q.includes("kia haal") || q.includes("kya haal") ||
       q.includes("how are you") || q === "aoa"
     ) {
-      if (isUrdu) {
-        return `وعلیکم السلام! میں ٹیلن AI ہوں۔ **${context.shopName}** (${context.shopCity}) کے تمام کھاتے، انوینٹری اور فروخت میرے سامنے لائیو ہیں۔ آج میں آپ کی کیا مدد کر سکتا ہوں؟ آپ ادھار، کم اسٹاک یا آج کے منافع کے بارے میں بلا جھجھک پوچھ سکتے ہیں۔`;
-      }
       return `Walaikum Assalam! I'm Tallyn AI. I'm actively monitoring **${context.shopName}** (${context.shopCity}). All ${context.totalProducts} commodities and customer ledgers are live and synchronized. How can I help you right now? You can ask about outstanding udhaar, low stock items, or today's revenue.`;
     }
 
@@ -125,9 +118,7 @@ export const AskTallynDrawer: React.FC = () => {
         .sort((a, b) => b.creditBalance - a.creditBalance);
 
       if (topDebtors.length === 0) {
-        return isUrdu
-          ? `ماشاءاللہ! اس وقت کسی گاہک کے ذمے کوئی ادھار واجب الادا نہیں ہے۔ تمام کھاتے کلیر ہیں۔`
-          : `Great news! There is zero outstanding customer udhaar right now across all neighbourhood accounts.`;
+        return `Great news! There is zero outstanding customer udhaar right now across all neighbourhood accounts.`;
       }
 
       const highest = topDebtors[0];
@@ -147,16 +138,11 @@ export const AskTallynDrawer: React.FC = () => {
     ) {
       const lowItems = products.filter(p => p.quantity <= p.minQuantity);
       if (lowItems.length === 0) {
-        return isUrdu
-          ? `الحمدللہ! گودام میں تمام ${products.length} اشیاء کا اسٹاک تسلی بخش حالت میں ہے۔ کوئی بھی چیز خطرے کی سطح سے نیچے نہیں ہے۔`
-          : `Inventory is healthy! All ${products.length} commodities are currently stocked above their minimum alert thresholds.`;
+        return `Inventory is healthy! All ${products.length} commodities are currently stocked above their minimum alert thresholds.`;
       }
 
-      const itemsList = lowItems.slice(0, 5).map(p => `• **${isUrdu ? p.nameUr : p.nameEn}**: ${p.quantity} ${p.unit} baaki (کم از کم: ${p.minQuantity})`).join("\n");
+      const itemsList = lowItems.slice(0, 5).map(p => `• **${p.name}**: ${p.quantity} ${p.unit} remaining (minimum: ${p.minQuantity})`).join("\n");
 
-      if (isUrdu) {
-        return `گودام میں **${lowItems.length} اشیاء** کا اسٹاک خطرناک حد تک کم ہو چکا ہے:\n\n${itemsList}\n\nمشورہ: غلہ منڈی یا سپلائر سے فوری دوبارہ فراہمی آرڈر کریں تاکہ کاؤنٹر پر گاہک خالی ہاتھ نہ لوٹے۔`;
-      }
       return `Stock Alert: **${lowItems.length} commodities** are critically low:\n\n${itemsList}\n\nRecommendation: Place a restocking purchase order with your wholesale mandi distributor today to avoid counter stockouts.`;
     }
 
@@ -176,9 +162,6 @@ export const AskTallynDrawer: React.FC = () => {
       const grossProfit = rev - cogs;
       const margin = rev > 0 ? Math.round((grossProfit / rev) * 1000) / 10 : 0;
 
-      if (isUrdu) {
-        return `آج **${context.shopName}** پر کل **${completed.length} فروخت** ریکارڈ ہوئی ہیں:\n\n• کل آمدنی: **${formatCurrency(rev)}**\n• نقد موصول: **${formatCurrency(cash)}**\n• ادھار دیا گیا: **${formatCurrency(credit)}**\n• متوقع خام منافع: **${formatCurrency(grossProfit)}** (${margin}% مارجن)\n\nکاؤنٹر رجسٹر اور دراز میں نقد رقم کا حساب برابر ہے۔`;
-      }
       return `Today's performance for **${context.shopName}** across **${completed.length} transactions**:\n\n• Total Revenue: **${formatCurrency(rev)}**\n• Cash Collected: **${formatCurrency(cash)}**\n• Udhaar Extended: **${formatCurrency(credit)}**\n• Estimated Gross Profit: **${formatCurrency(grossProfit)}** (${margin}% gross margin).`;
     }
 
@@ -187,24 +170,15 @@ export const AskTallynDrawer: React.FC = () => {
       q.includes("ramadan") || q.includes("season") || q.includes("eid") ||
       q.includes("rooh afza") || q.includes("surge") || q.includes("forecast")
     ) {
-      if (isUrdu) {
-        return `رمضان المبارک اور موسمی طلب ماڈل (فیچر 8):\n\nرمضان میں شربت (روح افزا)، چینی، سفید چاول، اور بیسن کی فروخت میں **+280% تک اضافہ** ہوتا ہے۔ چاند رات سے 10 دن قبل ہول سیل منڈی کے نرخ 12-15% بڑھ جاتے ہیں۔\n\nمشورہ: روح افزا اور 50 کلو چینی کی بوریوں کا ایڈوانس بلک آرڈر فوری محفوظ کریں تاکہ 22% کاؤنٹر منافع برقرار رہے۔`;
-      }
       return `Ramadan & Seasonal Demand Model (Feature 8):\n\nHistorical retail velocity for Rooh Afza syrup, white sugar, basmati rice, and gram flour surges **+280% in Ramadan**. Wholesale Mandi spot rates typically climb 12–15% ten days prior to moon sighting.\n\nRecommendation: Lock supplier purchase orders for 30 cartons of syrup and bulk sugar now to protect a 22% retail profit margin.`;
     }
 
     // 6. Clarification / "what?" / Help
     if (q === "what" || q === "what?" || q.includes("kya") || q.includes("help") || q.includes("who are you")) {
-      if (isUrdu) {
-        return `میں ٹیلن AI ہوں — آپ کی دکان کا خودکار مشیر۔ میں **${context.shopName}** کے ${context.totalProducts} پروڈکٹس، ${formatCurrency(context.totalUdhaar)} ادھار، اور آج کی فروخت کا لائیو تجزیہ کرتا ہوں۔\n\nآپ مجھ سے پوچھ سکتے ہیں:\n• "سب سے زیادہ ادھار کس پر ہے؟"\n• "کون سا سامان ختم ہو رہا ہے؟"\n• "آج کا کل منافع کتنا ہے؟"`;
-      }
       return `I am Tallyn AI — your autonomous Kiryana retail intelligence partner. I'm connected to **${context.shopName}** (${context.totalProducts} SKUs, ${formatCurrency(context.totalUdhaar)} udhaar ledger).\n\nYou can ask me:\n• *"Who has the most udhaar?"*\n• *"Which items are low on stock?"*\n• *"What was today's profit margin?"*`;
     }
 
     // Default Contextual Query Answer
-    if (isUrdu) {
-      return `سٹور رپورٹ برائے **${context.shopName}** (${context.shopCity}): آج کل ${context.todaySalesCount} ٹرانزیکشنز ہوئیں، آمدنی ${formatCurrency(context.todayRevenue)} رہی۔ مارکیٹ میں کل ادھار ${formatCurrency(context.totalUdhaar)} ہے اور ${context.lowStockItems.length} اشیاء ری آرڈر کی منتظر ہیں۔ آپ کسی بھی مخصوص کھاتے، گاہک، یا انوینٹری کے بارے میں بلا جھجھک پوچھ سکتے ہیں۔`;
-    }
     return `Store Report for **${context.shopName}** (${context.shopCity}): ${context.todaySalesCount} sales recorded today totaling ${formatCurrency(context.todayRevenue)}. Current neighbourhood udhaar stands at ${formatCurrency(context.totalUdhaar)}, and ${context.lowStockItems.length} products require restocking. Feel free to ask about any specific item, debtor, or Mandi price!`;
   };
 
@@ -231,7 +205,7 @@ export const AskTallynDrawer: React.FC = () => {
           accessToken,
           feature: "advisor",
           query: q,
-          language: isUrdu ? "ur" : "roman-ur",
+          language: "en",
           context: storeContext,
           history: conversationHistory,
         });
@@ -272,19 +246,12 @@ export const AskTallynDrawer: React.FC = () => {
     }, 400);
   };
 
-  const quickChips = isUrdu
-    ? [
-        "سب سے زیادہ ادھار کس پر ہے؟",
-        "کون سا سامان ختم ہو رہا ہے؟",
-        "آج کی فروخت کتنی ہے؟",
-        "منافع بڑھانے کا مشورہ دیں",
-      ]
-    : [
-        "Who has the most udhaar?",
-        "Which items are low on stock?",
-        "What was today's total revenue?",
-        "Give me profit tips for this season",
-      ];
+  const quickChips = [
+    "Who has the most udhaar?",
+    "Which items are low on stock?",
+    "What was today's total revenue?",
+    "Give me profit tips for this season",
+  ];
 
   // Simple markdown-to-JSX renderer for bold and bullets
   const renderMarkdown = (text: string) => {

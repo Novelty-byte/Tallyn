@@ -1,17 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
-import { 
-  Store, 
-  MapPin, 
-  Phone, 
-  Package, 
-  Boxes, 
-  Plus, 
-  Trash2, 
-  Check, 
-  Building2, 
+import {
+  Store,
+  MapPin,
+  Phone,
+  Package,
+  Boxes,
+  Plus,
+  Trash2,
+  Check,
+  Building2,
   ArrowRight,
   Layers,
   Sparkles,
@@ -44,8 +43,7 @@ interface BranchFormState {
 
 export const StoreOnboardingPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const { user, createShop, createMultipleShops } = useApp();
 
   // Multi-Store option toggle

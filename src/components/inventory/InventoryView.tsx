@@ -14,7 +14,7 @@ import {
 
 export const InventoryView: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  
   const { products, addProduct, updateStock } = useApp();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,7 +66,7 @@ export const InventoryView: React.FC = () => {
 
   const filteredProducts = products.filter((p) => {
     const matchesCat = selectedCategory === "all" || p.category === selectedCategory;
-    const name = isUrdu ? p.nameUr : p.nameEn;
+    const name = isUrdu ? p.name : p.nameEn;
     const matchesSearch =
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -182,7 +182,7 @@ export const InventoryView: React.FC = () => {
                   <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-slate-900">
                       <div>
-                        <p>{isUrdu ? p.nameUr : p.nameEn}</p>
+                        <p>{isUrdu ? p.name : p.nameEn}</p>
                         <p className="text-[10px] text-slate-400 font-normal">
                           {p.barcode ? `Barcode: ${p.barcode}` : p.unit}
                         </p>

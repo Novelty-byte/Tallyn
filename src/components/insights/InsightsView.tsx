@@ -16,7 +16,7 @@ import {
 
 export const InsightsView: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  
   const { products, sales, expenses, seasonalForecasts, setActiveTab } = useApp();
 
   // Low stock products with run rate

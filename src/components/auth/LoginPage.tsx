@@ -18,8 +18,7 @@ import {
 } from "lucide-react";
 
 export const LoginPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loginWithGoogle } = useApp();

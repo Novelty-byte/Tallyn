@@ -35,7 +35,7 @@ export const resources = {
       hero: {
         badge: "Next-Gen Retail OS",
         title: "Zero-Typing Counter POS & Voice Clarity for Neighbourhood Retail",
-        subtitle: "Deterministic financial & inventory math built for 390px mobile screens. AI eliminates counter typing, extracts messy supplier bills, and drafts Urdu WhatsApp collection reminders.",
+        subtitle: "Deterministic financial & inventory math built for 390px mobile screens. AI eliminates counter typing, extracts messy supplier bills, and drafts WhatsApp collection reminders.",
         openPOS: "Launch Counter POS",
         openDashboard: "View Executive Dashboard",
       },
@@ -44,8 +44,8 @@ export const resources = {
         subtitle: "Built for single-handed 390px phone counter operation with 44px+ tap targets.",
         searchPlaceholder: "Search 60+ retail products or barcode...",
         voicePOS: "Say-It Voice POS",
-        voicePOSPrompt: "Say in Urdu: '2 chai aur 1 ghee udhaar Asif'",
-        simulateVoice: "Speak & Simulate Urdu POS",
+        voicePOSPrompt: "Say in English: '2 chai aur 1 ghee udhaar Asif'",
+        simulateVoice: "Speak & Simulate Voice POS",
         cashSale: "Cash Sale",
         creditSale: "Credit (Udhaar)",
         selectCustomer: "Select Credit Customer",
@@ -118,176 +118,28 @@ export const resources = {
         createOne: "Create Shop Account",
       },
       radio: {
-        title: "Kiryana Radio (صبح کا احوال)",
+        title: "Kiryana Radio (Morning Briefing)",
         subtitle: "Listen to your shop's plain-language morning executive voice briefing.",
         playBriefing: "Play Audio Briefing",
         stopAudio: "Stop Audio",
       },
       ai: {
         title: "Ask Tallyn",
-        subtitle: "Read-only store intelligence assistant in Urdu, Roman Urdu, and English.",
+        subtitle: "Read-only store intelligence assistant in English.",
         placeholder: "Ask anything (e.g. 'Who owes the most debt?', 'Which item is running low?')...",
         send: "Ask",
       },
     },
   },
-  ur: {
-    translation: {
-      appName: "ٹیلن (Tallyn)",
-      tagline: "بغیر ٹائپنگ کاؤنٹر چیک آؤٹ، سمارٹ انوینٹری اور کریانہ اسٹورز کیلئے صوتی سہولت۔",
-      nav: {
-        home: "جائزہ",
-        pos: "کاؤنٹر POS",
-        dashboard: "ڈیش بورڈ",
-        inventory: "انوینٹری",
-        udhaar: "ادھار کھاتہ",
-        purchases: "خریداری و اسکینر",
-        insights: "بصیرت و تخمینہ",
-        history: "فروخت کی تاریخ",
-        settings: "دکان کی سیٹنگز",
-        demoBanner: "آپ ڈیمو اسٹور دیکھ رہے ہیں: المدینہ کریانہ",
-        exitDemo: "ڈیمو ختم کریں",
-        kiryanaRadio: "کریانہ ریڈیو",
-        askTallyn: "ٹیلن AI سے پوچھیں",
-        signIn: "لاگ ان",
-        register: "اپنی دکان درج کریں",
-        signOut: "لاگ آؤٹ",
-        features: "پلیٹ فارم خصوصیات",
-        multiStore: "ملٹی اسٹور سسٹم",
-        pricing: "قیمتیں",
-        demoStore: "ڈیمو اسٹور",
-        launchDemo: "لائیو ڈیمو",
-        switchStore: "برانچ تبدیل کریں",
-        addNewStore: "+ نئی برانچ شامل کریں",
-        manageStores: "برانچز کا انتظام",
-      },
-      hero: {
-        badge: "جدید ریٹیل سسٹم",
-        title: "کریانہ اسٹورز کے لیے زیرو ٹائپنگ کاؤنٹر POS اور آواز کی سہولت",
-        subtitle: "390px موبائل اسکرینز کے لیے تیار کردہ غیر متزلزل منافع اور اسٹاک حسابات۔ AI کاؤنٹر پر ٹائپنگ ختم کرتی ہے، پرچے اسکین کرتی ہے اور ادھار کی یاددہانی لکھتی ہے۔",
-        openPOS: "کاؤنٹر پی او ایس کھولیں",
-        openDashboard: "ڈیش بورڈ دیکھیں",
-      },
-      pos: {
-        title: "کاؤنٹر POS",
-        subtitle: "ایک ہاتھ سے 390px موبائل پر استعمال کے لیے 44px+ بڑے بٹن۔",
-        searchPlaceholder: "اشیاء یا بارکوڈ تلاش کریں...",
-        voicePOS: "بول کر فروخت کریں",
-        voicePOSPrompt: "بولیں: '2 چائے اور 1 گھی ادھار آصف'",
-        simulateVoice: "اردو آواز بولیں اور چیک کریں",
-        cashSale: "نقد فروخت",
-        creditSale: "ادھار (کھاتہ)",
-        selectCustomer: "کسٹمر منتخب کریں",
-        recordSale: "فروخت درج کریں (Atomic RPC)",
-        undoSale: "واپس لیں",
-        cartTotal: "کل رقم",
-        inCart: "اشیاء ٹوکری میں",
-        emptyCart: "ٹوکری خالی ہے۔ اشیاء شامل کرنے کیلئے ٹیپ کریں۔",
-        stock: "اسٹاک",
-        price: "قیمت",
-      },
-      dashboard: {
-        title: "آج کی دکان کا احوال اور تجاویز",
-        subtitle: "بغیر کسی غلطی کے خالص کوڈ کے ذریعے نکالا گیا حساب کتاب۔",
-        todayRevenue: "آج کی کل فروخت",
-        cashReceived: "موصول شدہ نقد رقم",
-        creditExtended: "آج دیا گیا ادھار",
-        grossProfit: "تخمینی مجموعی منافع",
-        netMargin: "منافع کا تناسب",
-        salesTrend: "پچھلے 7 دنوں کی فروخت کا رجحان",
-        actionCardsTitle: "فوری ضروری اقدامات",
-        loadDemo: "ڈیمو اسٹور کا ڈیٹا دوبارہ لوڈ کریں",
-      },
-      inventory: {
-        title: "سمارٹ انوینٹری اور اسٹاک",
-        subtitle: "اسٹاک کا فوری حساب اور خودکار دوبارہ آرڈر کی وارننگز۔",
-        addProduct: "نئی چیز شامل کریں",
-        adjustStock: "اسٹاک ایڈجسٹ کریں",
-        productName: "چیز کا نام",
-        category: "کیٹیگری",
-        stockQty: "موجود مقدار",
-        buyPrice: "قیمت خرید",
-        sellPrice: "قیمت فروخت",
-        margin: "مارجن",
-        actions: "اقدامات",
-        deadStockAlert: "کم بکنے والی اشیاء کے کمبو بنڈل",
-      },
-      udhaar: {
-        title: "گاہکوں کا ادھار اور کھاتہ",
-        subtitle: "شائستہ اور باوقار انداز میں ایک کلک پر واٹس ایپ یاد دہانی۔",
-        totalReceivable: "مارکیٹ میں کل واجب الادا ادھار",
-        activeAccounts: "کل ادھار گاہک",
-        overdueAccounts: "تاخیر کا شکار گاہک (>7 دن)",
-        recordPayment: "ادھار وصولی درج کریں",
-        sendWhatsApp: "اردو میں میسج بھیجیں",
-        customerName: "گاہک کا نام",
-        phone: "فون نمبر",
-        balance: "باقی رقم",
-        overdueDays: "کتنے دن سے باقی ہے",
-      },
-      purchases: {
-        title: "سپلائر خریداری اور بل اسکینر",
-        subtitle: "ہول سیل پرچے کی تصویر کھینچیں اور منڈی کے ریٹ سے موازنہ کریں۔",
-        scanBill: "سپلائر کا کچا پرچہ اسکین کریں",
-        mahngaiWatchdog: "مہنگائی اور منڈی ریٹ موازنہ",
-        supplier: "سپلائر کا نام",
-        invoice: "انوائس نمبر",
-        total: "کل رقم",
-        itemsCount: "شامل شدہ اشیاء",
-      },
-      auth: {
-        signInTitle: "ٹیلن اکاؤنٹ میں لاگ ان کریں",
-        signInSubtitle: "اپنی دکان کا کاؤنٹر پورے کنٹرول کے ساتھ سنبھالیں۔",
-        email: "ای میل ایڈریس",
-        password: "پاس ورڈ",
-        magicLinkBtn: "جادوئی لاگ ان لنک بھیجیں",
-        loginBtn: "لاگ ان کریں",
-        demoLoginBtn: "حاجی اسلم (ڈیمو) کے طور پر فوری لاگ ان",
-        noAccount: "اکاؤنٹ نہیں ہے؟",
-        createOne: "نئی دکان بنائیں",
-      },
-      radio: {
-        title: "کریانہ ریڈیو (صبح کا احوال)",
-        subtitle: "اپنی دکان کا صوتی آڈیو احوال اپنی مادری زبان میں سنیں۔",
-        playBriefing: "آڈیو سنیں",
-        stopAudio: "آڈیو بند کریں",
-      },
-      ai: {
-        title: "ٹیلن AI اسسٹنٹ",
-        subtitle: "دکان کی تمام تفصیلات اردو، رومن اردو یا انگریزی میں پوچھیں۔",
-        placeholder: "کچھ بھی پوچھیں (جیسے: سب سے زیادہ ادھار کس پر ہے؟ کون سا مال ختم ہو رہا ہے؟)",
-        send: "پوچھیں",
-      },
-    },
-  },
 };
-
-const savedLang = (typeof window !== "undefined" && localStorage.getItem("tallyn_lang")) || "en";
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: savedLang === "ur" ? "ur" : "en",
+  lng: "en",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false,
   },
 });
-
-// Set initial document attributes
-if (typeof document !== "undefined") {
-  document.documentElement.dir = savedLang === "ur" ? "rtl" : "ltr";
-  document.documentElement.lang = savedLang;
-}
-
-export function switchLanguage(lang: "en" | "ur") {
-  i18n.changeLanguage(lang);
-  document.documentElement.dir = lang === "ur" ? "rtl" : "ltr";
-  document.documentElement.lang = lang;
-  try {
-    localStorage.setItem("tallyn_lang", lang);
-  } catch {
-    /* ignore */
-  }
-}
 
 export default i18n;

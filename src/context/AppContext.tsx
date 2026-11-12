@@ -3,10 +3,9 @@ import React, {
 } from "react";
 import type {
   UserProfile, Shop, Product, Customer, Sale, Purchase, Expense,
-  SeasonalForecast, Language,
+  WholesalePriceBenchmark, SeasonalForecast,
 } from "@/types";
 import { audio } from "@/lib/audio";
-import { switchLanguage } from "@/i18n";
 import {
   SEEDED_PRODUCTS, SEEDED_BENCHMARKS, SEEDED_SEASONAL_FORECASTS,
   getBranchSeedData,
@@ -64,7 +63,6 @@ const DEMO_USER: UserProfile = {
   name: "Haji Aslam",
   email: "aslam@almadinakiryana.pk",
   role: "owner",
-  languagePreference: "ur",
   isDemo: true,
 };
 
@@ -74,8 +72,6 @@ interface AppContextType {
   shops: Shop[];
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
-  language: Language;
-  setLanguage: (lang: Language) => void;
   products: Product[];
   customers: Customer[];
   sales: Sale[];
@@ -133,9 +129,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
   const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
   const [activeTab, setActiveTab] = useState<ActiveTab>("landing");
-  const [language, setLangState] = useState<Language>(
-    (typeof window !== "undefined" && localStorage.getItem("tallyn_lang") as Language) || "en"
-  );
   const [products, setProducts] = useState<Product[]>(branch1.products);
   const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
   const [sales, setSales] = useState<Sale[]>(branch1.sales);
@@ -208,7 +201,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: profileName,
           email: u.email || "",
           role: "owner",
-          languagePreference: language,
           isDemo: false,
         });
         setIsDemoMode(false);
@@ -242,13 +234,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
-  /* ------------------------------ Language ------------------------------- */
-
-  const setLanguage = (lang: Language) => {
-    setLangState(lang);
-    switchLanguage(lang);
-  };
-
   /* ------------------------------- Actions ------------------------------- */
 
   const openSeededDemoShop = () => {
@@ -262,7 +247,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSales(b1.sales);
     setPurchases(b1.purchases ?? []);
     setExpenses(b1.expenses);
-    setWholesaleBenchmarks(SEEDED_BENCHMARKS);
     setIsDemoMode(true);
     setActiveTab("dashboard");
     audio.playCashRegisterChime();
@@ -323,7 +307,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (template === "grocery") {
           const starterRows = SEEDED_PRODUCTS.map((p) => ({
             name: p.nameEn,
-            name_ur: p.nameUr,
+            name_ur: p.name,
             category: p.category,
             quantity: p.quantity,
             buy_price: p.buyPrice,
@@ -350,7 +334,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: shopData.ownerName || "Retail Owner",
           email: `${shopData.name.toLowerCase().replace(/[^a-z0-9]/g, "")}@tallyn.pk`,
           role: "owner",
-          languagePreference: language,
         });
       }
     }
@@ -517,7 +500,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         await db.insertProducts(shop.id, [{
           name: p.nameEn,
-          name_ur: p.nameUr,
+          name_ur: p.name,
           category: p.category,
           quantity: p.quantity,
           buy_price: p.buyPrice,
@@ -539,7 +522,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (user && !isDemoMode) {
       try {
         await db.updateProduct(p.id, {
-          name: p.nameEn, name_ur: p.nameUr, category: p.category,
+          name: p.nameEn, name_ur: p.name, category: p.category,
           quantity: p.quantity, buy_price: p.buyPrice, sell_price: p.sellPrice,
           min_quantity: p.minQuantity, barcode: p.barcode,
         });
@@ -699,8 +682,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         shops,
         activeTab,
         setActiveTab,
-        language,
-        setLanguage,
         products,
         customers,
         sales,

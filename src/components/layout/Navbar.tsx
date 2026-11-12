@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useApp, ActiveTab } from "@/context/AppContext";
-import { 
-  Store, 
-  Globe, 
-  Radio, 
-  MessageSquareCode, 
-  User, 
+import {
+  Store,
+  Radio,
+  MessageSquareCode,
+  User,
   LogOut,
   ChevronDown,
   Plus,
@@ -22,36 +21,29 @@ import {
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
-  const { 
-    user, 
-    shop, 
+  const { t } = useTranslation();
+  const {
+    user,
+    shop,
     shops,
     switchShop,
-    activeTab, 
-    setActiveTab, 
-    language, 
-    setLanguage, 
-    setIsAuthModalOpen, 
+    activeTab,
+    setActiveTab,
+    setIsAuthModalOpen,
     setIsAddStoreModalOpen,
     setIsStoreManagementModalOpen,
-    setIsAskTallynOpen, 
+    setIsAskTallynOpen,
     setIsKiryanaRadioOpen,
     openSeededDemoShop,
     isDemoMode,
     exitDemoMode,
-    logout 
+    logout
   } = useApp();
 
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const isLandingView = activeTab === "landing";
-
-  const toggleLanguage = () => {
-    setLanguage(language === "en" ? "ur" : "en");
-  };
 
   const operationalNavLinks: { id: ActiveTab; label: string }[] = [
     { id: "landing", label: t("nav.home") },
@@ -325,15 +317,6 @@ export const Navbar: React.FC = () => {
               <span className="hidden xl:inline">{t("nav.askTallyn")}</span>
             </button>
           )}
-
-          {/* Language Toggle */}
-          <button
-            onClick={toggleLanguage}
-            className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors min-h-[38px]"
-          >
-            <Globe className="h-3.5 w-3.5 text-emerald-700" />
-            <span>{language === "en" ? "اردو" : "English"}</span>
-          </button>
 
           {/* SaaS CTAs vs In-Store User Menu */}
           {user ? (

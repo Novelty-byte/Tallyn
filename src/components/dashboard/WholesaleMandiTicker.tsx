@@ -16,8 +16,7 @@ interface MandiBenchmarkItem {
 }
 
 export const WholesaleMandiTicker: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  const { t } = useTranslation();
   const { shop, products, activeTab } = useApp();
 
   const [activeItemDetail, setActiveItemDetail] = useState<MandiBenchmarkItem | null>(null);
@@ -277,7 +276,7 @@ export const WholesaleMandiTicker: React.FC = () => {
       // Check if any product in the active store inventory matches this mandi commodity
       return products.some((p) => {
         const prodNameEn = (p.nameEn || "").toLowerCase();
-        const prodNameUr = (p.nameUr || "").toLowerCase();
+        const prodNameUr = (p.name || "").toLowerCase();
         const prodCategory = (p.category || "").toLowerCase();
 
         return mandiItem.keywords.some((kw) => {

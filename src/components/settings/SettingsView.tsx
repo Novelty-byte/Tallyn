@@ -24,16 +24,14 @@ import {
 
 export const SettingsView: React.FC = () => {
   const { t } = useTranslation();
-  const { 
-    shop, 
-    shops, 
-    switchShop, 
+  const {
+    shop,
+    shops,
+    switchShop,
     updateShop,
-    language, 
-    setLanguage, 
     setIsAddStoreModalOpen,
     setIsStoreManagementModalOpen,
-    user 
+    user
   } = useApp();
 
   const [shopName, setShopName] = useState(shop.name);
@@ -408,32 +406,13 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Language Selection */}
+        {/* Language info (English-only build) */}
         <div className="pt-2">
           <label className="block text-xs font-bold text-slate-700 mb-2">Display Language</label>
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setLanguage("en")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
-                language === "en"
-                  ? "bg-emerald-800 text-white shadow-2xs"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
+            <span className="rounded-xl px-4 py-2 text-xs font-bold bg-emerald-800 text-white shadow-2xs">
               English
-            </button>
-            <button
-              type="button"
-              onClick={() => setLanguage("ur")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
-                language === "ur"
-                  ? "bg-emerald-800 text-white shadow-2xs"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              اردو (Urdu RTL)
-            </button>
+            </span>
           </div>
         </div>
 

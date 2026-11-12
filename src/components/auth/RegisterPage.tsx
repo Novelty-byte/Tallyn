@@ -17,8 +17,7 @@ import {
 } from "lucide-react";
 
 export const RegisterPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isUrdu = i18n.language === "ur";
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();

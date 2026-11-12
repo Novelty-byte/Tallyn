@@ -1,11 +1,8 @@
-export type Language = "en" | "ur";
-
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
   role: "owner" | "manager" | "cashier";
-  languagePreference: Language;
   avatarUrl?: string;
   isDemo?: boolean;
   /** Supabase access token (for Edge Function auth) */
@@ -31,8 +28,9 @@ export type ProductCategory = "staples" | "beverages" | "dairy" | "spices" | "ho
 
 export interface Product {
   id: string;
-  nameEn: string;
-  nameUr: string;
+  name: string;
+  nameEn?: string;
+  nameUr?: string;
   category: ProductCategory;
   quantity: number;
   buyPrice: number;
