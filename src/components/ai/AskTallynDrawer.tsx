@@ -76,58 +76,45 @@ const APP_FEATURE_GUIDE = `
 - Ask about your store data, how to use features, or get retail advice.
 `;
 
-// ─── Direct Gemini API call (browser-side) ─────────────────────────────────
-async function tryGeminiModel(
-  apiKey: string,
-  model: string,
-  contents: unknown[]
-): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      generationConfig: { temperature: 0.7, topP: 0.95, maxOutputTokens: 600 },
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
-    throw new Error(`Gemini ${res.status} [${model}]: ${err.slice(0, 200)}`);
-  }
-  const json = await res.json();
-  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error(`Gemini [${model}] returned empty response`);
-  return text as string;
-}
-
+// ─── AI API call (OpenAI-compatible / ElectronHub) ─────────────────────────
 async function callGeminiDirect(
   apiKey: string,
   systemPrompt: string,
-  history: { role: "user" | "model"; parts: { text: string }[] }[],
+  history: { role: "user" | "assistant"; content: string }[],
   userMessage: string
 ): Promise<string> {
-  const contents = [
-    { role: "user", parts: [{ text: systemPrompt }] },
-    { role: "model", parts: [{ text: "Understood. I am Tallyn AI, ready to help." }] },
+  const baseUrl = (import.meta.env.VITE_AI_BASE_URL as string) || "https://api.electronhub.ai/v1";
+  const model = "gemini-3.5-flash-lite";
+
+  const messages = [
+    { role: "system", content: systemPrompt },
     ...history,
-    { role: "user", parts: [{ text: userMessage }] },
+    { role: "user", content: userMessage },
   ];
 
-  // Try primary model, fall back to secondary on any error
-  const models = ["gemini-3.5-flash", "gemini-3.6-flash"];
-  let lastError = "";
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.7,
+      max_tokens: 600,
+    }),
+  });
 
-  for (const model of models) {
-    try {
-      return await tryGeminiModel(apiKey, model, contents);
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
-      console.warn(`[Tallyn AI] ${lastError} — trying next model...`);
-    }
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`AI API ${res.status}: ${errText.slice(0, 150)}`);
   }
 
-  throw new Error(lastError || "All Gemini models failed");
+  const json = await res.json();
+  const text = json?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("AI returned empty response");
+  return text as string;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -145,7 +132,7 @@ export const AskTallynDrawer: React.FC = () => {
   const [inputQuery, setInputQuery] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [geminiHistory, setGeminiHistory] = useState<
-    { role: "user" | "model"; parts: { text: string }[] }[]
+    { role: "user" | "assistant"; content: string }[]
   >([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -254,8 +241,8 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
 
       setGeminiHistory((prev) => [
         ...prev.slice(-8), // keep last 8 turns in history
-        { role: "user", parts: [{ text: q }] },
-        { role: "model", parts: [{ text: answer }] },
+        { role: "user", content: q },
+        { role: "assistant", content: answer },
       ]);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Unknown error";
