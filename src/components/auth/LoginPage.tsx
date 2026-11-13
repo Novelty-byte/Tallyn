@@ -159,7 +159,7 @@ export const LoginPage: React.FC = () => {
             <div className="mx-auto mb-3 flex h-13 w-13 items-center justify-center rounded-2xl bg-emerald-800 text-amber-300 shadow-md">
               <Store className="h-7 w-7" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">
               Sign In to Tallyn
             </h2>
             <p className="mt-1.5 text-xs text-slate-500">
@@ -187,7 +187,7 @@ export const LoginPage: React.FC = () => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200" />
             </div>
-            <span className="relative bg-white px-3 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            <span className="relative bg-white px-3 text-xs uppercase font-semibold text-slate-400 tracking-wider">
               Or sign in with email & password
             </span>
           </div>
@@ -219,7 +219,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSendMagicLink}
-                  className="text-[11px] font-semibold text-emerald-800 hover:underline"
+                  className="text-xs font-semibold text-emerald-800 hover:underline min-h-[44px] inline-flex items-center"
                 >
                   Send One-Click Magic Link
                 </button>

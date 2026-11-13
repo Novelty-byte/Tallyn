@@ -1,39 +1,262 @@
 @import "tailwindcss";
 
+/* ============================================================
+   TALLYN DESIGN TOKENS — Tier 1
+   Spacing: 8pt (major) / 4pt (micro)  |  Type: 400/500/600
+   Colour: 60-30-10 anchored in Deep Green + Warm Amber
+   Motion: 100/150/200/300ms, transform & opacity only
+   ============================================================ */
+
 @theme {
   --shadow-2xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --blur-xs: 2px;
-}
 
-:root {
+  /* --- Brand --- */
   --color-forest: #166534;
   --color-forest-dark: #14532d;
   --color-forest-light: #22c55e;
   --color-amber: #d97706;
   --color-amber-light: #f59e0b;
   --color-amber-surface: #fef3c7;
-  --color-surface-bg: #f8fafc;
-  --color-surface-card: #ffffff;
-  --color-surface-border: #e2e8f0;
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
+
+  /* --- Surfaces (60 / 30 / 10 roles) --- */
+  --color-surface-bg: #f9fafb;     /* L0 canvas — 60% */
+  --color-surface-card: #ffffff;   /* L1 raised — 30% */
+  --color-surface-inset: #f3f4f6;  /* sunken wells, table headers */
+  --color-surface-border: #e5e7eb; /* whisper border (~8% fg) */
+
+  /* --- Text (contrast >= 4.5:1) --- */
+  --color-text-main: #0f172a;   /* primary  ~16.9:1 on #f9fafb */
+  --color-text-sub: #475569;    /* secondary ~7.5:1 */
+  --color-text-muted: #64748b;  /* meta      ~5.1:1 */
+
+  /* --- Semantic status --- */
+  --color-status-success: #166534;
+  --color-status-warning: #d97706;
+  --color-status-danger: #be123c;
+  --color-status-info: #1d4ed8;
+
+  /* --- Type --- */
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
+
+/* ---- Non-utility tokens (consumed via var()) ---- */
+:root {
+  /* Spacing — 8pt major */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --prose-max: 70ch;
+
+  /* Typography — 3 weights, sizes, leading */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-figure: 700; /* POS financial figures ONLY, always with tabular-nums */
+
+  --text-meta: 0.75rem;      /* 12px — timestamps, legal, kbd */
+  --text-secondary: 0.875rem;/* 14px — UI labels, table cells */
+  --text-body: 1rem;         /* 16px — primary content */
+  --text-h3: 1.25rem;
+  --text-h2: 1.5rem;
+  --text-h1: 2rem;
+
+  --leading-tight: 1.2;
+  --leading-body: 1.55;
+  --leading-meta: 1.4;
+  --tracking-display: -0.02em;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  /* Elevation — border first, soft shadow second */
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  --shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-lift: 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  /* Viewports — three tokens only */
+  --vp-narrow: 375px;
+  --vp-medium: 768px;
+  --vp-wide: 1280px;
+
+  /* Motion */
+  --motion-100: 100ms;
+  --motion-150: 150ms;
+  --motion-200: 200ms;
+  --motion-300: 300ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+
+  /* Tap target floor */
+  --hit-min: 44px;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
 
 html, body {
   overflow-x: clip;
   background-color: var(--color-surface-bg);
   color: var(--color-text-main);
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-body);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+main, .page {
+  width: 100%;
+  max-width: var(--vp-wide);
+  margin-inline: auto;
+}
+
+h1, h2, h3, h4 {
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+
+p, li, .prose {
+  max-width: var(--prose-max);
+}
+
+/* ============================================================
+   PRIMITIVES
+   ============================================================ */
+
+/* L1 surface: list, table, card frame — border before shadow */
+.surface-l1 {
+  background: var(--color-surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+/* L2/L3 overlay surface — opaque, never flat-equal to canvas */
+.surface-overlay {
+  background: var(--color-surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Data table with hairline row dividers */
+.table-l1 {
+  width: 100%;
+  text-align: start;
+  font-size: var(--text-secondary);
+  border-collapse: collapse;
+}
+.table-l1 th {
+  background: var(--color-surface-inset);
+  font-size: var(--text-meta);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-sub);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.table-l1 td {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.table-l1 tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Primary CTA — solid Deep Green, no gradients */
+.btn-primary {
+  background: var(--color-forest);
+  color: #ffffff;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-secondary);
+  border-radius: var(--radius-md);
+  min-height: var(--hit-min);
+  transition: background-color var(--motion-150) var(--ease-out),
+              opacity var(--motion-150) var(--ease-out);
+}
+.btn-primary:hover { background: var(--color-forest-dark); }
+.btn-primary:active { opacity: 0.9; }
+
+/* Secondary / amber action */
+.btn-amber {
+  background: var(--color-amber);
+  color: #ffffff;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-secondary);
+  border-radius: var(--radius-md);
+  min-height: var(--hit-min);
+  transition: background-color var(--motion-150) var(--ease-out);
+}
+
+/* Financial figure — the ONLY place weight 700 is allowed */
+.figure {
+  font-weight: var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Hit target helper for icon-only controls */
+.hit {
+  min-width: var(--hit-min);
+  min-height: var(--hit-min);
+}
+
+/* Focus — single accent, always visible */
 :focus-visible {
   outline: 2px solid var(--color-forest);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
+
+/* ============================================================
+   MOTION
+   ============================================================ */
+
+@keyframes tn-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tn-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(4px); }
+}
+
+/* Legacy class names kept working, mapped to tokens */
+.animate-fade-in,
+.animate-fadeIn {
+  animation: tn-fade-in var(--motion-200) var(--ease-out) both;
+}
+
+/* Functional marquee (live mandi feed) — data loop, not decoration */
+@keyframes mandi-marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.animate-mandi-marquee {
+  display: flex;
+  width: max-content;
+  animation: mandi-marquee 30s linear infinite;
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
@@ -42,19 +265,9 @@ html, body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-@keyframes mandi-marquee {
-  0% {
-    transform: translateX(0%);
+  .animate-mandi-marquee {
+    animation: none !important;
+    width: auto;
+    overflow-x: auto;
   }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-mandi-marquee {
-  display: flex;
-  width: max-content;
-  animation: mandi-marquee 30s linear infinite;
 }

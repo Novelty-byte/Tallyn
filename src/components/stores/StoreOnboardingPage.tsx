@@ -206,7 +206,7 @@ export const StoreOnboardingPage: React.FC = () => {
         {/* Top Stepper Pill */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-amber-300 text-xs font-black">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-amber-300 text-xs font-bold">
               2
             </span>
             <span className="text-xs font-bold text-slate-700">
@@ -234,7 +234,7 @@ export const StoreOnboardingPage: React.FC = () => {
           {/* Header */}
           <div className="pb-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight flex items-center gap-2.5">
                 <Store className="h-7 w-7 text-emerald-800" />
                 <span>Register Your Store</span>
               </h2>
@@ -287,7 +287,7 @@ export const StoreOnboardingPage: React.FC = () => {
                     <label className="block text-xs font-bold text-slate-800">
                       City / Region <span className="text-rose-600">*</span>
                     </label>
-                    <span className="text-[11px] font-semibold text-slate-400">Quick selection</span>
+                    <span className="text-xs font-semibold text-slate-400">Quick selection</span>
                   </div>
 
                   {/* Quick selection chips */}
@@ -384,7 +384,7 @@ export const StoreOnboardingPage: React.FC = () => {
                       onChange={(e) => setSingleStore({ ...singleStore, lowStockThreshold: Number(e.target.value) })}
                       className="w-full rounded-2xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-hidden"
                     />
-                    <span className="text-[10px] text-slate-400 mt-1 block">
+                    <span className="text-xs text-slate-400 mt-1 block">
                       Triggers warning when stock falls below this count
                     </span>
                   </div>
@@ -400,7 +400,7 @@ export const StoreOnboardingPage: React.FC = () => {
                       onChange={(e) => setSingleStore({ ...singleStore, leadTimeDays: Number(e.target.value) })}
                       className="w-full rounded-2xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-hidden"
                     />
-                    <span className="text-[10px] text-slate-400 mt-1 block">
+                    <span className="text-xs text-slate-400 mt-1 block">
                       Days supplier takes to deliver restocking orders
                     </span>
                   </div>

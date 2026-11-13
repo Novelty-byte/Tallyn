@@ -77,16 +77,15 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
       {/* Demo Mode Persistent Banner */}
       {isDemoMode && (
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-amber-700 text-white px-4 py-1.5 text-xs font-semibold flex items-center justify-between border-b border-emerald-900 shadow-xs">
+        <div className="bg-emerald-900 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between border-b border-emerald-950 shadow-xs">
           <div className="mx-auto flex items-center gap-2">
             <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-300"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
             </span>
             <span>{t("nav.demoBanner")} • {shop.name}</span>
             <button
               onClick={exitDemoMode}
-              className="ms-3 rounded bg-white/20 hover:bg-white/30 px-2.5 py-0.5 text-[11px] font-bold text-white transition-colors"
+              className="ms-3 rounded bg-white/20 hover:bg-white/30 px-2.5 py-1 text-xs font-semibold text-white transition-colors min-h-[32px]"
             >
               {t("nav.exitDemo")}
             </button>
@@ -117,8 +116,8 @@ export const Navbar: React.FC = () => {
               - When INSIDE STORE APP: Show Multi-Store Switcher Dropdown */}
           {isLandingView ? (
             <div className="hidden md:flex items-center gap-1.5 ps-3 border-s border-slate-200 text-xs">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-[11px] font-extrabold text-emerald-900 shadow-2xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-xs font-semibold text-emerald-900 shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 <span>Multi-Store Retail Platform</span>
               </span>
             </div>
@@ -130,28 +129,28 @@ export const Navbar: React.FC = () => {
                   setIsStoreDropdownOpen(!isStoreDropdownOpen);
                   setIsUserMenuOpen(false);
                 }}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-800 transition-all shadow-2xs group"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-800 transition-all shadow-2xs group min-h-[44px]"
                 title="Switch Store Branch"
               >
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-800 text-amber-300 shadow-2xs">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-800 text-amber-300 shadow-2xs shrink-0">
                   <Store className="h-3.5 w-3.5" />
                 </div>
                 <div className="text-start hidden sm:block max-w-[170px] lg:max-w-[210px]">
                   <div className="flex items-center gap-1.5">
-                    <p className="font-extrabold text-slate-900 text-xs leading-none truncate">
+                    <p className="font-semibold text-slate-900 text-xs leading-none truncate">
                       {shop.name}
                     </p>
                     {shop.city && (
-                      <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[9px] font-bold text-emerald-800 uppercase shrink-0">
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 uppercase shrink-0">
                         {shop.city}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-slate-500 truncate leading-tight mt-0.5">
+                  <p className="text-xs text-slate-500 truncate leading-tight mt-0.5">
                     {shop.address}
                   </p>
                 </div>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-700 transition-transform" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-700 transition-transform shrink-0" />
               </button>
 
               {/* Store Switcher Dropdown Menu */}
@@ -161,17 +160,17 @@ export const Navbar: React.FC = () => {
                     className="fixed inset-0 z-40" 
                     onClick={() => setIsStoreDropdownOpen(false)} 
                   />
-                  <div className="absolute start-0 mt-2 w-72 sm:w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl z-50 text-xs animate-fade-in text-start">
+                  <div className="absolute start-0 mt-2 w-72 sm:w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-lift z-50 text-xs text-start">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
                       <div>
-                        <p className="font-extrabold text-slate-900 text-xs">
+                        <p className="font-semibold text-slate-900 text-xs">
                           {t("nav.switchStore")}
                         </p>
-                        <p className="text-[10px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           Multi-tenant partitioned database
                         </p>
                       </div>
-                      <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5">
                         {shops.length} {shops.length === 1 ? "Branch" : "Branches"}
                       </span>
                     </div>
@@ -187,30 +186,30 @@ export const Navbar: React.FC = () => {
                               switchShop(s.id);
                               setIsStoreDropdownOpen(false);
                             }}
-                            className={`w-full flex items-center justify-between rounded-xl p-2.5 text-start transition-colors ${
+                            className={`w-full flex items-center justify-between rounded-xl p-2.5 text-start transition-colors min-h-[44px] ${
                               isCurrent
-                                ? "bg-emerald-50/80 border border-emerald-300 text-emerald-950 font-bold"
+                                ? "bg-emerald-50/80 border border-emerald-300 text-emerald-950 font-semibold"
                                 : "hover:bg-slate-50 text-slate-700 font-medium"
                             }`}
                           >
                             <div className="space-y-0.5 pe-2">
                               <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-xs text-slate-900">
+                                <span className="font-semibold text-xs text-slate-900">
                                   {s.name}
                                 </span>
                                 {s.city && (
-                                  <span className="rounded bg-slate-200 text-slate-700 text-[9px] font-semibold px-1 py-0.2">
+                                  <span className="rounded bg-slate-200 text-slate-700 text-xs font-medium px-1 py-0.5">
                                     {s.city}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-500 truncate max-w-[210px]">
+                              <p className="text-xs text-slate-500 truncate max-w-[210px]">
                                 {s.address}
                               </p>
                             </div>
                             {isCurrent && (
                               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-white">
-                                <Check className="h-3 w-3 stroke-[3]" />
+                                <Check className="h-3 w-3 stroke-[2.5]" />
                               </span>
                             )}
                           </button>
@@ -225,7 +224,7 @@ export const Navbar: React.FC = () => {
                           setIsStoreDropdownOpen(false);
                           setIsAddStoreModalOpen(true);
                         }}
-                        className="w-full flex items-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-2 text-xs font-bold transition-colors"
+                        className="w-full flex items-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-2.5 text-xs font-semibold transition-colors min-h-[44px]"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>{t("nav.addNewStore")}</span>
@@ -235,9 +234,9 @@ export const Navbar: React.FC = () => {
                           setIsStoreDropdownOpen(false);
                           setIsStoreManagementModalOpen(true);
                         }}
-                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 text-[11px] font-semibold transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-2 text-xs font-semibold transition-colors min-h-[40px]"
                       >
-                        <Building className="h-3 w-3 text-slate-500" />
+                        <Building className="h-3.5 w-3.5 text-slate-500" />
                         <span>{t("nav.manageStores")}</span>
                       </button>
                     </div>
@@ -297,10 +296,10 @@ export const Navbar: React.FC = () => {
           {!isLandingView && (
             <button
               onClick={() => setIsKiryanaRadioOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs min-h-[38px]"
+              className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs min-h-[44px]"
               title="Listen to Kiryana Radio Audio Briefing"
             >
-              <Radio className="h-3.5 w-3.5 text-amber-700 animate-pulse" />
+              <Radio className="h-3.5 w-3.5 text-amber-700" />
               <span className="hidden xl:inline">{t("nav.kiryanaRadio")}</span>
             </button>
           )}
@@ -309,7 +308,7 @@ export const Navbar: React.FC = () => {
           {!isLandingView && (
             <button
               onClick={() => setIsAskTallynOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition-colors shadow-2xs min-h-[38px]"
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition-colors shadow-2xs min-h-[44px]"
               title="Ask Tallyn AI Store Assistant"
             >
               <MessageSquareCode className="h-3.5 w-3.5 text-emerald-700" />
@@ -326,9 +325,9 @@ export const Navbar: React.FC = () => {
                   setIsUserMenuOpen(!isUserMenuOpen);
                   setIsStoreDropdownOpen(false);
                 }}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors min-h-[38px]"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors min-h-[44px]"
               >
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-800 text-white text-[10px]">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-white text-xs font-semibold">
                   {user.name.charAt(0)}
                 </div>
                 <span className="hidden md:inline max-w-[90px] truncate">{user.name}</span>
@@ -341,11 +340,11 @@ export const Navbar: React.FC = () => {
                     className="fixed inset-0 z-40" 
                     onClick={() => setIsUserMenuOpen(false)} 
                   />
-                  <div className="absolute end-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50 text-xs animate-fade-in text-start">
+                  <div className="absolute end-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-lift z-50 text-xs text-start">
                     <div className="px-2 py-2 border-b border-slate-100">
-                      <p className="font-bold text-slate-900">{user.name}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
-                      <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-800 font-semibold">
+                      <p className="font-semibold text-slate-900">{user.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                      <div className="mt-1 flex items-center gap-1 text-xs text-emerald-800 font-medium">
                         <Store className="h-3 w-3" />
                         <span className="truncate">{shop.name}</span>
                       </div>
@@ -358,7 +357,7 @@ export const Navbar: React.FC = () => {
                             setActiveTab("dashboard");
                             setIsUserMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start font-medium text-slate-700 hover:bg-slate-100"
+                          className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start font-medium text-slate-700 hover:bg-slate-100 min-h-[40px]"
                         >
                           <Building className="h-3.5 w-3.5 text-slate-500" />
                           <span>Enter Store Dashboard</span>
@@ -370,7 +369,7 @@ export const Navbar: React.FC = () => {
                           setIsAddStoreModalOpen(true);
                           setIsUserMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start font-medium text-slate-700 hover:bg-slate-100"
+                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start font-medium text-slate-700 hover:bg-slate-100 min-h-[40px]"
                       >
                         <Plus className="h-3.5 w-3.5 text-emerald-700" />
                         <span>Register New Branch</span>
@@ -381,7 +380,7 @@ export const Navbar: React.FC = () => {
                           setActiveTab("settings");
                           setIsUserMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start font-medium text-slate-700 hover:bg-slate-100"
+                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start font-medium text-slate-700 hover:bg-slate-100 min-h-[40px]"
                       >
                         <Settings className="h-3.5 w-3.5 text-slate-500" />
                         <span>{t("nav.settings")}</span>
@@ -394,7 +393,7 @@ export const Navbar: React.FC = () => {
                           logout();
                           setIsUserMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start font-medium text-rose-600 hover:bg-rose-50"
+                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start font-medium text-rose-600 hover:bg-rose-50 min-h-[40px]"
                       >
                         <LogOut className="h-3.5 w-3.5" />
                         <span>{t("nav.signOut")}</span>
@@ -410,7 +409,7 @@ export const Navbar: React.FC = () => {
               {/* Launch Live Demo CTA */}
               <button
                 onClick={openSeededDemoShop}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3.5 py-2 text-xs shadow-xs transition-colors min-h-[38px]"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold px-3.5 py-2 text-xs shadow-soft transition-colors min-h-[44px]"
                 title="Launch Live Demo Store"
               >
                 <Play className="h-3 w-3 fill-slate-950" />
@@ -420,7 +419,7 @@ export const Navbar: React.FC = () => {
               {/* Register Store CTA */}
               <button
                 onClick={() => navigate("/register")}
-                className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold px-3 py-2 text-xs transition-colors min-h-[38px] cursor-pointer"
+                className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-semibold px-3 py-2 text-xs transition-colors min-h-[44px] cursor-pointer"
               >
                 <Store className="h-3.5 w-3.5 text-emerald-700" />
                 <span>{t("nav.register")}</span>
@@ -429,7 +428,7 @@ export const Navbar: React.FC = () => {
               {/* Sign In CTA */}
               <button
                 onClick={() => navigate("/login")}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 px-3.5 py-2 text-xs font-bold text-amber-100 transition-colors shadow-xs min-h-[38px] cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 px-3.5 py-2 text-xs font-semibold text-amber-100 transition-colors shadow-soft min-h-[44px] cursor-pointer"
               >
                 <User className="h-3.5 w-3.5" />
                 <span>{t("nav.signIn")}</span>
@@ -439,7 +438,7 @@ export const Navbar: React.FC = () => {
             /* Inside App but not logged in (e.g. anonymous counter demo) */
             <button
               onClick={() => navigate("/login")}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-800 px-3.5 py-2 text-xs font-bold text-amber-100 hover:bg-emerald-900 transition-colors shadow-xs min-h-[38px] cursor-pointer"
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-800 px-3.5 py-2 text-xs font-semibold text-amber-100 hover:bg-emerald-900 transition-colors shadow-soft min-h-[44px] cursor-pointer"
             >
               <User className="h-3.5 w-3.5" />
               <span>{t("nav.signIn")}</span>
@@ -454,35 +453,29 @@ export const Navbar: React.FC = () => {
           <>
             <button
               onClick={openSeededDemoShop}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-400 text-slate-950 px-3 py-1.5 text-xs font-black min-h-[34px]"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-400 text-slate-950 px-3 py-1.5 text-xs font-semibold min-h-[44px]"
             >
               <Play className="h-3 w-3 fill-slate-950" />
               <span>{t("nav.launchDemo")}</span>
             </button>
             <button
               onClick={() => navigate("/register")}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-800 text-white px-3 py-1.5 text-xs font-bold min-h-[34px] cursor-pointer"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-800 text-white px-3 py-1.5 text-xs font-semibold min-h-[44px] cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>{t("nav.register")}</span>
             </button>
             <button
-              onClick={() => handleSaaSNavClick("features")}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-200 min-h-[34px]"
+              onClick={() => handleSaaSNavClick("capabilities")}
+              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-200 min-h-[44px]"
             >
               {t("nav.features")}
             </button>
             <button
-              onClick={() => handleSaaSNavClick("multistore")}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-200 min-h-[34px]"
+              onClick={() => handleSaaSNavClick("multi-store")}
+              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-200 min-h-[44px]"
             >
               {t("nav.multiStore")}
-            </button>
-            <button
-              onClick={() => handleSaaSNavClick("pricing")}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-200 min-h-[34px]"
-            >
-              {t("nav.pricing")}
             </button>
           </>
         ) : (
@@ -490,9 +483,9 @@ export const Navbar: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 min-h-[34px] transition-colors ${
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 min-h-[44px] transition-colors ${
                 activeTab === tab.id
-                  ? "bg-emerald-800 text-white font-bold"
+                  ? "bg-emerald-800 text-white font-semibold"
                   : "text-slate-600 hover:bg-slate-200"
               }`}
             >

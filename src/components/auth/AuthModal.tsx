@@ -69,7 +69,7 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-fade-in">
       <div
         className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200"
         role="dialog"
@@ -121,7 +121,7 @@ export const AuthModal: React.FC = () => {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-slate-200" />
           </div>
-          <span className="relative bg-white px-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+          <span className="relative bg-white px-2 text-xs uppercase font-semibold text-slate-400 tracking-wider">
             Or continue with email
           </span>
         </div>

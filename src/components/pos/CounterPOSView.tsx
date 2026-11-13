@@ -17,7 +17,8 @@ import {
   Monitor, 
   Check,
   Volume2,
-  Camera
+  Camera,
+  Package
 } from "lucide-react";
 
 export const CounterPOSView: React.FC = () => {
@@ -46,6 +47,7 @@ export const CounterPOSView: React.FC = () => {
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
   const [newCustName, setNewCustName] = useState("");
   const [newCustPhone, setNewCustPhone] = useState("");
+  const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
 
   const addToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId);
@@ -80,7 +82,11 @@ export const CounterPOSView: React.FC = () => {
   const totalItemsCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
   const handleCheckout = () => {
-    if (totalItemsCount === 0) return;
+    if (totalItemsCount === 0) {
+      setCheckoutNotice("Add at least one item before recording a sale.");
+      setTimeout(() => setCheckoutNotice(null), 4000);
+      return;
+    }
 
     const items = Object.entries(cart).map(([productId, quantity]) => {
       const p = products.find((item) => item.id === productId)!;
@@ -237,43 +243,50 @@ export const CounterPOSView: React.FC = () => {
   });
 
   return (
-    <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       {/* Top Controls Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900">
             {t("pos.title")}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
+          <p className="text-sm text-slate-600 mt-1">
             {t("pos.subtitle")}
           </p>
         </div>
 
         {/* Viewport Frame Mode Toggle (390px Mobile vs Full Desktop) */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="text-xs font-semibold text-slate-500">Layout Mode:</span>
-          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+          <span className="text-sm font-medium text-slate-600">Layout</span>
+          <div
+            role="group"
+            aria-label="Layout mode"
+            className="inline-flex rounded-lg border border-slate-200 bg-white p-1"
+          >
             <button
               onClick={() => setIs390pxMobileFrame(true)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+              aria-pressed={is390pxMobileFrame}
+              className={`flex items-center gap-2 rounded-md px-3 text-sm font-medium min-h-[40px] transition-colors ${
                 is390pxMobileFrame
                   ? "bg-emerald-800 text-white"
-                  : "text-slate-600 hover:text-slate-900"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <Smartphone className="h-3.5 w-3.5" />
-              <span>390px Counter Phone</span>
+              <Smartphone className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">390px Counter Phone</span>
+              <span className="sm:hidden">Phone</span>
             </button>
             <button
               onClick={() => setIs390pxMobileFrame(false)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+              aria-pressed={!is390pxMobileFrame}
+              className={`flex items-center gap-2 rounded-md px-3 text-sm font-medium min-h-[40px] transition-colors ${
                 !is390pxMobileFrame
                   ? "bg-emerald-800 text-white"
-                  : "text-slate-600 hover:text-slate-900"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <Monitor className="h-3.5 w-3.5" />
-              <span>Full Desktop Split</span>
+              <Monitor className="h-4 w-4" aria-hidden="true" />
+              <span>Desktop</span>
             </button>
           </div>
         </div>
@@ -281,25 +294,29 @@ export const CounterPOSView: React.FC = () => {
 
       {/* 10-Second Undo Toast Banner */}
       {undoSeconds > 0 && lastSaleUndo && (
-        <div className="mb-6 rounded-2xl bg-slate-900 p-4 text-white shadow-xl flex items-center justify-between gap-3 animate-bounce">
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-6 rounded-xl bg-slate-900 p-4 text-white flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
-              <Check className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+              <Check className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-200">
-                Sale #{lastSaleUndo.id.slice(-6)} Committed Atomically
+              <p className="text-sm font-medium text-slate-200">
+                Sale #{lastSaleUndo.id.slice(-6)} recorded
               </p>
-              <p className="text-sm font-extrabold text-amber-300">
-                {formatCurrency(lastSaleUndo.totalAmount)} • {lastSaleUndo.items.length} items deducted from stock
+              <p className="text-base figure text-amber-300">
+                {formatCurrency(lastSaleUndo.totalAmount)} · {lastSaleUndo.items.length} items deducted
               </p>
             </div>
           </div>
           <button
             onClick={undoSale}
-            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 hover:bg-amber-400 transition-colors shadow-md min-h-[44px]"
+            className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-semibold text-slate-950 hover:bg-amber-400 transition-colors min-h-[44px]"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
             <span>{t("pos.undoSale")} ({undoSeconds}s)</span>
           </button>
         </div>
@@ -307,22 +324,22 @@ export const CounterPOSView: React.FC = () => {
 
       {/* Main POS Container */}
       <div className={is390pxMobileFrame ? "mx-auto max-w-[420px]" : "w-full"}>
-        <div className="rounded-3xl border-4 border-slate-900 bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row">
-          
+        <div className={`surface-l1 overflow-hidden flex flex-col ${!is390pxMobileFrame ? "lg:flex-row" : ""}`}>
+
           {/* Products Panel */}
-          <div className={`flex-1 flex flex-col border-b lg:border-b-0 ${!is390pxMobileFrame ? "lg:border-e lg:border-slate-200" : ""}`}>
+          <div className={`flex-1 flex flex-col ${!is390pxMobileFrame ? "border-b lg:border-b-0 lg:border-e border-slate-200" : ""}`}>
             {/* Say-It Voice POS Banner with Speech Synthesis */}
-            <div className="bg-emerald-900 px-4 py-3 text-amber-100 flex items-center justify-between gap-2 border-b border-emerald-800">
-              <div className="flex items-center gap-2">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-800 text-amber-300 ${isSpeakingVoice ? "animate-pulse ring-2 ring-amber-400" : ""}`}>
-                  <Mic className="h-4 w-4" />
+            <div className="bg-emerald-900 px-4 py-3 text-white flex items-center justify-between gap-3 border-b border-emerald-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-800 text-amber-300 ${isSpeakingVoice ? "ring-2 ring-amber-400" : ""}`}>
+                  <Mic className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <div>
-                  <p className="text-[11px] font-extrabold tracking-wide uppercase text-amber-300 flex items-center gap-1">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-amber-300 flex items-center gap-2">
                     <span>{t("pos.voicePOS")}</span>
-                    {isSpeakingVoice && <Volume2 className="h-3 w-3 animate-ping" />}
+                    {isSpeakingVoice && <Volume2 className="h-4 w-4" aria-hidden="true" />}
                   </p>
-                  <p className="text-xs text-emerald-100 truncate max-w-[210px]">
+                  <p className="text-sm text-emerald-100 truncate">
                     {t("pos.voicePOSPrompt")}
                   </p>
                 </div>
@@ -330,32 +347,34 @@ export const CounterPOSView: React.FC = () => {
               <button
                 onClick={handleVoicePOS}
                 disabled={isSpeakingVoice}
-                className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400 transition-colors shrink-0 shadow-xs min-h-[40px] flex items-center gap-1.5"
+                aria-label={isSpeakingVoice ? "Listening for order" : "Speak order"}
+                className="rounded-lg bg-amber-500 px-4 text-sm font-semibold text-slate-950 hover:bg-amber-400 disabled:opacity-70 transition-colors shrink-0 min-h-[44px] flex items-center gap-2"
               >
-                <Mic className="h-3.5 w-3.5" />
-                <span>{isSpeakingVoice ? "Listening…" : "🎙 Speak Order"}</span>
+                <Mic className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">{isSpeakingVoice ? "Listening…" : "Speak Order"}</span>
               </button>
             </div>
 
             {/* Voice Notice Toast */}
             {voiceNotice && (
-              <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs font-bold text-amber-900 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
+              <div role="status" aria-live="polite" className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-900 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-600 shrink-0" aria-hidden="true" />
                 <span>{voiceNotice}</span>
               </div>
             )}
 
             {/* Search & Camera Barcode Button */}
-            <div className="p-3.5 border-b border-slate-100 bg-slate-50">
-              <div className="flex items-center gap-2 mb-2.5">
+            <div className="p-4 border-b border-slate-200 bg-slate-50">
+              <div className="flex items-center gap-2 mb-3">
                 <div className="relative flex-1">
-                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" aria-hidden="true" />
                   <input
-                    type="text"
+                    type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t("pos.searchPlaceholder")}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2 ps-9 pe-3.5 text-xs placeholder:text-slate-400 focus:border-emerald-600 focus:outline-hidden min-h-[40px]"
+                    aria-label="Search products"
+                    className="w-full rounded-lg border border-slate-300 bg-white py-2 ps-10 pe-4 text-base placeholder:text-slate-400 focus:border-emerald-700 focus:outline-hidden min-h-[44px]"
                   />
                 </div>
 
@@ -363,16 +382,16 @@ export const CounterPOSView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsBarcodeScannerOpen(true)}
-                  className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 text-xs font-bold shrink-0 min-h-[40px] shadow-2xs"
-                  title="Open Camera Barcode Scanner"
+                  aria-label="Scan barcode with camera"
+                  className="flex items-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white px-3 text-sm font-medium shrink-0 min-h-[44px]"
                 >
-                  <Camera className="h-4 w-4 text-amber-300" />
-                  <span className="hidden sm:inline">Scan Barcode</span>
+                  <Camera className="h-4 w-4 text-amber-300" aria-hidden="true" />
+                  <span className="hidden sm:inline">Scan</span>
                 </button>
               </div>
 
               {/* Categories */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+              <div className="flex gap-2 overflow-x-auto pb-1 text-sm scrollbar-none" role="group" aria-label="Product categories">
                 {[
                   { id: "all", label: "All Items" },
                   { id: "staples", label: "Staples" },
@@ -385,10 +404,11 @@ export const CounterPOSView: React.FC = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`whitespace-nowrap rounded-lg px-3 py-1.5 font-semibold transition-colors min-h-[34px] ${
+                    aria-pressed={selectedCategory === cat.id}
+                    className={`whitespace-nowrap rounded-lg px-3 font-medium transition-colors min-h-[40px] ${
                       selectedCategory === cat.id
                         ? "bg-emerald-800 text-white"
-                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                        : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-100"
                     }`}
                   >
                     {cat.label}
@@ -398,64 +418,79 @@ export const CounterPOSView: React.FC = () => {
             </div>
 
             {/* Product Grid (44px+ tap targets) */}
-            <div className="p-3.5 overflow-y-auto max-h-[340px] sm:max-h-[440px] grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 bg-slate-50 flex-1">
+            <div className="p-4 overflow-y-auto max-h-[340px] sm:max-h-[480px] grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50 flex-1">
               {filteredProducts.map((p) => {
                 const inCartQty = cart[p.id] || 0;
                 const isOutOfStock = p.quantity <= 0;
+                const isLow = p.quantity <= p.minQuantity;
 
                 return (
                   <button
                     key={p.id}
                     disabled={isOutOfStock}
                     onClick={() => addToCart(p.id)}
-                    className={`relative flex flex-col justify-between rounded-2xl border p-3 text-start transition-all min-h-[96px] ${
+                    aria-label={`Add ${p.name || p.nameEn}, ${formatCurrency(p.sellPrice)}, ${p.quantity} in stock`}
+                    className={`relative flex flex-col justify-between rounded-lg border p-3 text-start transition-colors min-h-[104px] ${
                       inCartQty > 0
-                        ? "border-emerald-600 bg-emerald-50/70 shadow-xs ring-1 ring-emerald-500"
-                        : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : "active:scale-98"}`}
+                        ? "border-emerald-600 bg-emerald-50"
+                        : "border-slate-200 bg-white hover:border-slate-400"
+                    } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : "active:bg-slate-100"}`}
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-1">
-                        <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
-                          {p.name || p.nameEn}
-                        </p>
-                        {inCartQty > 0 && (
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-extrabold text-white">
-                            {inCartQty}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-slate-900 leading-snug line-clamp-2">
+                        {p.name || p.nameEn}
+                      </p>
+                      {inCartQty > 0 && (
+                        <span className="flex h-6 min-w-6 px-1 shrink-0 items-center justify-center rounded-md bg-emerald-800 text-sm figure text-white">
+                          {inCartQty}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between text-xs">
-                      <span className="font-extrabold text-slate-900">
+                    <div className="mt-2 flex items-baseline justify-between gap-2">
+                      <span className="figure text-slate-900">
                         {formatCurrency(p.sellPrice)}
                       </span>
-                      <span className={`text-[10px] font-semibold ${p.quantity <= p.minQuantity ? "text-amber-600" : "text-slate-500"}`}>
-                        Stock: {p.quantity}
+                      <span className={`text-xs font-medium tabular-nums ${isLow ? "text-amber-700" : "text-slate-500"}`}>
+                        {isOutOfStock ? "Out" : `${p.quantity} ${p.unit}`}
                       </span>
                     </div>
                   </button>
                 );
               })}
+
+              {filteredProducts.length === 0 && (
+                <div className="col-span-full rounded-lg border border-dashed border-slate-300 p-8 text-center">
+                  <Package className="mx-auto h-6 w-6 text-slate-400" aria-hidden="true" />
+                  <p className="mt-2 text-base font-medium text-slate-900">No products match “{searchQuery}”</p>
+                  <p className="mt-1 text-sm text-slate-600">Try a shorter name, or clear the search to see the full shelf.</p>
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(""); setSelectedCategory("all"); }}
+                    className="mt-4 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 hover:bg-slate-100 min-h-[44px]"
+                  >
+                    Clear search and filters
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Cart & Checkout Panel */}
-          <div className={`${!is390pxMobileFrame ? "lg:w-[380px]" : "w-full"} border-t lg:border-t-0 bg-white p-4 flex flex-col justify-between shadow-lg`}>
+          <div className={`${!is390pxMobileFrame ? "lg:w-[380px]" : "w-full"} ${!is390pxMobileFrame ? "border-t lg:border-t-0 border-slate-200" : ""} bg-white p-4 flex flex-col justify-between`}>
             <div>
               {/* Cart Header */}
-              <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-3 pb-2 border-b border-slate-100">
+              <div className="flex items-center justify-between text-sm font-medium text-slate-700 mb-3 pb-3 border-b border-slate-200">
                 <span className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-emerald-800" />
+                  <ShoppingCart className="h-4 w-4 text-emerald-800" aria-hidden="true" />
                   <span>{totalItemsCount} {t("pos.inCart")}</span>
                 </span>
                 {totalItemsCount > 0 && (
                   <button
                     onClick={clearCart}
-                    className="text-xs text-rose-600 hover:underline flex items-center gap-1 font-semibold"
+                    className="text-sm text-rose-700 hover:text-rose-800 hover:underline flex items-center gap-1.5 font-medium min-h-[44px] px-2"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                     Clear
                   </button>
                 )}
@@ -463,11 +498,12 @@ export const CounterPOSView: React.FC = () => {
 
               {/* Cart Items List */}
               {totalItemsCount === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400 my-4">
-                  {t("pos.emptyCart")}
+                <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center my-4">
+                  <p className="text-base font-medium text-slate-900">Cart is empty</p>
+                  <p className="mt-1 text-sm text-slate-600">{t("pos.emptyCart")}</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 mb-3">
+                <div className="space-y-2 max-h-[240px] overflow-y-auto pe-1 mb-3">
                   {Object.entries(cart).map(([productId, qty]) => {
                     const item = products.find((p) => p.id === productId);
                     if (!item) return null;
@@ -475,30 +511,32 @@ export const CounterPOSView: React.FC = () => {
                     return (
                       <div
                         key={productId}
-                        className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2"
                       >
-                        <span className="font-medium text-slate-800 truncate max-w-[140px]">
-                          {item.name || item.nameEn}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">
+                            {item.name || item.nameEn}
+                          </p>
+                          <p className="text-sm figure text-slate-600">
                             {formatCurrency(item.sellPrice * qty)}
-                          </span>
-                          <div className="flex items-center gap-1 bg-white rounded-lg border border-slate-200">
-                            <button
-                              onClick={() => removeFromCart(productId)}
-                              className="h-6 w-6 flex items-center justify-center text-slate-600 hover:bg-slate-100"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </button>
-                            <span className="text-xs font-bold px-1.5">{qty}</span>
-                            <button
-                              onClick={() => addToCart(productId)}
-                              className="h-6 w-6 flex items-center justify-center text-slate-600 hover:bg-slate-100"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
-                          </div>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => removeFromCart(productId)}
+                            aria-label={`Remove one ${item.name || item.nameEn}`}
+                            className="h-11 w-11 flex items-center justify-center rounded-md text-slate-700 hover:bg-slate-100"
+                          >
+                            <Minus className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <span className="text-base figure w-8 text-center text-slate-900">{qty}</span>
+                          <button
+                            onClick={() => addToCart(productId)}
+                            aria-label={`Add one more ${item.name || item.nameEn}`}
+                            className="h-11 w-11 flex items-center justify-center rounded-md text-slate-700 hover:bg-slate-100"
+                          >
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                          </button>
                         </div>
                       </div>
                     );
@@ -507,12 +545,13 @@ export const CounterPOSView: React.FC = () => {
               )}
 
               {/* Payment Type Toggle */}
-              <div className="grid grid-cols-2 gap-2 my-3">
+              <div className="grid grid-cols-2 gap-2 my-3" role="group" aria-label="Payment type">
                 <button
                   onClick={() => setPaymentType("cash")}
-                  className={`rounded-xl py-2.5 text-xs font-bold transition-all min-h-[44px] ${
+                  aria-pressed={paymentType === "cash"}
+                  className={`rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                     paymentType === "cash"
-                      ? "bg-slate-900 text-white shadow-xs"
+                      ? "bg-slate-900 text-white"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
@@ -520,9 +559,10 @@ export const CounterPOSView: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setPaymentType("credit")}
-                  className={`rounded-xl py-2.5 text-xs font-bold transition-all min-h-[44px] ${
+                  aria-pressed={paymentType === "credit"}
+                  className={`rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                     paymentType === "credit"
-                      ? "bg-amber-600 text-white shadow-xs"
+                      ? "bg-amber-600 text-white"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
@@ -532,27 +572,28 @@ export const CounterPOSView: React.FC = () => {
 
               {/* Credit Customer Selector */}
               {paymentType === "credit" && (
-                <div className="mb-3 rounded-2xl border border-amber-300 bg-amber-50/80 p-3 text-xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[11px] font-bold text-amber-900">
-                      {t("pos.selectCustomer")}:
+                <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <label htmlFor="credit-customer" className="text-sm font-medium text-amber-900">
+                      {t("pos.selectCustomer")}
                     </label>
                     <button
                       type="button"
                       onClick={() => setIsNewCustomerModalOpen(true)}
-                      className="text-[11px] font-bold text-emerald-800 hover:underline"
+                      className="text-sm font-medium text-emerald-800 hover:underline"
                     >
-                      + New Debtor
+                      Add new customer
                     </button>
                   </div>
                   <select
+                    id="credit-customer"
                     value={selectedCustomerId}
                     onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 min-h-[40px]"
+                    className="w-full rounded-md border border-amber-300 bg-white px-3 text-base text-slate-800 min-h-[44px]"
                   >
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name} — Debt: {formatCurrency(c.creditBalance)}
+                        {c.name} · {formatCurrency(c.creditBalance)} owed
                       </option>
                     ))}
                   </select>
@@ -561,26 +602,33 @@ export const CounterPOSView: React.FC = () => {
             </div>
 
             {/* Total Due & Complete Button */}
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-200">
+              {checkoutNotice && (
+                <div role="status" aria-live="polite" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+                  {checkoutNotice}
+                </div>
+              )}
               <div className="flex items-baseline justify-between mb-3">
-                <p className="text-xs uppercase font-bold text-slate-500">
+                <p className="text-sm font-medium text-slate-600">
                   {t("pos.cartTotal")}
                 </p>
-                <p className="text-2xl font-black text-slate-900">
+                <p className="text-3xl figure text-slate-900" aria-live="polite">
                   {formatCurrency(totalAmount)}
                 </p>
               </div>
 
               <button
-                disabled={totalItemsCount === 0}
                 onClick={handleCheckout}
-                className={`w-full rounded-2xl py-3.5 text-xs font-black text-white transition-all shadow-md min-h-[48px] ${
+                aria-disabled={totalItemsCount === 0}
+                className={`w-full rounded-lg text-base font-semibold text-white transition-colors min-h-[52px] ${
                   totalItemsCount > 0
-                    ? "bg-emerald-800 hover:bg-emerald-900 active:scale-98"
-                    : "bg-slate-300 cursor-not-allowed"
+                    ? "bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950"
+                    : "bg-slate-300 text-slate-600 cursor-not-allowed"
                 }`}
               >
-                {t("pos.recordSale")}
+                {totalItemsCount > 0
+                  ? `Record Sale · ${formatCurrency(totalAmount)}`
+                  : "Add items to record a sale"}
               </button>
             </div>
           </div>
@@ -589,43 +637,51 @@ export const CounterPOSView: React.FC = () => {
 
       {/* Inline Add Customer Modal */}
       {isNewCustomerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
-            <h4 className="text-base font-bold text-slate-900 mb-3">Add Credit Customer</h4>
-            <form onSubmit={handleAddNewCustomer} className="space-y-3">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-customer-title"
+        >
+          <div className="w-full max-w-sm surface-overlay p-6">
+            <h4 id="new-customer-title" className="text-base font-semibold text-slate-900">Add Credit Customer</h4>
+            <p className="mt-1 text-sm text-slate-600">A new account is opened for this shop. Debt starts at zero.</p>
+            <form onSubmit={handleAddNewCustomer} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Customer Name</label>
+                <label htmlFor="new-cust-name" className="block text-sm font-medium text-slate-700 mb-1">Customer Name</label>
                 <input
+                  id="new-cust-name"
                   type="text"
                   required
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
                   placeholder="e.g. Asif Bhai (Makan #12)"
-                  className="w-full rounded-xl border border-slate-200 p-2 text-xs"
+                  className="w-full rounded-lg border border-slate-300 px-3 text-base text-slate-900 min-h-[44px]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">WhatsApp Phone Number</label>
+                <label htmlFor="new-cust-phone" className="block text-sm font-medium text-slate-700 mb-1">WhatsApp Phone Number</label>
                 <input
-                  type="text"
+                  id="new-cust-phone"
+                  type="tel"
                   required
                   value={newCustPhone}
                   onChange={(e) => setNewCustPhone(e.target.value)}
                   placeholder="0300-1234567"
-                  className="w-full rounded-xl border border-slate-200 p-2 text-xs"
+                  className="w-full rounded-lg border border-slate-300 px-3 text-base text-slate-900 min-h-[44px]"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsNewCustomerModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 hover:bg-slate-100 min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-900"
+                  className="rounded-lg bg-emerald-800 px-4 text-sm font-medium text-white hover:bg-emerald-900 min-h-[44px]"
                 >
                   Save Customer
                 </button>

@@ -82,12 +82,12 @@ export const RegisterPage: React.FC = () => {
         {/* Progress Pills */}
         <div className="flex items-center justify-center gap-3 text-xs font-bold">
           <span className="flex items-center gap-1.5 rounded-full bg-emerald-800 text-amber-300 px-3 py-1 shadow-xs">
-            <span className="h-4 w-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[10px] font-black">1</span>
+            <span className="h-4 w-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-xs font-bold">1</span>
             <span>Create Account</span>
           </span>
           <span className="text-slate-300">───</span>
           <span className="flex items-center gap-1.5 rounded-full bg-slate-100 text-slate-500 px-3 py-1">
-            <span className="h-4 w-4 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-black">2</span>
+            <span className="h-4 w-4 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">2</span>
             <span>Register Store</span>
           </span>
         </div>
@@ -99,7 +99,7 @@ export const RegisterPage: React.FC = () => {
             <div className="mx-auto mb-3 flex h-13 w-13 items-center justify-center rounded-2xl bg-emerald-800 text-amber-300 shadow-md">
               <Store className="h-7 w-7" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">
               Register Your Store on Tallyn
             </h2>
             <p className="mt-1.5 text-xs text-slate-500">
@@ -134,7 +134,7 @@ export const RegisterPage: React.FC = () => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200" />
             </div>
-            <span className="relative bg-white px-3 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            <span className="relative bg-white px-3 text-xs uppercase font-semibold text-slate-400 tracking-wider">
               Or register with email
             </span>
           </div>

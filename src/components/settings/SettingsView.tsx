@@ -95,7 +95,7 @@ export const SettingsView: React.FC = () => {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
+          <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5 uppercase tracking-wider">
             SaaS Architecture
           </span>
           <span className="text-slate-400">•</span>
@@ -131,10 +131,10 @@ export const SettingsView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-900">
                 Merchant Owner Account & Cloud Identity
               </h3>
-              <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5">
+              <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5">
                 {user?.isDemo ? "Demo Account" : "Authenticated Live"}
               </span>
             </div>
@@ -222,10 +222,10 @@ export const SettingsView: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900">
                   Branch & Multi-Store Management
                 </h3>
-                <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
+                <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5">
                   {shops.length} {shops.length === 1 ? "Branch" : "Branches"}
                 </span>
               </div>
@@ -275,20 +275,20 @@ export const SettingsView: React.FC = () => {
                         {s.name}
                       </span>
                       {s.city && (
-                        <span className="rounded bg-slate-100 text-slate-700 text-[9px] font-bold px-1.5 py-0.2 shrink-0">
+                        <span className="rounded bg-slate-100 text-slate-700 text-xs font-semibold px-1.5 py-0.5 shrink-0">
                           {s.city}
                         </span>
                       )}
                     </div>
                     {isActive ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-800 text-white text-[10px] font-bold px-2 py-0.5 shrink-0">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5 shrink-0">
                         <Check className="h-2.5 w-2.5 stroke-[3]" /> Active Branch
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => switchShop(s.id)}
-                        className="rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold px-2.5 py-1 transition-colors"
+                        className="rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-2.5 py-2 transition-colors min-h-[44px]"
                       >
                         Switch Here
                       </button>
@@ -301,7 +301,7 @@ export const SettingsView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
                   <span className="flex items-center gap-1">
                     <Phone className="h-3 w-3 text-slate-400" />
                     <span>{s.phone}</span>
@@ -332,7 +332,7 @@ export const SettingsView: React.FC = () => {
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
+          <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5">
             Active ID: {shop.id}
           </span>
         </div>
@@ -384,7 +384,7 @@ export const SettingsView: React.FC = () => {
               onChange={(e) => setLowStockDefault(Number(e.target.value))}
               className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-medium text-slate-900 focus:border-emerald-600 focus:outline-hidden"
             />
-            <span className="text-[10px] text-slate-400 mt-1 block">
+            <span className="text-xs text-slate-400 mt-1 block">
               Flag items below this threshold in red for immediate reordering.
             </span>
           </div>
@@ -400,7 +400,7 @@ export const SettingsView: React.FC = () => {
               onChange={(e) => setLeadTime(Number(e.target.value))}
               className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-medium text-slate-900 focus:border-emerald-600 focus:outline-hidden"
             />
-            <span className="text-[10px] text-slate-400 mt-1 block">
+            <span className="text-xs text-slate-400 mt-1 block">
               Average delivery turnaround time from wholesale suppliers.
             </span>
           </div>

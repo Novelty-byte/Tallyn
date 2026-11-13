@@ -82,6 +82,7 @@ export const LandingView: React.FC = () => {
   // Quick Sign-up state
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpShopName, setSignUpShopName] = useState("");
+  const [signUpErrors, setSignUpErrors] = useState<{ email?: string; shopName?: string }>({});
 
   // Phone Simulator Actions
   const handleAddPhoneItem = (item: { id: string; name: string; price: number }) => {
@@ -146,8 +147,21 @@ export const LandingView: React.FC = () => {
 
   const handleQuickRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signUpEmail.trim()) return;
-    navigate(`/register?email=${encodeURIComponent(signUpEmail.trim())}`);
+    const errors: { email?: string; shopName?: string } = {};
+    if (!signUpShopName.trim()) {
+      errors.shopName = "Please enter your store or business name.";
+    }
+    if (!signUpEmail.trim()) {
+      errors.email = "Please enter an email address for receipt summaries.";
+    } else if (!signUpEmail.includes("@")) {
+      errors.email = "Please include an '@' in the email address.";
+    }
+    if (Object.keys(errors).length > 0) {
+      setSignUpErrors(errors);
+      return;
+    }
+    setSignUpErrors({});
+    navigate(`/register?email=${encodeURIComponent(signUpEmail.trim())}&shopName=${encodeURIComponent(signUpShopName.trim())}`);
   };
 
   const phoneSubtotal = phoneCart.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -177,7 +191,7 @@ export const LandingView: React.FC = () => {
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/90 px-4 py-1.5 text-xs font-black text-emerald-950 shadow-xs mb-6 animate-pulse">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/90 px-4 py-1.5 text-xs font-semibold text-emerald-950 shadow-xs mb-6">
             <Sparkles className="h-3.5 w-3.5 text-amber-600" />
             <span>Autonomous Retail Operating System for Pakistani Kiryana & Chains</span>
             <span className="text-emerald-700">•</span>
@@ -185,7 +199,7 @@ export const LandingView: React.FC = () => {
           </div>
 
           {/* Main Headline */}
-          <h1 className="max-w-4xl mx-auto text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-[1.12]">
+          <h1 className="max-w-4xl mx-auto text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.12]">
             Zero-Typing Counter POS & Voice Clarity for Neighbourhood Retail
           </h1>
 
@@ -198,24 +212,21 @@ export const LandingView: React.FC = () => {
           <div className="mt-10 flex flex-col items-center justify-center">
             <button
               onClick={openSeededDemoShop}
-              className="group relative inline-flex items-center justify-center gap-3 rounded-3xl bg-emerald-800 hover:bg-emerald-900 text-amber-100 px-8 py-5 text-base sm:text-lg font-black shadow-2xl transition-all transform hover:-translate-y-1 active:scale-98 border-2 border-amber-400/50 min-h-[68px]"
+              className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-amber-100 px-8 py-4 text-base sm:text-lg font-semibold shadow-lift transition-all transform hover:-translate-y-0.5 active:scale-98 border border-emerald-700/60 min-h-[64px]"
             >
-              {/* Outer pulsing ring */}
-              <span className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-600 opacity-40 blur-md group-hover:opacity-75 transition duration-500" />
-              
               <div className="relative flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 font-black shadow-md">
-                  <Play className="h-6 w-6 fill-slate-950" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-slate-950 font-bold shadow-xs">
+                  <Play className="h-5 w-5 fill-slate-950" />
                 </div>
                 <div className="text-start">
-                  <span className="block text-base sm:text-lg font-black text-amber-300">
+                  <span className="block text-base sm:text-lg font-semibold text-amber-300">
                     Launch Live Demo Store (Al-Madina Kiryana)
                   </span>
                   <span className="block text-xs text-emerald-100 font-medium">
                     60 seeded products • 8 credit customers • Instant test-drive without sign-up
                   </span>
                 </div>
-                <ArrowRight className="h-5 w-5 text-amber-300 rtl:rotate-180 group-hover:translate-x-1.5 transition-transform" />
+                <ArrowRight className="h-5 w-5 text-amber-300 rtl:rotate-180 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
 
@@ -249,12 +260,12 @@ export const LandingView: React.FC = () => {
             <div className="w-full max-w-[390px] mx-auto rounded-[42px] border-[9px] border-slate-900 bg-slate-950 p-3 shadow-2xl text-white relative overflow-hidden ring-4 ring-emerald-900/20">
               
               {/* Phone Dynamic Island / Notch */}
-              <div className="flex items-center justify-between px-3 pt-1 pb-2 border-b border-slate-900 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center justify-between px-3 pt-1 pb-2 border-b border-slate-900 text-xs font-mono text-slate-400">
                 <span>09:41</span>
                 <div className="h-4 w-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 </div>
-                <div className="flex items-center gap-1 text-[10px]">
+                <div className="flex items-center gap-1 text-xs">
                   <span>4G</span>
                   <span>100%</span>
                 </div>
@@ -263,13 +274,13 @@ export const LandingView: React.FC = () => {
               {/* Counter App Header inside phone */}
               <div className="pt-2 pb-3 px-1 flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-xl bg-emerald-700 text-amber-300 flex items-center justify-center font-black">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-700 text-amber-300 flex items-center justify-center font-bold">
                     <Store className="h-4 w-4" />
                   </div>
                   <div className="text-start">
-                    <h3 className="text-xs font-extrabold text-white">Al-Madina Kiryana</h3>
-                    <p className="text-[10px] text-emerald-400 flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Counter POS #1
+                    <h3 className="text-xs font-semibold text-white">Al-Madina Kiryana</h3>
+                    <p className="text-xs text-emerald-400 flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Counter POS #1
                     </p>
                   </div>
                 </div>
@@ -279,17 +290,17 @@ export const LandingView: React.FC = () => {
                   onClick={handlePhoneVoicePOS}
                   disabled={phoneVoiceActive}
                   aria-label="Test Voice POS in Phone Simulator"
-                  className="flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-2.5 py-1.5 text-[11px] font-black transition-all active:scale-95 shadow-sm"
+                  className="flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95 shadow-sm min-h-[44px]"
                 >
                   <Mic className="h-3.5 w-3.5" />
                   <span>{phoneVoiceActive ? "Listening..." : "Voice POS"}</span>
-                  {phoneVoiceActive && <Volume2 className="h-3.5 w-3.5 animate-ping" />}
+                  {phoneVoiceActive && <Volume2 className="h-3.5 w-3.5" />}
                 </button>
               </div>
 
               {/* Voice Notice bubble */}
               {phoneVoiceNotice && (
-                <div className="my-2 rounded-xl bg-amber-950/80 border border-amber-500/50 p-2 text-[11px] font-bold text-amber-200 flex items-center justify-between animate-fadeIn">
+                <div className="my-2 rounded-xl bg-amber-950/80 border border-amber-500/50 p-2 text-xs font-semibold text-amber-200 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Volume2 className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                     <span>{phoneVoiceNotice}</span>
@@ -297,7 +308,7 @@ export const LandingView: React.FC = () => {
                   <button 
                     onClick={() => setPhoneVoiceNotice(null)} 
                     aria-label="Dismiss voice notice"
-                    className="text-amber-400 hover:text-white"
+                    className="text-amber-400 hover:text-white p-1"
                   >
                     <CloseIcon className="h-3 w-3" />
                   </button>
@@ -307,10 +318,10 @@ export const LandingView: React.FC = () => {
               {/* Clickable Product Shelf inside phone */}
               <div className="my-2 text-start">
                 <div className="flex items-center justify-between px-1 mb-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Quick Counter Items (Tap to Add)
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-mono">Web Audio Active</span>
+                  <span className="text-xs text-emerald-400 font-mono">Web Audio Active</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-1.5">
@@ -323,14 +334,14 @@ export const LandingView: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => handleAddPhoneItem(item)}
-                      className="text-start p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/80 hover:bg-slate-800/80 transition-all active:scale-95 cursor-pointer group"
+                      className="text-start p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/80 hover:bg-slate-800/80 transition-all active:scale-95 cursor-pointer group min-h-[44px]"
                     >
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
                         <span>{item.cat}</span>
-                        <span className="text-emerald-400 font-bold group-hover:scale-110 transition-transform">+ Add</span>
+                        <span className="text-emerald-400 font-semibold group-hover:scale-105 transition-transform">+ Add</span>
                       </div>
-                      <p className="text-[11px] font-bold text-white mt-0.5 truncate">{item.name}</p>
-                      <p className="text-[11px] font-black text-amber-300 font-mono">{formatCurrency(item.price)}</p>
+                      <p className="text-xs font-semibold text-white mt-0.5 truncate">{item.name}</p>
+                      <p className="text-xs font-bold text-amber-300 font-mono tabular-nums">{formatCurrency(item.price)}</p>
                     </button>
                   ))}
                 </div>
@@ -338,37 +349,37 @@ export const LandingView: React.FC = () => {
 
               {/* Cart Summary inside phone */}
               <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-2.5 my-2">
-                <div className="flex items-center justify-between text-[11px] mb-1.5 pb-1 border-b border-slate-800">
-                  <span className="font-bold text-slate-300 flex items-center gap-1">
+                <div className="flex items-center justify-between text-xs mb-1.5 pb-1 border-b border-slate-800">
+                  <span className="font-semibold text-slate-300 flex items-center gap-1">
                     <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
                     <span>Cart ({phoneCart.reduce((sum, i) => sum + i.qty, 0)} items)</span>
                   </span>
                   <button 
                     onClick={() => setPhoneCart([])}
-                    className="text-[10px] text-slate-400 hover:text-rose-400 flex items-center gap-0.5"
+                    className="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-0.5 p-1"
                   >
-                    <Trash2 className="h-2.5 w-2.5" /> Clear
+                    <Trash2 className="h-3 w-3" /> Clear
                   </button>
                 </div>
 
                 {phoneCart.length === 0 ? (
-                  <p className="text-[11px] text-slate-500 py-3 text-center italic">
+                  <p className="text-xs text-slate-500 py-3 text-center italic">
                     Cart empty. Tap a product above or click Voice POS!
                   </p>
                 ) : (
                   <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-none pr-1">
                     {phoneCart.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-[11px]">
+                      <div key={item.id} className="flex items-center justify-between text-xs">
                         <span className="text-slate-300 truncate max-w-[170px]">
                           {item.qty}x {item.name}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-amber-300 font-bold">
+                          <span className="font-mono tabular-nums text-amber-300 font-bold">
                             {formatCurrency(item.price * item.qty)}
                           </span>
                           <button 
                             onClick={() => handleRemovePhoneItem(item.id)}
-                            className="text-slate-500 hover:text-rose-400"
+                            className="text-slate-500 hover:text-rose-400 p-1"
                           >
                             ×
                           </button>
@@ -378,9 +389,9 @@ export const LandingView: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between text-xs font-black">
+                <div className="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between text-xs font-semibold">
                   <span className="text-slate-300">Total Payable:</span>
-                  <span className="text-sm font-mono text-amber-300">
+                  <span className="text-sm font-mono tabular-nums text-amber-300 font-bold">
                     {formatCurrency(phoneSubtotal)}
                   </span>
                 </div>
@@ -388,23 +399,23 @@ export const LandingView: React.FC = () => {
 
               {/* Sale Success / Undo Banner inside phone */}
               {phoneSaleCompleted && (
-                <div className="my-2 rounded-xl bg-emerald-950 border border-emerald-600/60 p-2 text-start animate-fadeIn">
+                <div className="my-2 rounded-xl bg-emerald-950 border border-emerald-600/60 p-2 text-start">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-emerald-300 font-bold text-[11px]">
+                    <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-xs">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                       <span>Sale Completed: {formatCurrency(lastCompletedTotal)}</span>
                     </div>
                     {phoneUndoAvailable && (
                       <button
                         onClick={handlePhoneUndoSale}
-                        className="flex items-center gap-1 rounded-lg bg-rose-900/80 hover:bg-rose-800 text-rose-200 px-2 py-0.5 text-[10px] font-bold transition-colors"
+                        className="flex items-center gap-1 rounded-lg bg-rose-900/80 hover:bg-rose-800 text-rose-200 px-2 py-0.5 text-xs font-semibold transition-colors"
                       >
-                        <RotateCcw className="h-2.5 w-2.5" />
+                        <RotateCcw className="h-3 w-3" />
                         <span>Undo Sale</span>
                       </button>
                     )}
                   </div>
-                  <p className="text-[10px] text-emerald-200/80 mt-0.5">
+                  <p className="text-xs text-emerald-200/80 mt-0.5">
                     Stock atomically decremented. 10-second safety window open.
                   </p>
                 </div>
@@ -415,7 +426,7 @@ export const LandingView: React.FC = () => {
                 <button
                   onClick={handlePhoneCheckout}
                   disabled={phoneCart.length === 0}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-black py-2.5 text-xs shadow-lg transition-all active:scale-95 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-semibold py-2.5 text-xs shadow-lift transition-all active:scale-95 cursor-pointer min-h-[44px]"
                 >
                   <Coins className="h-4 w-4" />
                   <span>Record Sale ({formatCurrency(phoneSubtotal)})</span>
@@ -449,7 +460,7 @@ export const LandingView: React.FC = () => {
             <Sparkles className="h-3.5 w-3.5 text-amber-600" />
             <span>Complete Autonomous Suite</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
             Seven Engines Built for Counter Livelihood
           </h2>
           <p className="mt-3 text-sm sm:text-base text-slate-600">
@@ -473,7 +484,7 @@ export const LandingView: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveFeatureTab(tab.id)}
-                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold whitespace-nowrap transition-all min-h-[42px] cursor-pointer ${
+                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all min-h-[44px] cursor-pointer ${
                   activeFeatureTab === tab.id
                     ? "bg-emerald-800 text-white shadow-md ring-2 ring-emerald-600"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900"
@@ -492,7 +503,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 1: Conversational POS</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Say-It: Speech-to-Cart Voice Checkout
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -528,7 +539,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 2: Multimodal Vision OCR</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Crumpled Supplier Paper Invoice Scanner
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -566,7 +577,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 3: Spoken Executive Audio</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Kiryana Radio (Morning Memo)
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -583,9 +594,9 @@ export const LandingView: React.FC = () => {
                 </div>
               </div>
               <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 text-center shadow-inner">
-                <Radio className="h-10 w-10 text-amber-400 mx-auto mb-2 animate-pulse" />
-                <p className="text-xs font-bold text-amber-300">Spoken Memo Synthesizer</p>
-                <p className="text-[11px] text-slate-400 mt-1 italic">
+                <Radio className="h-10 w-10 text-amber-400 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-amber-300">Spoken Memo Synthesizer</p>
+                <p className="text-xs text-slate-400 mt-1 italic">
                   "Good morning Haji Aslam! Today's recorded store revenue is Rs 18,900..."
                 </p>
               </div>
@@ -596,7 +607,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 4: Cultural Communication</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Culturally Respectful WhatsApp Udhaar Reminders
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -624,7 +635,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 5: Mahngai Watchdog</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Wholesale Benchmark Comparison
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -656,7 +667,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 6: Cultural Calendar</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Ramadan & Seasonal Demand Forecaster
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -684,7 +695,7 @@ export const LandingView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 7: Multi-Branch Infrastructure</span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
                   Multi-Store Chain Management Hub
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -714,7 +725,7 @@ export const LandingView: React.FC = () => {
                   </div>
                   <span className="text-sky-400 font-mono">Rs. 68,150 Today</span>
                 </div>
-                <div className="pt-1 flex items-center justify-between text-slate-400 text-[11px]">
+                <div className="pt-1 flex items-center justify-between text-slate-400 text-xs">
                   <span>Consolidated Chain Revenue</span>
                   <span className="text-amber-300 font-bold font-mono">Rs. 110,950</span>
                 </div>
@@ -731,7 +742,7 @@ export const LandingView: React.FC = () => {
             <Building2 className="h-3.5 w-3.5 text-amber-600" />
             <span>Multi-Branch Infrastructure</span>
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
             One Account. Multiple Stores. Zero Confusion.
           </h2>
           <p className="mt-3 text-sm sm:text-base text-slate-600">
@@ -763,13 +774,15 @@ export const LandingView: React.FC = () => {
               color: "bg-slate-50 border-slate-200",
             },
           ].map((branch, i) => (
-            <div key={i} className={`rounded-3xl border p-6 ${branch.color} hover:shadow-md transition-shadow`}>
-              <div className="text-3xl mb-3">{branch.icon}</div>
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-black text-slate-900 text-sm">{branch.title}</h3>
-                <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">{branch.city}</span>
+            <div key={i} className={`rounded-2xl border p-6 ${branch.color} hover:shadow-soft transition-shadow flex flex-col justify-between`}>
+              <div>
+                <div className="text-3xl mb-3">{branch.icon}</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold text-slate-900 text-sm">{branch.title}</h3>
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5">{branch.city}</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">{branch.desc}</p>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">{branch.desc}</p>
             </div>
           ))}
         </div>
@@ -777,7 +790,7 @@ export const LandingView: React.FC = () => {
         <div className="mt-10 text-center">
           <button
             onClick={openSeededDemoShop}
-            className="inline-flex items-center gap-2 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-white px-6 py-3 text-sm font-bold transition-colors shadow-md"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-6 py-3 text-sm font-semibold transition-colors shadow-soft min-h-[44px]"
           >
             <Play className="h-4 w-4 fill-white" />
             Explore Multi-Store Demo →
@@ -788,10 +801,10 @@ export const LandingView: React.FC = () => {
       {/* 6. Real Kiryana Testimonial Grid */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900 border border-emerald-300 mb-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 border border-emerald-300 mb-3">
             <Award className="h-3.5 w-3.5 text-amber-600" /> Pakistani Retailer Stories
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900">
+          <h2 className="text-2xl sm:text-4xl font-semibold text-slate-900">
             Trusted by Kiryana Owners from Islamabad to Lahore
           </h2>
           <p className="mt-3 text-sm sm:text-base text-slate-600">
@@ -836,7 +849,7 @@ export const LandingView: React.FC = () => {
           ].map((item, idx) => (
             <div
               key={idx}
-              className="rounded-3xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-xs hover:shadow-md transition-all group"
+              className="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-soft hover:shadow-lift transition-all group"
             >
               <div>
                 {/* 5-star rating */}
@@ -844,7 +857,7 @@ export const LandingView: React.FC = () => {
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="h-3.5 w-3.5 fill-amber-400" />
                   ))}
-                  <span className="ms-1.5 text-[10px] font-bold text-slate-400">5.0</span>
+                  <span className="ms-1.5 text-xs font-semibold text-slate-400">5.0</span>
                 </div>
 
                 <p className="text-xs text-slate-700 leading-relaxed italic">
@@ -853,13 +866,13 @@ export const LandingView: React.FC = () => {
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-emerald-800 text-amber-300 font-black text-xs flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-300 font-bold text-xs flex items-center justify-center shrink-0">
                   {item.initials}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 truncate">{item.name}</h4>
-                  <p className="text-[10px] text-slate-500 truncate">{item.shop}</p>
-                  <p className="text-[10px] text-emerald-800 font-medium truncate">{item.location}</p>
+                  <h4 className="text-xs font-semibold text-slate-900 truncate">{item.name}</h4>
+                  <p className="text-xs text-slate-500 truncate">{item.shop}</p>
+                  <p className="text-xs text-emerald-800 font-medium truncate">{item.location}</p>
                 </div>
               </div>
             </div>
@@ -869,9 +882,9 @@ export const LandingView: React.FC = () => {
 
       {/* 7. Comparison Matrix: Pen & Paper vs Generic SaaS vs Tallyn */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-xs">
+        <div className="surface-l1 p-6 sm:p-10">
           <div className="text-center max-w-2xl mx-auto mb-8">
-            <h3 className="text-xl sm:text-3xl font-black text-slate-900">
+            <h3 className="text-xl sm:text-3xl font-semibold text-slate-900">
               Why Pakistani Retailers Switch to Tallyn
             </h3>
             <p className="mt-2 text-xs sm:text-sm text-slate-500">
@@ -880,16 +893,16 @@ export const LandingView: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-start">
+            <table className="table-l1">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold">
+                <tr>
                   <th className="py-3 px-4 text-start">Retail Capability</th>
                   <th className="py-3 px-4 text-center">Pen & Paper Registers</th>
                   <th className="py-3 px-4 text-center">Generic Desktop SaaS</th>
-                  <th className="py-3 px-4 text-center bg-emerald-50 text-emerald-950 font-black">Tallyn Retail OS</th>
+                  <th className="py-3 px-4 text-center bg-emerald-50 text-emerald-950 font-semibold">Tallyn Retail OS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {[
                   { name: "390px Single-Handed Counter Operation", paper: false, generic: false, tallyn: true },
                   { name: "Voice POS ('Say-It') with Real Speech", paper: false, generic: false, tallyn: true },
@@ -902,15 +915,15 @@ export const LandingView: React.FC = () => {
                   { name: "Multi-Store Branch Switching & Consolidated P&L", paper: false, generic: true, tallyn: true },
                 ].map((row, i) => (
                   <tr key={i}>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">{row.name}</td>
+                    <td className="py-3.5 px-4 font-semibold text-slate-900">{row.name}</td>
                     <td className="py-3.5 px-4 text-center">
                       {row.paper ? <Check className="h-4 w-4 text-emerald-600 mx-auto" /> : <CloseIcon className="h-4 w-4 text-slate-300 mx-auto" />}
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       {row.generic ? <Check className="h-4 w-4 text-emerald-600 mx-auto" /> : <CloseIcon className="h-4 w-4 text-slate-300 mx-auto" />}
                     </td>
-                    <td className="py-3.5 px-4 text-center bg-emerald-50/70 font-extrabold text-emerald-900">
-                      <Check className="h-5 w-5 text-emerald-700 mx-auto stroke-[3]" />
+                    <td className="py-3.5 px-4 text-center bg-emerald-50/70 font-semibold text-emerald-900">
+                      <Check className="h-5 w-5 text-emerald-700 mx-auto stroke-[2.5]" />
                     </td>
                   </tr>
                 ))}
@@ -925,7 +938,7 @@ export const LandingView: React.FC = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-mono uppercase tracking-wider text-amber-400">Architectural Guarantees</span>
-            <h2 className="text-2xl sm:text-4xl font-black mt-2">The 5 Inviolable Rules of Tallyn</h2>
+            <h2 className="text-2xl sm:text-4xl font-semibold mt-2">The 5 Inviolable Rules of Tallyn</h2>
             <p className="mt-2 text-xs sm:text-sm text-slate-400">
               Non-negotiable commercial guarantees protecting your money and counter integrity.
             </p>
@@ -941,7 +954,7 @@ export const LandingView: React.FC = () => {
             ].map((rule, idx) => (
               <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between">
                 <div>
-                  <span className="text-2xl font-black text-amber-400/80 font-mono">{rule.num}</span>
+                  <span className="text-2xl font-bold text-amber-400 font-mono tabular-nums">{rule.num}</span>
                   <h3 className="text-sm font-bold text-white mt-1 mb-2">{rule.title}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">{rule.desc}</p>
                 </div>
@@ -953,10 +966,10 @@ export const LandingView: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 border-t border-slate-800">
             <button
               onClick={() => setIsArchitectureModalOpen(true)}
-              className="inline-flex items-center gap-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-6 py-3.5 text-xs shadow-lg transition-all active:scale-98 cursor-pointer"
+              className="inline-flex items-center gap-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-6 py-3 text-xs shadow-md transition-all active:scale-98 cursor-pointer min-h-[44px]"
             >
               <Layers className="h-4 w-4" />
-              <span>View Technical Architecture & Security Model</span>
+              <span>Inspect Technical Architecture &amp; Security</span>
             </button>
             <span className="text-xs text-slate-400">
               Interactive deep dive into the 4-tier stack and ACID database locks
@@ -967,12 +980,12 @@ export const LandingView: React.FC = () => {
 
       {/* 9. Dedicated New Retailer Customer Sign-Up Section */}
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border-2 border-emerald-800/40 bg-gradient-to-br from-emerald-900 to-slate-950 text-white p-8 sm:p-12 shadow-2xl relative">
+        <div className="rounded-3xl border border-emerald-800/40 bg-slate-950 text-white p-8 sm:p-12 shadow-lift relative">
           <div className="text-center max-w-2xl mx-auto mb-8">
-            <span className="inline-block rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-amber-300 mb-3">
+            <span className="inline-block rounded-full bg-emerald-900/80 px-3 py-1 text-xs font-semibold text-amber-300 mb-3 border border-emerald-700/60">
               Retailer Onboarding
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white">
+            <h2 className="text-2xl sm:text-4xl font-semibold text-white">
               Open Your Shop's Counter Account
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-slate-300">
@@ -984,7 +997,7 @@ export const LandingView: React.FC = () => {
           <div className="max-w-md mx-auto space-y-3 mb-6">
             <button
               onClick={loginWithGoogle}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl bg-white text-slate-800 font-bold py-3 text-xs shadow-md hover:bg-slate-100 transition-colors min-h-[46px] cursor-pointer"
+              className="w-full flex items-center justify-center gap-3 rounded-xl bg-white text-slate-800 font-semibold py-3 text-xs shadow-soft hover:bg-slate-100 transition-colors min-h-[44px] cursor-pointer"
             >
               {/* Colorful Google SVG */}
               <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -1001,42 +1014,58 @@ export const LandingView: React.FC = () => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-700" />
             </div>
-            <span className="relative bg-emerald-950 px-3 text-[10px] uppercase font-bold text-slate-400">
+            <span className="relative bg-slate-950 px-3 text-xs uppercase font-semibold text-slate-400">
               Or Register With Email
             </span>
           </div>
 
           {/* Quick Registration Form */}
-          <form onSubmit={handleQuickRegister} className="max-w-md mx-auto space-y-3">
+          <form onSubmit={handleQuickRegister} className="max-w-md mx-auto space-y-3" noValidate>
             <div>
-              <label htmlFor="landing-shop-name" className="block text-xs font-bold text-slate-300 mb-1">Your Store Name</label>
+              <label htmlFor="landing-shop-name" className="block text-xs font-semibold text-slate-300 mb-1">Your Store Name</label>
               <input
                 id="landing-shop-name"
                 type="text"
-                required
                 value={signUpShopName}
-                onChange={(e) => setSignUpShopName(e.target.value)}
+                onChange={(e) => {
+                  setSignUpShopName(e.target.value);
+                  if (signUpErrors.shopName) setSignUpErrors(prev => ({ ...prev, shopName: undefined }));
+                }}
+                onBlur={() => {
+                  if (!signUpShopName.trim()) setSignUpErrors(prev => ({ ...prev, shopName: "Enter your shop name (e.g. Al-Madina Kiryana)" }));
+                }}
                 placeholder="e.g. Madina Grocers & General Store"
-                className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500"
+                className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 min-h-[44px]"
               />
+              {signUpErrors.shopName && (
+                <p className="text-xs text-rose-400 mt-1">{signUpErrors.shopName}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="landing-email-addr" className="block text-xs font-bold text-slate-300 mb-1">Retailer Email Address</label>
+              <label htmlFor="landing-email-addr" className="block text-xs font-semibold text-slate-300 mb-1">Retailer Email Address</label>
               <input
                 id="landing-email-addr"
                 type="email"
-                required
                 value={signUpEmail}
-                onChange={(e) => setSignUpEmail(e.target.value)}
+                onChange={(e) => {
+                  setSignUpEmail(e.target.value);
+                  if (signUpErrors.email) setSignUpErrors(prev => ({ ...prev, email: undefined }));
+                }}
+                onBlur={() => {
+                  if (!signUpEmail.trim()) setSignUpErrors(prev => ({ ...prev, email: "Enter your email address" }));
+                }}
                 placeholder="storeowner@gmail.com"
-                className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500"
+                className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 min-h-[44px]"
               />
+              {signUpErrors.email && (
+                <p className="text-xs text-rose-400 mt-1">{signUpErrors.email}</p>
+              )}
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 text-xs transition-colors shadow-lg min-h-[46px] mt-2 cursor-pointer"
+              className="w-full rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold py-3 text-xs transition-colors shadow-lift min-h-[44px] mt-2 cursor-pointer"
             >
               Create Free Shop Account
             </button>

@@ -93,6 +93,10 @@ export const KiryanaRadioModal: React.FC = () => {
 
   // ── Animated waveform ─────────────────────────────────────────────────────
   const startBarAnimation = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setBars(Array(14).fill(24));
+      return;
+    }
     const animate = () => {
       setBars(prev => prev.map(() => Math.floor(Math.random() * 80) + 12));
       animFrameRef.current = requestAnimationFrame(animate) as unknown as number;
@@ -132,8 +136,8 @@ export const KiryanaRadioModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md rounded-3xl bg-slate-900 text-white p-6 sm:p-8 shadow-2xl border border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-fade-in">
+      <div className="w-full max-w-md rounded-2xl bg-slate-900 text-white p-6 sm:p-8 shadow-lift border border-slate-800">
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
@@ -142,13 +146,14 @@ export const KiryanaRadioModal: React.FC = () => {
               <Radio className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-white">{t("radio.title")}</h3>
+              <h3 className="text-base font-semibold text-white">{t("radio.title")}</h3>
               <p className="text-xs text-slate-400">{shop.name} • {city}</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors min-h-[40px] min-w-[40px]"
+            aria-label="Close Radio Modal"
           >
             <X className="h-4 w-4" />
           </button>
@@ -158,18 +163,18 @@ export const KiryanaRadioModal: React.FC = () => {
         <div className="grid grid-cols-3 gap-2 mb-5">
           <div className="bg-slate-800/60 rounded-xl p-2.5 text-center">
             <TrendingUp className="h-3.5 w-3.5 text-emerald-400 mx-auto mb-1" />
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Today's Sales</p>
-            <p className="text-xs font-black text-emerald-300 font-mono">{formatCurrency(totalRev)}</p>
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Today's Sales</p>
+            <p className="text-xs font-bold text-emerald-300 font-mono tabular-nums">{formatCurrency(totalRev)}</p>
           </div>
           <div className="bg-slate-800/60 rounded-xl p-2.5 text-center">
             <Users className="h-3.5 w-3.5 text-amber-400 mx-auto mb-1" />
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Udhaar</p>
-            <p className="text-xs font-black text-amber-300 font-mono">{formatCurrency(totalUdhaar)}</p>
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Udhaar</p>
+            <p className="text-xs font-bold text-amber-300 font-mono tabular-nums">{formatCurrency(totalUdhaar)}</p>
           </div>
           <div className={`rounded-xl p-2.5 text-center ${lowStockItems.length > 0 ? "bg-rose-950/50 border border-rose-800/40" : "bg-slate-800/60"}`}>
             <AlertTriangle className={`h-3.5 w-3.5 mx-auto mb-1 ${lowStockItems.length > 0 ? "text-rose-400" : "text-slate-500"}`} />
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Low Stock</p>
-            <p className={`text-xs font-black font-mono ${lowStockItems.length > 0 ? "text-rose-300" : "text-slate-400"}`}>
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Low Stock</p>
+            <p className={`text-xs font-bold font-mono tabular-nums ${lowStockItems.length > 0 ? "text-rose-300" : "text-slate-400"}`}>
               {lowStockItems.length} items
             </p>
           </div>
@@ -192,17 +197,17 @@ export const KiryanaRadioModal: React.FC = () => {
             ))}
           </div>
 
-          <p className="text-xs font-semibold text-slate-300">
+          <p className="text-xs font-medium text-slate-300">
             {isPlaying ? (
-              <span className="inline-flex items-center gap-1.5 text-amber-300 font-bold">
-                <Volume2 className="h-4 w-4 animate-bounce" />
+              <span className="inline-flex items-center gap-1.5 text-amber-300 font-semibold">
+                <Volume2 className="h-4 w-4" />
                 Broadcasting Daily Briefing for {shop.name}
               </span>
             ) : (
               <span className="text-slate-400">
                 Tap play for your AI-generated daily briefing
                 <br />
-                <span className="text-[10px] text-slate-500">Data sourced from your live {city} store inventory</span>
+                <span className="text-xs text-slate-500">Data sourced from your live {city} store inventory</span>
               </span>
             )}
           </p>
@@ -210,7 +215,7 @@ export const KiryanaRadioModal: React.FC = () => {
 
         {/* Briefing Preview Text (truncated) */}
         {!isPlaying && (
-          <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-3 mb-5 text-[11px] text-slate-300 leading-relaxed line-clamp-3 max-h-16 overflow-hidden">
+          <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-3 mb-5 text-xs text-slate-300 leading-relaxed line-clamp-3 max-h-16 overflow-hidden">
             {briefingTextEn.trim().slice(0, 200)}...
           </div>
         )}
@@ -220,7 +225,7 @@ export const KiryanaRadioModal: React.FC = () => {
           {!isPlaying ? (
             <button
               onClick={handlePlayAudio}
-              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 py-3.5 text-xs font-black text-slate-950 transition-all shadow-md min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 py-3.5 text-xs font-semibold text-slate-950 transition-all shadow-md min-h-[48px]"
             >
               <Play className="h-4 w-4 fill-slate-950" />
               <span>{t("radio.playBriefing") || "▶ Play Daily Briefing"}</span>
@@ -228,7 +233,7 @@ export const KiryanaRadioModal: React.FC = () => {
           ) : (
             <button
               onClick={handleStopAudio}
-              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-rose-700 hover:bg-rose-600 py-3.5 text-xs font-black text-white transition-all shadow-md min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-rose-700 hover:bg-rose-600 py-3.5 text-xs font-semibold text-white transition-all shadow-md min-h-[48px]"
             >
               <Square className="h-4 w-4 fill-white" />
               <span>Stop Broadcast</span>
@@ -236,16 +241,15 @@ export const KiryanaRadioModal: React.FC = () => {
           )}
           <button
             onClick={handleClose}
-            className="rounded-2xl bg-slate-800 hover:bg-slate-700 px-5 text-xs font-bold text-slate-300 hover:text-white transition-colors min-h-[48px]"
+            className="rounded-xl bg-slate-800 hover:bg-slate-700 px-5 text-xs font-medium text-slate-300 hover:text-white transition-colors min-h-[48px]"
           >
             {t("common.close") || "Close"}
           </button>
         </div>
 
         {/* TTS Info Note */}
-        <p className="text-center text-[10px] text-slate-500 mt-3 leading-relaxed">
-          🔊 Uses browser speech synthesis  
-          No external TTS API required.
+        <p className="text-center text-xs text-slate-500 mt-3 leading-relaxed">
+          🔊 Uses browser speech synthesis • No external TTS API required
         </p>
       </div>
     </div>

@@ -29,7 +29,7 @@ export const StoreManagementModal: React.FC = () => {
   if (!isStoreManagementModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 animate-fade-in overflow-y-auto">
       <div 
         className="relative w-full max-w-2xl rounded-3xl bg-white p-5 sm:p-7 shadow-2xl border border-slate-200 my-8 text-start"
         role="dialog"
@@ -54,7 +54,7 @@ export const StoreManagementModal: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
                   Multi-Store Branch Manager
                 </h3>
-                <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
+                <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5">
                   {shops.length} {shops.length === 1 ? "Store" : "Stores"}
                 </span>
               </div>
@@ -82,12 +82,12 @@ export const StoreManagementModal: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-extrabold text-slate-900">{s.name}</h4>
                     {isActive && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-800 text-white text-[10px] font-bold px-2 py-0.5">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5">
                         <Check className="h-2.5 w-2.5 stroke-[3]" /> Active Counter
                       </span>
                     )}
                     {s.city && (
-                      <span className="rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold px-1.5 py-0.5">
+                      <span className="rounded-md bg-slate-100 text-slate-600 text-xs font-semibold px-1.5 py-0.5">
                         {s.city}
                       </span>
                     )}
@@ -96,7 +96,7 @@ export const StoreManagementModal: React.FC = () => {
                     <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
                     <span>{s.address}</span>
                   </p>
-                  <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1">
+                  <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
                     <span>Phone: {s.phone}</span>
                     <span>•</span>
                     <span>Currency: {s.currency}</span>

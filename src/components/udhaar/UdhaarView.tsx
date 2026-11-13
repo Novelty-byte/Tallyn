@@ -68,17 +68,17 @@ export const UdhaarView: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900">
             {t("udhaar.title")}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
+          <p className="text-sm text-slate-600 mt-1">
             {t("udhaar.subtitle")}
           </p>
         </div>
 
         <button
           onClick={() => setIsAddCustomerOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-amber-100 hover:bg-emerald-900 shadow-sm transition-all self-start sm:self-auto min-h-[44px]"
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-4 text-sm font-medium text-white hover:bg-emerald-900 transition-colors self-start sm:self-auto min-h-[44px]"
         >
           <Plus className="h-4 w-4" />
           <span>New Customer Account</span>
@@ -87,31 +87,31 @@ export const UdhaarView: React.FC = () => {
 
       {/* Credit Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-amber-300 bg-amber-50/70 p-4 shadow-2xs">
-          <p className="text-[11px] font-bold uppercase text-amber-900">
+        <div className="surface-l1 border-amber-300 p-4">
+          <p className="text-xs font-medium uppercase text-amber-900">
             {t("udhaar.totalReceivable")}
           </p>
-          <p className="text-2xl font-black text-amber-950 mt-1">
+          <p className="text-2xl figure text-amber-950 mt-1">
             {formatCurrency(totalOutstanding)}
           </p>
           <p className="text-xs text-amber-800 mt-1">Across all neighbourhood credit accounts</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <p className="text-[11px] font-bold uppercase text-slate-500">
+        <div className="surface-l1 p-4">
+          <p className="text-xs font-medium uppercase text-slate-500">
             {t("udhaar.activeAccounts")}
           </p>
-          <p className="text-2xl font-black text-slate-900 mt-1">
+          <p className="text-2xl figure text-slate-900 mt-1">
             {customers.length} Customers
           </p>
           <p className="text-xs text-slate-500 mt-1">Verified phone numbers linked</p>
         </div>
 
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4 shadow-2xs">
-          <p className="text-[11px] font-bold uppercase text-rose-900">
+        <div className="surface-l1 border-rose-200 p-4">
+          <p className="text-xs font-medium uppercase text-rose-900">
             {t("udhaar.overdueAccounts")}
           </p>
-          <p className="text-2xl font-black text-rose-950 mt-1">
+          <p className="text-2xl figure text-rose-950 mt-1">
             {overdueCount} Accounts
           </p>
           <p className="text-xs text-rose-800 mt-1">Pending payment for more than 7 days</p>
@@ -126,15 +126,15 @@ export const UdhaarView: React.FC = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search customer by name or phone..."
-          className="w-full rounded-xl border border-slate-200 bg-white ps-9 pe-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden min-h-[40px]"
+          className="w-full rounded-lg border border-slate-300 bg-white ps-10 pe-4 text-base focus:border-emerald-700 focus:outline-hidden min-h-[44px]"
         />
       </div>
 
       {/* Customers Table */}
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="surface-l1 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-start text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+          <table className="table-l1">
+            <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 font-medium uppercase text-xs tracking-wider">
               <tr>
                 <th className="py-3 px-4 text-start">{t("udhaar.customerName")}</th>
                 <th className="py-3 px-4 text-start">{t("udhaar.phone")}</th>
@@ -143,29 +143,29 @@ export const UdhaarView: React.FC = () => {
                 <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredCustomers.map((c) => {
                 const isOverdue = (c.overdueDays || 0) > 7;
                 return (
                   <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                    <td className="py-3 px-4 font-medium text-slate-900">
                       {c.name}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">
+                    <td className="py-3 px-4 text-slate-600 font-mono text-sm">
                       {c.phone}
                     </td>
                     <td className="py-3.5 px-4 text-end">
-                      <span className={`font-black ${c.creditBalance > 0 ? "text-amber-900" : "text-emerald-700"}`}>
+                      <span className={`figure ${c.creditBalance > 0 ? "text-amber-900" : "text-emerald-700"}`}>
                         {formatCurrency(c.creditBalance)}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       {c.creditBalance > 0 ? (
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${isOverdue ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${isOverdue ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"}`}>
                           {c.overdueDays || 0} days
                         </span>
                       ) : (
-                        <span className="text-[10px] text-emerald-700 font-semibold flex items-center justify-center gap-1">
+                        <span className="text-xs text-emerald-700 font-medium flex items-center justify-center gap-1">
                           <CheckCircle2 className="h-3 w-3" /> Clear
                         </span>
                       )}
@@ -176,13 +176,13 @@ export const UdhaarView: React.FC = () => {
                           <>
                             <button
                               onClick={() => setSelectedCustPayment(c)}
-                              className="rounded-lg bg-emerald-800 text-white px-2.5 py-1 text-[11px] font-bold hover:bg-emerald-900 transition-colors"
+                              className="rounded-md bg-emerald-800 text-white px-3 text-sm font-medium hover:bg-emerald-900 transition-colors min-h-[44px]"
                             >
                               {t("udhaar.recordPayment")}
                             </button>
                             <button
                               onClick={() => sendWhatsAppReminder(c)}
-                              className="rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 px-2.5 py-1 text-[11px] font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                              className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-1.5 min-h-[44px]"
                               title="Send respectful WhatsApp reminder"
                             >
                               <MessageSquare className="h-3 w-3 text-emerald-700" />
@@ -203,15 +203,15 @@ export const UdhaarView: React.FC = () => {
 
       {/* Record Payment Modal */}
       {selectedCustPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
-            <h4 className="text-base font-bold text-slate-900 mb-1">{t("udhaar.recordPayment")}</h4>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70">
+          <div className="w-full max-w-sm surface-overlay p-6">
+            <h4 className="text-base font-semibold text-slate-900">{t("udhaar.recordPayment")}</h4>
             <p className="text-xs text-slate-500 mb-3">
               {selectedCustPayment.name} (Current debt: {formatCurrency(selectedCustPayment.creditBalance)})
             </p>
             <form onSubmit={handlePaymentSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Amount Paid (PKR)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid (PKR)</label>
                 <input
                   type="number"
                   required
@@ -219,20 +219,20 @@ export const UdhaarView: React.FC = () => {
                   max={selectedCustPayment.creditBalance}
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-sm font-bold"
+                  className="w-full rounded-lg border border-slate-300 px-3 text-base min-h-[44px]"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setSelectedCustPayment(null)}
-                  className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 hover:bg-slate-100 min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-900"
+                  className="rounded-lg bg-emerald-800 px-4 text-sm font-medium text-white hover:bg-emerald-900 min-h-[44px]"
                 >
                   Confirm Payment
                 </button>
@@ -244,43 +244,43 @@ export const UdhaarView: React.FC = () => {
 
       {/* Add Customer Modal */}
       {isAddCustomerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
-            <h4 className="text-base font-bold text-slate-900 mb-3">Add Customer Account</h4>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70">
+          <div className="w-full max-w-sm surface-overlay p-6">
+            <h4 className="text-base font-semibold text-slate-900">Add Customer Account</h4>
             <form onSubmit={handleAddCustomerSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Customer Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Customer Name</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Asif Bhai"
-                  className="w-full rounded-xl border border-slate-200 p-2 text-xs"
+                  className="w-full rounded-lg border border-slate-300 px-3 text-base min-h-[44px]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">WhatsApp Phone Number</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp Phone Number</label>
                 <input
                   type="text"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0300-1234567"
-                  className="w-full rounded-xl border border-slate-200 p-2 text-xs"
+                  className="w-full rounded-lg border border-slate-300 px-3 text-base min-h-[44px]"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAddCustomerOpen(false)}
-                  className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 hover:bg-slate-100 min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-900"
+                  className="rounded-lg bg-emerald-800 px-4 text-sm font-medium text-white hover:bg-emerald-900 min-h-[44px]"
                 >
                   Create Account
                 </button>

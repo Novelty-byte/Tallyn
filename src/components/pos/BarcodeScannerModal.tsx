@@ -40,7 +40,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ onScan
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 animate-fade-in">
       <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-800 text-white p-6 shadow-2xl relative">
         {/* Close Button */}
         <button
@@ -94,32 +94,32 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ onScan
           ) : (
             <div className="text-center p-4 text-slate-500">
               <Scan className="h-10 w-10 mx-auto mb-1 text-slate-600 animate-pulse" />
-              <p className="text-[11px]">Align item barcode</p>
+              <p className="text-xs">Align item barcode</p>
             </div>
           )}
         </div>
 
         {/* 1-Tap Sample Commodity Barcodes */}
         <div className="mb-4">
-          <p className="text-[11px] font-bold text-slate-400 mb-1.5 text-center">
+          <p className="text-xs font-bold text-slate-400 mb-1.5 text-center">
             Or Tap Test Commodity Barcode:
           </p>
           <div className="grid grid-cols-3 gap-1.5">
             <button
               onClick={() => simulateScan("896101412001")}
-              className="rounded-lg bg-slate-800 hover:bg-slate-700 p-2 text-[10px] font-bold text-slate-200 text-center transition-colors"
+              className="rounded-lg bg-slate-800 hover:bg-slate-700 p-2 text-xs font-bold text-slate-200 text-center transition-colors min-h-[44px]"
             >
               Tapal Tea (450g)
             </button>
             <button
               onClick={() => simulateScan("896101412007")}
-              className="rounded-lg bg-slate-800 hover:bg-slate-700 p-2 text-[10px] font-bold text-slate-200 text-center transition-colors"
+              className="rounded-lg bg-slate-800 hover:bg-slate-700 p-2 text-xs font-bold text-slate-200 text-center transition-colors min-h-[44px]"
             >
               Dalda Oil (1L)
             </button>
             <button
               onClick={() => simulateScan("896101412020")}
-              className="rounded-lg bg-slate-800 hover:bg-slate-700 p-2 text-[10px] font-bold text-slate-200 text-center transition-colors"
+              className="rounded-lg bg-slate-800 hover:bg-slate-700 p-2 text-xs font-bold text-slate-200 text-center transition-colors min-h-[44px]"
             >
               MilkPak (1L)
             </button>

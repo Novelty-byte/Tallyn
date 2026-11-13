@@ -82,7 +82,7 @@ export const AddStoreModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 animate-fade-in overflow-y-auto">
       <div 
         className="relative w-full max-w-xl rounded-3xl bg-white p-5 sm:p-7 shadow-2xl border border-slate-200 my-8 text-start"
         role="dialog"
@@ -106,7 +106,7 @@ export const AddStoreModal: React.FC = () => {
               <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
                 Register New Store Branch
               </h3>
-              <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">
+              <span className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5 uppercase tracking-wide">
                 Multi-Store
               </span>
             </div>
@@ -152,7 +152,7 @@ export const AddStoreModal: React.FC = () => {
               <label className="block text-xs font-bold text-slate-800">
                 City / Region <span className="text-rose-500">*</span>
               </label>
-              <span className="text-[10px] text-slate-400">Quick selection</span>
+              <span className="text-xs text-slate-400">Quick selection</span>
             </div>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {POPULAR_CITIES.map((c) => (
@@ -160,7 +160,7 @@ export const AddStoreModal: React.FC = () => {
                   key={c}
                   type="button"
                   onClick={() => setCity(c)}
-                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+                  className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors min-h-[36px] ${
                     city === c
                       ? "bg-emerald-800 text-white font-bold"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -252,7 +252,7 @@ export const AddStoreModal: React.FC = () => {
                 onChange={(e) => setLowStockThreshold(Number(e.target.value))}
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs text-slate-900 font-medium focus:border-emerald-600 focus:outline-hidden"
               />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
+              <span className="text-xs text-slate-400 mt-0.5 block">
                 Triggers warning when stock falls below this count
               </span>
             </div>
@@ -269,7 +269,7 @@ export const AddStoreModal: React.FC = () => {
                 onChange={(e) => setLeadTimeDays(Number(e.target.value))}
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs text-slate-900 font-medium focus:border-emerald-600 focus:outline-hidden"
               />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
+              <span className="text-xs text-slate-400 mt-0.5 block">
                 Days supplier takes to deliver restocking orders
               </span>
             </div>
@@ -305,10 +305,10 @@ export const AddStoreModal: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-600 leading-normal">
+                <p className="text-xs text-slate-600 leading-normal">
                   Pre-loaded with 60 staple grocery items (Tea, Cooking Oil, Flour, Sugar, Spices, Dairy) with realistic cost & sell margins.
                 </p>
-                <span className="mt-2 inline-block rounded bg-emerald-200/60 px-1.5 py-0.5 text-[10px] font-bold text-emerald-900">
+                <span className="mt-2 inline-block rounded bg-emerald-200/60 px-1.5 py-0.5 text-xs font-semibold text-emerald-900">
                   Recommended for Kiryana
                 </span>
               </div>
@@ -337,10 +337,10 @@ export const AddStoreModal: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-600 leading-normal">
+                <p className="text-xs text-slate-600 leading-normal">
                   Fresh clean catalog with 0 products. Add your products manually, scan supplier paper slips, or import custom CSV.
                 </p>
-                <span className="mt-2 inline-block rounded bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                <span className="mt-2 inline-block rounded bg-slate-200/80 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
                   Clean Slate
                 </span>
               </div>

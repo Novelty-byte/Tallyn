@@ -59,10 +59,10 @@ export const InsightsView: React.FC = () => {
               <Calendar className="h-6 w-6" />
             </div>
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400">
+              <span className="text-xs font-mono uppercase tracking-wider text-amber-400">
                 Feature 8: Cultural Demand Model
               </span>
-              <h3 className="text-lg sm:text-xl font-black text-white">
+              <h3 className="text-lg sm:text-xl font-semibold text-white">
                 Upcoming Ramadan & Seasonal Forecaster
               </h3>
             </div>
@@ -116,7 +116,7 @@ export const InsightsView: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-start text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs">
               <tr>
                 <th className="py-3 px-4 text-start">Commodity</th>
                 <th className="py-3 px-4 text-end">Current Stock</th>
@@ -152,11 +152,11 @@ export const InsightsView: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       {isUrgent ? (
-                        <span className="text-[11px] font-bold text-rose-600 flex items-center justify-center gap-1">
+                        <span className="text-xs font-bold text-rose-600 flex items-center justify-center gap-1">
                           <AlertTriangle className="h-3 w-3" /> Reorder Now
                         </span>
                       ) : (
-                        <span className="text-[11px] font-semibold text-slate-400">Adequate</span>
+                        <span className="text-xs font-semibold text-slate-400">Adequate</span>
                       )}
                     </td>
                   </tr>

@@ -245,12 +245,11 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
         { role: "assistant", content: answer },
       ]);
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "Unknown error";
-      // Graceful local fallback
+      // Graceful local fallback without user blame or raw error dumps
       const fallback = buildLocalFallback(q, { products, customers, sales, shop, formatCurrency });
       setMessages((prev) => {
         const without = prev.filter((m) => !m.isLoading);
-        return [...without, { sender: "tallyn", text: fallback + `\n\n*(AI offline: ${errMsg.slice(0, 80)})*` }];
+        return [...without, { sender: "tallyn", text: fallback + "\n\n*(Serving store snapshot while live AI reconnects.)*" }];
       });
     } finally {
       setIsThinking(false);
@@ -274,7 +273,7 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
       const isBullet = line.startsWith("• ") || line.startsWith("- ") || line.startsWith("* ");
       const cleanLine = boldLine.replace(/^(###|##|#)\s/, "").replace(/^[•\-\*]\s/, "");
 
-      if (isHeading) return <p key={i} className="font-black text-emerald-800 text-xs mt-2 mb-1" dangerouslySetInnerHTML={{ __html: cleanLine }} />;
+      if (isHeading) return <p key={i} className="font-semibold text-emerald-800 text-xs mt-2 mb-1" dangerouslySetInnerHTML={{ __html: cleanLine }} />;
       if (isBullet) return <div key={i} className="flex gap-1.5 mb-0.5"><span className="text-emerald-600 shrink-0">•</span><span dangerouslySetInnerHTML={{ __html: cleanLine }} /></div>;
       if (line.trim() === "") return <div key={i} className="h-1.5" />;
       return <p key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: boldLine }} />;
@@ -284,30 +283,30 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
   const lowStockCount = products.filter((p) => p.quantity <= p.minQuantity).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/50 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col justify-between">
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 animate-fade-in">
+      <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col justify-between border-s border-slate-200">
 
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-950 to-emerald-900 text-white shrink-0">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-950 text-white shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="h-9 w-9 rounded-xl bg-emerald-700 text-amber-300 flex items-center justify-center shadow-inner">
               <Bot className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm font-black">Ask Tallyn AI</h3>
-              <p className="text-[11px] text-emerald-300">
+              <h3 className="text-sm font-semibold">Ask Tallyn AI</h3>
+              <p className="text-xs text-emerald-300">
                 Live Store Advisor • {shop.name}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex gap-1.5 text-[10px]">
-              <span className="bg-emerald-800/50 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1 text-emerald-200">
+            <div className="hidden sm:flex gap-1.5 text-xs">
+              <span className="bg-emerald-900/80 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1 text-emerald-200">
                 <Package className="h-3 w-3" />
                 {products.length} SKUs
               </span>
               {lowStockCount > 0 && (
-                <span className="bg-rose-900/50 border border-rose-700 px-2 py-1 rounded-full flex items-center gap-1 text-rose-200">
+                <span className="bg-rose-950/80 border border-rose-700 px-2 py-1 rounded-full flex items-center gap-1 text-rose-200">
                   <AlertTriangle className="h-3 w-3" />
                   {lowStockCount} Low
                 </span>
@@ -315,7 +314,8 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
             </div>
             <button
               onClick={() => setIsAskTallynOpen(false)}
-              className="h-8 w-8 rounded-lg bg-emerald-900/80 flex items-center justify-center text-slate-300 hover:text-white hover:bg-emerald-800 transition-colors"
+              className="h-10 w-10 rounded-xl bg-emerald-900/80 flex items-center justify-center text-slate-300 hover:text-white hover:bg-emerald-800 transition-colors min-h-[40px] min-w-[40px]"
+              aria-label="Close Ask Tallyn Drawer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -323,13 +323,13 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
         </div>
 
         {/* Quick Chips */}
-        <div className="p-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto text-[11px] scrollbar-none shrink-0">
+        <div className="p-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto text-xs scrollbar-none shrink-0">
           {quickChips.map((chip, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(chip)}
               disabled={isThinking}
-              className="whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-emerald-900 hover:bg-emerald-50 transition-colors font-medium shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-emerald-900 hover:bg-emerald-50 transition-colors font-medium shrink-0 disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
             >
               {chip}
             </button>
@@ -364,7 +364,7 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
                     <span className="animate-bounce">●</span>
                     <span className="animate-bounce delay-100">●</span>
                     <span className="animate-bounce delay-200">●</span>
-                    <span className="ms-1 text-[10px] font-semibold">Tallyn AI is thinking...</span>
+                    <span className="ms-1 text-xs font-semibold">Tallyn AI is thinking...</span>
                   </div>
                 ) : (
                   <div className="space-y-0.5">{renderMarkdown(m.text)}</div>
@@ -390,12 +390,12 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
               onChange={(e) => setInputQuery(e.target.value)}
               placeholder={isThinking ? "Tallyn AI is thinking..." : "Ask anything about your store..."}
               disabled={isThinking}
-              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs focus:border-emerald-600 focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-400"
+              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs focus:border-emerald-600 focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-400 min-h-[44px]"
             />
             <button
               type="submit"
-              disabled={isThinking || !inputQuery.trim()}
-              className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-200 flex items-center justify-center hover:bg-emerald-900 transition-colors shrink-0 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Send message to Tallyn AI"
+              className="h-11 w-11 rounded-xl bg-emerald-800 text-amber-200 flex items-center justify-center hover:bg-emerald-900 transition-colors shrink-0 shadow-xs min-h-[44px] min-w-[44px] disabled:opacity-40"
             >
               {isThinking ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -404,7 +404,7 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
               )}
             </button>
           </form>
-          <p className="text-center text-[10px] text-slate-400 mt-1.5">
+          <p className="text-center text-xs text-slate-400 mt-1.5">
             Powered by Gemini • Full store context loaded
           </p>
         </div>

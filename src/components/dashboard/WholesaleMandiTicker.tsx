@@ -321,12 +321,12 @@ export const WholesaleMandiTicker: React.FC = () => {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
           <div className="text-start leading-tight">
-            <div className="flex items-center gap-1 font-bold text-slate-200 text-[11px]">
+            <div className="flex items-center gap-1 font-bold text-slate-200 text-xs">
               <span className="text-emerald-400 font-extrabold uppercase tracking-wide">
                 {shop.city || "Mandi"} Rates
               </span>
               <span className="hidden md:inline text-slate-500">•</span>
-              <span className="hidden md:inline text-[10px] text-slate-400 font-normal truncate max-w-[150px]">
+              <span className="hidden md:inline text-xs text-slate-400 font-normal truncate max-w-[150px]">
                 {mandiHubInfo.marketShort}
               </span>
             </div>
@@ -341,28 +341,28 @@ export const WholesaleMandiTicker: React.FC = () => {
               <div
                 key={`${item.id}-${idx}`}
                 onClick={() => setActiveItemDetail(item)}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 px-2.5 py-1 text-[11px] transition-all hover:scale-102 shrink-0"
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 px-2.5 py-1 text-xs transition-all hover:scale-102 shrink-0"
               >
                 <span className="font-bold text-slate-100">{item.name}</span>
-                <span className="font-mono font-black text-amber-300">
+                <span className="font-mono font-bold text-amber-300">
                   {formatCurrency(item.benchmarkPrice)}
                 </span>
-                <span className="text-[10px] text-slate-400">/{item.unit}</span>
+                <span className="text-xs text-slate-400">/{item.unit}</span>
 
                 {item.trend === "up" && (
-                  <span className="flex items-center text-[10px] text-rose-400 font-bold">
+                  <span className="flex items-center text-xs text-rose-400 font-bold">
                     <TrendingUp className="h-3 w-3 me-0.5" />
                     {item.change}
                   </span>
                 )}
                 {item.trend === "down" && (
-                  <span className="flex items-center text-[10px] text-emerald-400 font-bold">
+                  <span className="flex items-center text-xs text-emerald-400 font-bold">
                     <TrendingDown className="h-3 w-3 me-0.5" />
                     {item.change}
                   </span>
                 )}
                 {item.trend === "stable" && (
-                  <span className="flex items-center text-[10px] text-slate-400 font-semibold">
+                  <span className="flex items-center text-xs text-slate-400 font-semibold">
                     <Minus className="h-2.5 w-2.5 me-0.5" />
                     Stable
                   </span>
@@ -373,7 +373,7 @@ export const WholesaleMandiTicker: React.FC = () => {
         </div>
 
         {/* Right Status Indicator */}
-        <div className="flex items-center gap-2 shrink-0 ps-3 sm:ps-4 border-s border-slate-800/80 z-10 bg-slate-950/90 py-1 text-[10px] text-slate-400">
+        <div className="flex items-center gap-2 shrink-0 ps-3 sm:ps-4 border-s border-slate-800/80 z-10 bg-slate-950/90 py-1 text-xs text-slate-400">
           <span className="hidden sm:inline">Daily Wholesale Mandi Feed</span>
         </div>
 
@@ -382,7 +382,7 @@ export const WholesaleMandiTicker: React.FC = () => {
       {/* Item Inspection Overlay Modal */}
       {activeItemDetail && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75"
           onClick={() => setActiveItemDetail(null)}
         >
           <div 
@@ -394,7 +394,7 @@ export const WholesaleMandiTicker: React.FC = () => {
                 <Sparkles className="h-4 w-4 text-amber-400" />
                 <h4 className="font-extrabold text-sm">{activeItemDetail.name}</h4>
               </div>
-              <span className="rounded bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 text-[10px] font-bold uppercase">
+              <span className="rounded bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 text-xs font-bold uppercase">
                 {shop.city} Mandi
               </span>
             </div>
@@ -402,13 +402,13 @@ export const WholesaleMandiTicker: React.FC = () => {
             <div className="my-4 space-y-2 text-xs">
               <div className="flex justify-between items-center bg-slate-800/60 p-2.5 rounded-xl">
                 <span className="text-slate-400">Current Wholesale Benchmark:</span>
-                <span className="font-mono font-black text-amber-300 text-sm">
+                <span className="font-mono font-bold text-amber-300 text-sm">
                   {formatCurrency(activeItemDetail.benchmarkPrice)} / {activeItemDetail.unit}
                 </span>
               </div>
               <div className="flex justify-between items-center px-1">
                 <span className="text-slate-400">Trading Hub:</span>
-                <span className="font-medium text-slate-200 text-end text-[11px] max-w-[190px]">
+                <span className="font-medium text-slate-200 text-end text-xs max-w-[190px]">
                   {mandiHubInfo.marketName}
                 </span>
               </div>
@@ -422,7 +422,7 @@ export const WholesaleMandiTicker: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-xl border border-slate-800 leading-relaxed mb-4">
+            <p className="text-xs text-slate-400 bg-slate-950 p-2.5 rounded-xl border border-slate-800 leading-relaxed mb-4">
               💡 <strong>Tallyn Mahngai Protection:</strong> This benchmark is extracted from {mandiHubInfo.marketShort}. Any distributor charging more than 10% above this rate will be flagged as an overcharge on purchase bill scans.
             </p>
 

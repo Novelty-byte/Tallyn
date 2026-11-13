@@ -161,7 +161,7 @@ export const InventoryView: React.FC = () => {
       <div className="rounded-3xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-start text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-xs tracking-wider">
               <tr>
                 <th className="py-3 px-4 text-start">{t("inventory.productName")}</th>
                 <th className="py-3 px-4 text-start">{t("inventory.category")}</th>
@@ -183,13 +183,13 @@ export const InventoryView: React.FC = () => {
                     <td className="py-3.5 px-4 font-bold text-slate-900">
                       <div>
                         <p>{p.name || p.nameEn}</p>
-                        <p className="text-[10px] text-slate-400 font-normal">
+                        <p className="text-xs text-slate-400 font-normal">
                           {p.barcode ? `Barcode: ${p.barcode}` : p.unit}
                         </p>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="capitalize rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                      <span className="capitalize rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
                         {p.category}
                       </span>
                     </td>
@@ -218,7 +218,7 @@ export const InventoryView: React.FC = () => {
                           setAdjustModalProduct(p);
                           setAdjustDelta(0);
                         }}
-                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition-colors min-h-[32px]"
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors min-h-[44px]"
                       >
                         Adjust Stock
                       </button>
@@ -233,7 +233,7 @@ export const InventoryView: React.FC = () => {
 
       {/* Add Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 mb-4">{t("inventory.addProduct")}</h3>
             <form onSubmit={handleAddSubmit} className="space-y-3.5">
@@ -335,7 +335,7 @@ export const InventoryView: React.FC = () => {
 
       {/* Adjust Stock Modal */}
       {adjustModalProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 mb-1">Adjust Inventory Count</h4>
             <p className="text-xs text-slate-500 mb-3">{adjustModalProduct.nameEn}</p>

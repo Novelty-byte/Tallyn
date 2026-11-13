@@ -52,7 +52,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2">
+        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
           <p>© 2026 Tallyn (tallyn.xyz). Designed for neighbourhood retail counters.</p>
           <p className="flex items-center gap-1">
             <span>Crafted with</span>

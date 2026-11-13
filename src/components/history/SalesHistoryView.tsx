@@ -59,8 +59,8 @@ export const SalesHistoryView: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Sales Ledger & Receipts
+          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+            Sales Ledger &amp; Receipts
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
             Chronological log of counter sales with atomic transactional receipts and CSV export.
@@ -69,7 +69,7 @@ export const SalesHistoryView: React.FC = () => {
 
         <button
           onClick={exportCSV}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto min-h-[44px]"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-soft self-start sm:self-auto min-h-[44px]"
         >
           <Download className="h-4 w-4 text-emerald-800" />
           <span>Export Sales CSV</span>
@@ -85,7 +85,7 @@ export const SalesHistoryView: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by sale ID, customer name, or item..."
-            className="w-full rounded-xl border border-slate-200 bg-white ps-9 pe-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden min-h-[40px]"
+            className="w-full rounded-xl border border-slate-200 bg-white ps-9 pe-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden min-h-[44px]"
           />
         </div>
 
@@ -99,9 +99,9 @@ export const SalesHistoryView: React.FC = () => {
             <button
               key={f.id}
               onClick={() => setPaymentFilter(f.id)}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition-colors min-h-[34px] ${
+              className={`rounded-xl px-3.5 py-2 font-semibold transition-colors min-h-[44px] ${
                 paymentFilter === f.id
-                  ? "bg-slate-900 text-white font-bold"
+                  ? "bg-slate-900 text-white font-semibold"
                   : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
               }`}
             >
@@ -112,13 +112,13 @@ export const SalesHistoryView: React.FC = () => {
       </div>
 
       {/* Sales Table */}
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="surface-l1 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-start text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+          <table className="table-l1">
+            <thead>
               <tr>
                 <th className="py-3 px-4 text-start">Transaction ID</th>
-                <th className="py-3 px-4 text-start">Date & Time</th>
+                <th className="py-3 px-4 text-start">Date &amp; Time</th>
                 <th className="py-3 px-4 text-start">Type</th>
                 <th className="py-3 px-4 text-start">Customer / Counter</th>
                 <th className="py-3 px-4 text-start">Items Count</th>
@@ -127,17 +127,17 @@ export const SalesHistoryView: React.FC = () => {
                 <th className="py-3 px-4 text-center">Receipt</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredSales.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                  <td className="py-3.5 px-4 font-mono font-semibold text-slate-900">
                     #{s.id.slice(-6)}
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500">
+                  <td className="py-3.5 px-4 text-slate-500 text-xs">
                     {new Date(s.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {new Date(s.createdAt).toLocaleDateString()}
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold uppercase ${
                       s.paymentType === "cash"
                         ? "bg-emerald-100 text-emerald-800"
                         : "bg-amber-100 text-amber-900"
@@ -145,22 +145,22 @@ export const SalesHistoryView: React.FC = () => {
                       {s.paymentType}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 font-semibold text-slate-800">
+                  <td className="py-3.5 px-4 font-medium text-slate-800">
                     {s.customerName || "Walk-in Cash Customer"}
                   </td>
                   <td className="py-3.5 px-4 text-slate-600">
                     {s.items.reduce((sum, i) => sum + i.quantity, 0)} items
                   </td>
-                  <td className="py-3.5 px-4 text-end font-black text-slate-900">
+                  <td className="py-3.5 px-4 text-end font-bold font-mono tabular-nums text-slate-900 text-sm">
                     {formatCurrency(s.totalAmount)}
                   </td>
                   <td className="py-3.5 px-4 text-center">
                     {s.status === "completed" ? (
-                      <span className="text-emerald-700 font-bold inline-flex items-center gap-1">
+                      <span className="text-emerald-700 font-semibold inline-flex items-center gap-1 text-xs">
                         <CheckCircle2 className="h-3.5 w-3.5" /> Settled
                       </span>
                     ) : (
-                      <span className="text-rose-600 font-bold inline-flex items-center gap-1">
+                      <span className="text-rose-600 font-semibold inline-flex items-center gap-1 text-xs">
                         <XCircle className="h-3.5 w-3.5" /> Undone
                       </span>
                     )}
@@ -168,9 +168,9 @@ export const SalesHistoryView: React.FC = () => {
                   <td className="py-3.5 px-4 text-center">
                     <button
                       onClick={() => setSelectedReceipt(s)}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1 mx-auto"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1 mx-auto min-h-[36px]"
                     >
-                      <Receipt className="h-3 w-3" />
+                      <Receipt className="h-3.5 w-3.5" />
                       <span>View</span>
                     </button>
                   </td>
@@ -183,20 +183,21 @@ export const SalesHistoryView: React.FC = () => {
 
       {/* Itemized Receipt Modal */}
       {selectedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lift border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-lg bg-emerald-800 text-amber-300 flex items-center justify-center">
                   <Receipt className="h-4 w-4" />
                 </div>
-                <h4 className="text-base font-bold text-slate-900">
+                <h4 className="text-base font-semibold text-slate-900">
                   Receipt #{selectedReceipt.id.slice(-6)}
                 </h4>
               </div>
               <button
                 onClick={() => setSelectedReceipt(null)}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-slate-400 hover:text-slate-700 p-1"
+                aria-label="Close Receipt"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -210,12 +211,12 @@ export const SalesHistoryView: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Payment Type:</span>
-                  <span className="font-bold uppercase text-emerald-800">{selectedReceipt.paymentType}</span>
+                  <span className="font-semibold uppercase text-emerald-800">{selectedReceipt.paymentType}</span>
                 </div>
                 {selectedReceipt.customerName && (
                   <div className="flex justify-between">
                     <span className="text-slate-500">Debtor:</span>
-                    <span className="font-bold">{selectedReceipt.customerName}</span>
+                    <span className="font-semibold">{selectedReceipt.customerName}</span>
                   </div>
                 )}
               </div>
@@ -227,7 +228,7 @@ export const SalesHistoryView: React.FC = () => {
                     <span className="font-medium text-slate-800">
                       {item.productName} <span className="text-slate-400">×{item.quantity}</span>
                     </span>
-                    <span className="font-bold text-slate-900">
+                    <span className="font-semibold font-mono tabular-nums text-slate-900">
                       {formatCurrency(item.unitPrice * item.quantity)}
                     </span>
                   </div>
@@ -235,15 +236,15 @@ export const SalesHistoryView: React.FC = () => {
               </div>
 
               {/* Total */}
-              <div className="flex justify-between text-base font-black text-slate-900 pt-1">
+              <div className="flex justify-between text-base font-bold text-slate-900 pt-1">
                 <span>Total Due:</span>
-                <span>{formatCurrency(selectedReceipt.totalAmount)}</span>
+                <span className="font-mono tabular-nums">{formatCurrency(selectedReceipt.totalAmount)}</span>
               </div>
             </div>
 
             <button
               onClick={() => setSelectedReceipt(null)}
-              className="mt-6 w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800"
+              className="mt-6 w-full rounded-xl bg-slate-900 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 min-h-[44px]"
             >
               Close Receipt
             </button>
