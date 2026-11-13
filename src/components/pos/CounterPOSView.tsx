@@ -4,6 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
 import { audio } from "@/lib/audio";
 import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
+import { ConfettiBurst } from "@/components/animations/ConfettiBurst";
 import { 
   ShoppingCart, 
   Trash2, 
@@ -48,6 +49,7 @@ export const CounterPOSView: React.FC = () => {
   const [newCustName, setNewCustName] = useState("");
   const [newCustPhone, setNewCustPhone] = useState("");
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const addToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId);
@@ -109,6 +111,10 @@ export const CounterPOSView: React.FC = () => {
       totalAmount,
       items,
     });
+
+    // Trigger confetti burst for successful sale
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 2500);
 
     clearCart();
   };
@@ -244,6 +250,9 @@ export const CounterPOSView: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      {/* Sale Success Confetti Burst */}
+      <ConfettiBurst trigger={showConfetti} particleCount={100} duration={2500} />
+
       {/* Top Controls Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -430,25 +439,33 @@ export const CounterPOSView: React.FC = () => {
                     disabled={isOutOfStock}
                     onClick={() => addToCart(p.id)}
                     aria-label={`Add ${p.name || p.nameEn}, ${formatCurrency(p.sellPrice)}, ${p.quantity} in stock`}
-                    className={`relative flex flex-col justify-between rounded-lg border p-3 text-start transition-colors min-h-[104px] ${
+                    className={`relative flex flex-col justify-between rounded-lg border p-3 text-start transition-all duration-200 min-h-[104px] group hover:-translate-y-0.5 hover:shadow-md active:scale-98 ${
                       inCartQty > 0
                         ? "border-emerald-600 bg-emerald-50"
-                        : "border-slate-200 bg-white hover:border-slate-400"
+                        : "border-slate-200 bg-white hover:border-emerald-400"
                     } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : "active:bg-slate-100"}`}
                   >
+                    {/* Stock-level bar (animated fill) */}
+                    {!isOutOfStock && (
+                      <span
+                        className="absolute bottom-0 left-0 h-0.5 rounded-full bg-emerald-500/70 transition-all duration-500"
+                        style={{ width: `${Math.min(100, (p.quantity / Math.max(p.minQuantity * 4, 1)) * 100)}%` }}
+                        aria-hidden="true"
+                      />
+                    )}
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium text-slate-900 leading-snug line-clamp-2">
                         {p.name || p.nameEn}
                       </p>
                       {inCartQty > 0 && (
-                        <span className="flex h-6 min-w-6 px-1 shrink-0 items-center justify-center rounded-md bg-emerald-800 text-sm figure text-white">
+                        <span className="flex h-6 min-w-6 px-1 shrink-0 items-center justify-center rounded-md bg-emerald-800 text-sm figure text-white animate-pump">
                           {inCartQty}
                         </span>
                       )}
                     </div>
 
                     <div className="mt-2 flex items-baseline justify-between gap-2">
-                      <span className="figure text-slate-900">
+                      <span className="figure text-slate-900 group-hover:text-emerald-800 transition-colors">
                         {formatCurrency(p.sellPrice)}
                       </span>
                       <span className={`text-xs font-medium tabular-nums ${isLow ? "text-amber-700" : "text-slate-500"}`}>

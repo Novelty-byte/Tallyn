@@ -25,22 +25,22 @@ export const Footer: React.FC = () => {
 
           {/* Quick Links */}
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-700">
-            <button onClick={() => setActiveTab("landing")} className="hover:text-emerald-800">
+            <button onClick={() => setActiveTab("landing")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Overview
             </button>
-            <button onClick={() => setActiveTab("pos")} className="hover:text-emerald-800">
+            <button onClick={() => setActiveTab("pos")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Counter POS
             </button>
-            <button onClick={() => setActiveTab("dashboard")} className="hover:text-emerald-800">
+            <button onClick={() => setActiveTab("dashboard")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Dashboard
             </button>
-            <button onClick={() => setActiveTab("inventory")} className="hover:text-emerald-800">
+            <button onClick={() => setActiveTab("inventory")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Inventory
             </button>
-            <button onClick={() => setActiveTab("udhaar")} className="hover:text-emerald-800">
+            <button onClick={() => setActiveTab("udhaar")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Udhaar Ledger
             </button>
-            <button onClick={() => setActiveTab("purchases")} className="hover:text-emerald-800">
+            <button onClick={() => setActiveTab("purchases")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Supplier Scanner
             </button>
           </div>

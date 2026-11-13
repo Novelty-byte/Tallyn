@@ -130,8 +130,12 @@ export const InsightsView: React.FC = () => {
               {stockInsights.map((item, idx) => {
                 const isUrgent = item.daysLeft <= 4;
                 return (
-                  <tr key={idx} className="hover:bg-slate-50/70">
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                  <tr
+                    key={idx}
+                    className="group hover:bg-emerald-50/50 transition-all duration-200 border-l-2 border-l-transparent hover:border-l-emerald-700"
+                    style={{ animation: `tn-fade-in 300ms var(--ease-out) ${Math.min(idx * 40, 600)}ms both` }}
+                  >
+                    <td className="py-3.5 px-4 font-bold text-slate-900 group-hover:translate-x-1 transition-transform duration-200">
                       {item.product.name || item.product.nameEn}
                     </td>
                     <td className="py-3.5 px-4 text-end font-semibold text-slate-800">
@@ -141,8 +145,8 @@ export const InsightsView: React.FC = () => {
                       ~{item.avgDailyUnits} / day
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                        isUrgent ? "bg-rose-100 text-rose-900" : "bg-emerald-50 text-emerald-800"
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold transition-transform group-hover:scale-105 ${
+                        isUrgent ? "bg-rose-100 text-rose-900 group-hover:animate-pump" : "bg-emerald-50 text-emerald-800"
                       }`}>
                         {item.daysLeft} days
                       </span>

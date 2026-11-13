@@ -147,21 +147,29 @@ export const UdhaarView: React.FC = () => {
               {filteredCustomers.map((c) => {
                 const isOverdue = (c.overdueDays || 0) > 7;
                 return (
-                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4 font-medium text-slate-900">
+                  <tr key={c.id} className="group hover:bg-emerald-50/50 transition-all duration-200 border-l-2 border-l-transparent hover:border-l-emerald-700">
+                    <td className="py-3 px-4 font-medium text-slate-900 group-hover:translate-x-1 transition-transform duration-200">
                       {c.name}
                     </td>
                     <td className="py-3 px-4 text-slate-600 font-mono text-sm">
                       {c.phone}
                     </td>
                     <td className="py-3.5 px-4 text-end">
-                      <span className={`figure ${c.creditBalance > 0 ? "text-amber-900" : "text-emerald-700"}`}>
+                      <span className={`figure ${c.creditBalance > 0 ? "text-amber-900 group-hover:text-amber-700" : "text-emerald-700"} transition-colors`}>
                         {formatCurrency(c.creditBalance)}
                       </span>
+                      {c.creditBalance > 0 && (
+                        <span className="block mt-1 h-1 rounded-full bg-slate-200 overflow-hidden" aria-hidden="true">
+                          <span
+                            className="block h-full rounded-full bg-amber-500/80 group-hover:bg-amber-600 transition-all duration-500"
+                            style={{ width: `${Math.min(100, (c.creditBalance / Math.max(totalOutstanding, 1)) * 100)}%` }}
+                          />
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       {c.creditBalance > 0 ? (
-                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${isOverdue ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-transform group-hover:scale-105 ${isOverdue ? "bg-rose-100 text-rose-800 group-hover:animate-pump" : "bg-slate-100 text-slate-700"}`}>
                           {c.overdueDays || 0} days
                         </span>
                       ) : (
@@ -176,16 +184,16 @@ export const UdhaarView: React.FC = () => {
                           <>
                             <button
                               onClick={() => setSelectedCustPayment(c)}
-                              className="rounded-md bg-emerald-800 text-white px-3 text-sm font-medium hover:bg-emerald-900 transition-colors min-h-[44px]"
+                              className="rounded-md bg-emerald-800 text-white px-3 text-sm font-medium hover:bg-emerald-900 hover:-translate-y-0.5 transition-all duration-200 min-h-[44px]"
                             >
                               {t("udhaar.recordPayment")}
                             </button>
                             <button
                               onClick={() => sendWhatsAppReminder(c)}
-                              className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-1.5 min-h-[44px]"
+                              className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 text-sm font-medium hover:bg-emerald-100 hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-1.5 min-h-[44px]"
                               title="Send respectful WhatsApp reminder"
                             >
-                              <MessageSquare className="h-3 w-3 text-emerald-700" />
+                              <MessageSquare className="h-3 w-3 text-emerald-700 group-hover:scale-110 transition-transform" />
                               <span>WhatsApp</span>
                               <ExternalLink className="h-2.5 w-2.5 opacity-60" />
                             </button>

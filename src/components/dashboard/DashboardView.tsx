@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { computeDailyPulse } from "@/lib/deterministicMath";
 import { formatCurrency } from "@/lib/utils";
+import { MetricCounter } from "@/components/animations/MetricCounter";
 import { 
   TrendingUp, 
   Coins, 
@@ -108,64 +109,56 @@ export const DashboardView: React.FC = () => {
       {/* Today's Pulse KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Revenue */}
-        <div className="surface-l1 p-4">
+        <div className="surface-l1 p-4 group hover:-translate-y-1 hover:shadow-lift transition-all duration-200">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wide">{t("dashboard.todayRevenue")}</span>
-            <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform">
               <TrendingUp className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl figure text-slate-900">
-            {formatCurrency(metrics.totalRevenue)}
-          </p>
+          <MetricCounter value={metrics.totalRevenue} className="text-2xl text-slate-900" />
           <p className="text-xs text-emerald-700 font-medium mt-1">
             {metrics.transactionCount} completed sales
           </p>
         </div>
 
         {/* Cash Received */}
-        <div className="surface-l1 p-4">
+        <div className="surface-l1 p-4 group hover:-translate-y-1 hover:shadow-lift transition-all duration-200">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wide">{t("dashboard.cashReceived")}</span>
-            <div className="h-7 w-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform">
               <Coins className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl figure text-slate-900">
-            {formatCurrency(metrics.cashReceived)}
-          </p>
+          <MetricCounter value={metrics.cashReceived} className="text-2xl text-slate-900" />
           <p className="text-xs text-slate-500 font-medium mt-1">
             In store register
           </p>
         </div>
 
         {/* Credit Extended */}
-        <div className="surface-l1 border-amber-300 p-4">
+        <div className="surface-l1 border-amber-300 p-4 group hover:-translate-y-1 hover:shadow-lift transition-all duration-200">
           <div className="flex items-center justify-between text-amber-800 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wide">{t("dashboard.creditExtended")}</span>
-            <div className="h-7 w-7 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform">
               <CreditCard className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl figure text-amber-950">
-            {formatCurrency(metrics.creditExtended)}
-          </p>
+          <MetricCounter value={metrics.creditExtended} className="text-2xl text-amber-950" />
           <p className="text-xs text-amber-700 font-medium mt-1">
             Udhaar ledger
           </p>
         </div>
 
         {/* Estimated Gross Profit */}
-        <div className="surface-l1 p-4">
+        <div className="surface-l1 p-4 group hover:-translate-y-1 hover:shadow-lift transition-all duration-200">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wide">{t("dashboard.grossProfit")}</span>
-            <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform">
               <Sparkles className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl figure text-emerald-800">
-            {formatCurrency(metrics.grossProfit)}
-          </p>
+          <MetricCounter value={metrics.grossProfit} className="text-2xl text-emerald-800" />
           <p className="text-xs text-emerald-600 font-medium mt-1">
             Calculated from unit costs
           </p>
@@ -281,19 +274,19 @@ export const DashboardView: React.FC = () => {
             const creditH = bar.credit > 0 ? Math.max(Math.min(Math.round((bar.credit / maxVal) * 120), 120), 4) : 0;
 
             return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 group/bar">
                 <div className="w-full max-w-[36px] flex flex-col items-center justify-end h-[130px]">
                   {creditH > 0 && (
                     <div
-                      style={{ height: `${creditH}px` }}
-                      className="w-full rounded-t bg-amber-500 transition-all"
+                      style={{ height: `${creditH}px`, '--target-height': `${creditH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` }}
+                      className="w-full rounded-t bg-amber-500 transition-all duration-200 group-hover/bar:brightness-110"
                       title={`${bar.day} Credit: ${formatCurrency(bar.credit)}`}
                     />
                   )}
                   {cashH > 0 && (
                     <div
-                      style={{ height: `${cashH}px` }}
-                      className={`w-full bg-emerald-800 transition-all ${creditH > 0 ? "rounded-b" : "rounded"}`}
+                      style={{ height: `${cashH}px`, '--target-height': `${cashH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` }}
+                      className={`w-full bg-emerald-800 transition-all duration-200 group-hover/bar:brightness-110 group-hover/bar:shadow-md ${creditH > 0 ? "rounded-b" : "rounded"}`}
                       title={`${bar.day} Cash: ${formatCurrency(bar.cash)}`}
                     />
                   )}
@@ -301,7 +294,7 @@ export const DashboardView: React.FC = () => {
                     <div className="w-full h-1 bg-slate-200 rounded" title={`${bar.day}: No sales`} />
                   )}
                 </div>
-                <span className="text-sm font-medium text-slate-500 mt-2">
+                <span className="text-sm font-medium text-slate-500 mt-2 group-hover/bar:text-emerald-800 transition-colors">
                   {bar.day}
                 </span>
               </div>

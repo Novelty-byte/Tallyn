@@ -208,17 +208,17 @@ export const PurchasesView: React.FC = () => {
               return (
                 <div
                   key={b.id || i}
-                  className={`rounded-xl border p-3.5 shadow-2xs transition-all relative flex flex-col justify-between ${
+                  className={`group rounded-xl border p-3.5 shadow-2xs transition-all duration-200 relative flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg ${
                     isFlagged
-                      ? "border-rose-300 bg-rose-50/80 ring-1 ring-rose-400/30"
-                      : "border-slate-200 bg-slate-50/70 hover:border-slate-300"
+                      ? "border-rose-300 bg-rose-50/80 ring-1 ring-rose-400/30 hover:ring-rose-400/60"
+                      : "border-slate-200 bg-slate-50/70 hover:border-emerald-300 hover:ring-1 hover:ring-emerald-300/50"
                   }`}
                 >
                   <div>
                     {/* Header: Item name & Delta Badge */}
                     <div className="flex items-start justify-between gap-1 mb-2">
                       <div>
-                        <p className="text-xs font-semibold text-slate-900 leading-snug line-clamp-1">
+                        <p className="text-xs font-semibold text-slate-900 leading-snug line-clamp-1 group-hover:translate-x-0.5 transition-transform duration-200">
                           {b.itemName}
                         </p>
                         <span className="text-xs font-medium text-slate-500 uppercase">
@@ -228,17 +228,17 @@ export const PurchasesView: React.FC = () => {
 
                       {/* Inflation Warning Tags */}
                       {isFlagged ? (
-                        <span className="inline-flex items-center gap-0.5 rounded-md bg-rose-200 px-1.5 py-0.5 text-xs font-bold text-rose-900 whitespace-nowrap shadow-2xs">
+                        <span className="inline-flex items-center gap-0.5 rounded-md bg-rose-200 px-1.5 py-0.5 text-xs font-bold text-rose-900 whitespace-nowrap shadow-2xs group-hover:scale-105 transition-transform">
                           <AlertTriangle className="h-3 w-3" />
                           +{b.markupPercent}%
                         </span>
                       ) : isBelowMandi ? (
-                        <span className="inline-flex items-center gap-0.5 rounded-md bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-800 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-0.5 rounded-md bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-800 whitespace-nowrap group-hover:scale-105 transition-transform">
                           <ArrowDownRight className="h-3 w-3" />
                           {b.markupPercent}%
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800 whitespace-nowrap group-hover:scale-105 transition-transform">
                           <ArrowUpRight className="h-3 w-3" />
                           Fair +{b.markupPercent}%
                         </span>
@@ -366,13 +366,35 @@ export const PurchasesView: React.FC = () => {
             </div>
 
             {isScanning ? (
-              <div className="py-12 text-center space-y-3">
-                <div className="relative mx-auto h-16 w-16 rounded-2xl bg-emerald-50 border-2 border-emerald-500 border-dashed flex items-center justify-center text-emerald-800 animate-spin">
-                  <Sparkles className="h-8 w-8 text-emerald-600" />
+              <div className="py-8 text-center space-y-3">
+                {/* Scanning viewport with animated laser line */}
+                <div className="relative mx-auto h-40 w-full max-w-xs rounded-xl border-2 border-emerald-400/70 bg-slate-900 overflow-hidden shadow-inner">
+                  {/* Corner brackets */}
+                  <span className="absolute top-2 left-2 h-5 w-5 border-t-2 border-l-2 border-emerald-400 rounded-tl" aria-hidden="true" />
+                  <span className="absolute top-2 right-2 h-5 w-5 border-t-2 border-r-2 border-emerald-400 rounded-tr" aria-hidden="true" />
+                  <span className="absolute bottom-2 left-2 h-5 w-5 border-b-2 border-l-2 border-emerald-400 rounded-bl" aria-hidden="true" />
+                  <span className="absolute bottom-2 right-2 h-5 w-5 border-b-2 border-r-2 border-emerald-400 rounded-br" aria-hidden="true" />
+                  {/* Faux invoice lines */}
+                  <div className="absolute inset-6 space-y-2 opacity-40">
+                    <div className="h-2 w-3/4 rounded bg-slate-600" />
+                    <div className="h-2 w-1/2 rounded bg-slate-700" />
+                    <div className="h-2 w-5/6 rounded bg-slate-600" />
+                    <div className="h-2 w-2/3 rounded bg-slate-700" />
+                    <div className="h-2 w-3/4 rounded bg-slate-600" />
+                  </div>
+                  {/* Scanning laser line */}
+                  <span
+                    className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_12px_2px_rgba(16,185,129,0.8)]"
+                    style={{ animation: 'scan-line 1.6s ease-in-out infinite' }}
+                    aria-hidden="true"
+                  />
                 </div>
-                <p className="text-xs font-semibold text-slate-800">
-                  Gemini Vision OCR analyzing paper invoice...
-                </p>
+                <div className="flex items-center justify-center gap-2 text-emerald-800">
+                  <Sparkles className="h-4 w-4 animate-pulse" />
+                  <p className="text-xs font-semibold">
+                    Gemini Vision OCR analyzing paper invoice...
+                  </p>
+                </div>
                 <p className="text-xs text-slate-500">
                   Extracting item names, wholesale buying prices, and batch units
                 </p>
@@ -388,7 +410,8 @@ export const PurchasesView: React.FC = () => {
                   {scannedResult.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 text-xs"
+                      className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 text-xs hover:bg-emerald-50 transition-colors"
+                      style={{ animation: `tn-fade-in 300ms var(--ease-out) ${idx * 80}ms both` }}
                     >
                       <div>
                         <p className="font-semibold text-slate-900">{item.name}</p>

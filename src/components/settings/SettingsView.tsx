@@ -204,7 +204,7 @@ export const SettingsView: React.FC = () => {
             <button
               type="submit"
               disabled={isUpdatingProfile}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 text-xs transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 text-xs hover:-translate-y-0.5 active:scale-95 transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50"
             >
               <Save className="h-3.5 w-3.5" />
               <span>{isUpdatingProfile ? "Saving..." : "Update Owner Name"}</span>

@@ -5,6 +5,8 @@ import { useApp } from "@/context/AppContext";
 import { audio } from "@/lib/audio";
 import { formatCurrency } from "@/lib/utils";
 import { ArchitectureModal } from "@/components/landing/ArchitectureModal";
+import { AnimatedSection } from "@/components/animations/AnimatedSection";
+import { useMousePosition } from "@/lib/animations";
 import { 
   ArrowRight, 
   Smartphone, 
@@ -65,6 +67,9 @@ export const LandingView: React.FC = () => {
   // Tab & Modal States
   const [activeFeatureTab, setActiveFeatureTab] = useState<number>(0);
   const [isArchitectureModalOpen, setIsArchitectureModalOpen] = useState(false);
+
+  // Mouse position tracking for ambient glow
+  const mousePosition = useMousePosition();
 
   // Hero interactive ticker state (retained for comparison table elsewhere on page)
   const [activeTickerAlert, setActiveTickerAlert] = useState<string | null>(null);
@@ -181,11 +186,36 @@ export const LandingView: React.FC = () => {
 
       {/* 2. Hero Section */}
       <section className="relative pt-6 sm:pt-14 pb-8 overflow-hidden">
-        {/* Dynamic Background Glow */}
-        <div 
+        {/* Dynamic Background Glow with Mouse Tracking */}
+        <div
           className="pointer-events-none absolute top-0 start-1/2 -translate-x-1/2 w-full max-w-7xl h-[680px] opacity-25 blur-3xl"
           style={{
-            background: "radial-gradient(circle at 50% 25%, #047857 0%, #d97706 45%, transparent 75%)",
+            background: `radial-gradient(circle at ${50 + mousePosition.x / 100}% ${25 + mousePosition.y / 100}%, #047857 0%, #d97706 45%, transparent 75%)`,
+            transition: 'background 0.3s ease-out'
+          }}
+        />
+
+        {/* Floating gradient blobs for ambient depth */}
+        <div
+          className="pointer-events-none absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 animate-float"
+          style={{
+            background: 'radial-gradient(circle, #166534 0%, transparent 70%)',
+            filter: 'blur(40px)'
+          }}
+        />
+        <div
+          className="pointer-events-none absolute top-1/2 right-1/4 w-80 h-80 rounded-full opacity-15 animate-float"
+          style={{
+            background: 'radial-gradient(circle, #d97706 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            animationDelay: '-10s'
+          }}
+        />
+        <div
+          className="pointer-events-none absolute bottom-1/4 left-1/3 w-64 h-64 rounded-full opacity-10 animate-pulse-glow"
+          style={{
+            background: 'radial-gradient(circle, #22c55e 0%, transparent 70%)',
+            filter: 'blur(40px)'
           }}
         />
 
@@ -212,10 +242,12 @@ export const LandingView: React.FC = () => {
           <div className="mt-10 flex flex-col items-center justify-center">
             <button
               onClick={openSeededDemoShop}
-              className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-amber-100 px-8 py-4 text-base sm:text-lg font-semibold shadow-lift transition-all transform hover:-translate-y-0.5 active:scale-98 border border-emerald-700/60 min-h-[64px]"
+              className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-amber-100 px-8 py-4 text-base sm:text-lg font-semibold shadow-lift hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 active:scale-98 border border-emerald-700/60 min-h-[64px] overflow-hidden"
             >
+              {/* Shimmer sweep on hover */}
+              <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/15 to-transparent" aria-hidden="true" />
               <div className="relative flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-slate-950 font-bold shadow-xs">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-slate-950 font-bold shadow-xs group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
                   <Play className="h-5 w-5 fill-slate-950" />
                 </div>
                 <div className="text-start">
@@ -226,22 +258,22 @@ export const LandingView: React.FC = () => {
                     60 seeded products • 8 credit customers • Instant test-drive without sign-up
                   </span>
                 </div>
-                <ArrowRight className="h-5 w-5 text-amber-300 rtl:rotate-180 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="h-5 w-5 text-amber-300 rtl:rotate-180 group-hover:translate-x-1.5 transition-transform duration-300" />
               </div>
             </button>
 
             {/* Sub-Actions */}
             <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-600">
-              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200">
+              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 cursor-default">
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> 60 Realistic Commodities Seeded
               </span>
-              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200">
+              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 cursor-default">
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> 8 Customer Credit Accounts
               </span>
-              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200">
+              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 cursor-default">
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> Live Voice Audio
               </span>
-              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200">
+              <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 cursor-default">
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> Multi-Store Switching Ready
               </span>
             </div>
@@ -454,6 +486,7 @@ export const LandingView: React.FC = () => {
       </section>
 
       {/* 4. Core Autonomous Capabilities Interactive Tabs */}
+      <AnimatedSection delay={200} direction="up" threshold={0.1}>
       <section id="capabilities" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-20">
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200 mb-3">
@@ -484,13 +517,13 @@ export const LandingView: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveFeatureTab(tab.id)}
-                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all min-h-[44px] cursor-pointer ${
+                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] cursor-pointer hover:-translate-y-0.5 ${
                   activeFeatureTab === tab.id
-                    ? "bg-emerald-800 text-white shadow-md ring-2 ring-emerald-600"
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-emerald-800 text-white shadow-md ring-2 ring-emerald-600 scale-105"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-emerald-300 hover:shadow-sm"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className={`h-4 w-4 transition-transform duration-300 ${activeFeatureTab === tab.id ? "scale-125 rotate-6" : "group-hover:scale-110"}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -498,7 +531,7 @@ export const LandingView: React.FC = () => {
         </div>
 
         {/* Tab Active Content Card */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-lg">
+        <div key={activeFeatureTab} className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-lg animate-fade-in-up">
           {activeFeatureTab === 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
@@ -734,8 +767,10 @@ export const LandingView: React.FC = () => {
           )}
         </div>
       </section>
+      </AnimatedSection>
 
       {/* Multi-Store Chain OS Section */}
+      <AnimatedSection delay={400} direction="up" threshold={0.1}>
       <section id="multi-store" className="scroll-mt-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-10">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200 mb-3">
@@ -774,7 +809,7 @@ export const LandingView: React.FC = () => {
               color: "bg-slate-50 border-slate-200",
             },
           ].map((branch, i) => (
-            <div key={i} className={`rounded-2xl border p-6 ${branch.color} hover:shadow-soft transition-shadow flex flex-col justify-between`}>
+            <div key={i} className={`rounded-2xl border p-6 ${branch.color} group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col justify-between`}>
               <div>
                 <div className="text-3xl mb-3">{branch.icon}</div>
                 <div className="flex items-center gap-2 mb-2">
@@ -797,8 +832,10 @@ export const LandingView: React.FC = () => {
           </button>
         </div>
       </section>
+      </AnimatedSection>
 
       {/* 6. Real Kiryana Testimonial Grid */}
+      <AnimatedSection delay={600} direction="up" threshold={0.1}>
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 border border-emerald-300 mb-3">
@@ -849,13 +886,13 @@ export const LandingView: React.FC = () => {
           ].map((item, idx) => (
             <div
               key={idx}
-              className="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-soft hover:shadow-lift transition-all group"
+              className="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-soft hover:shadow-lift hover:-translate-y-1.5 hover:border-emerald-300/80 transition-all duration-300 group"
             >
               <div>
                 {/* 5-star rating */}
                 <div className="flex items-center gap-1 text-amber-500 mb-3">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400" />
+                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400 group-hover:scale-110 transition-transform" style={{ transitionDelay: `${i * 40}ms` }} />
                   ))}
                   <span className="ms-1.5 text-xs font-semibold text-slate-400">5.0</span>
                 </div>
@@ -866,7 +903,7 @@ export const LandingView: React.FC = () => {
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-300 font-bold text-xs flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-emerald-700 group-hover:rotate-3 transition-all duration-300">
                   {item.initials}
                 </div>
                 <div className="min-w-0">
@@ -879,6 +916,7 @@ export const LandingView: React.FC = () => {
           ))}
         </div>
       </section>
+      </AnimatedSection>
 
       {/* 7. Comparison Matrix: Pen & Paper vs Generic SaaS vs Tallyn */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -914,16 +952,19 @@ export const LandingView: React.FC = () => {
                   { name: "Wholesale Market Price Inflation Alert & Benchmarking", paper: false, generic: false, tallyn: true },
                   { name: "Multi-Store Branch Switching & Consolidated P&L", paper: false, generic: true, tallyn: true },
                 ].map((row, i) => (
-                  <tr key={i}>
-                    <td className="py-3.5 px-4 font-semibold text-slate-900">{row.name}</td>
+                  <tr
+                    key={i}
+                    className="group transition-colors duration-200 hover:bg-slate-50"
+                  >
+                    <td className="py-3.5 px-4 font-semibold text-slate-900 group-hover:text-emerald-900 group-hover:translate-x-1 transition-all duration-200">{row.name}</td>
                     <td className="py-3.5 px-4 text-center">
-                      {row.paper ? <Check className="h-4 w-4 text-emerald-600 mx-auto" /> : <CloseIcon className="h-4 w-4 text-slate-300 mx-auto" />}
+                      {row.paper ? <Check className="h-4 w-4 text-emerald-600 mx-auto transition-transform group-hover:scale-125" /> : <CloseIcon className="h-4 w-4 text-slate-300 mx-auto" />}
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      {row.generic ? <Check className="h-4 w-4 text-emerald-600 mx-auto" /> : <CloseIcon className="h-4 w-4 text-slate-300 mx-auto" />}
+                      {row.generic ? <Check className="h-4 w-4 text-emerald-600 mx-auto transition-transform group-hover:scale-125" /> : <CloseIcon className="h-4 w-4 text-slate-300 mx-auto" />}
                     </td>
-                    <td className="py-3.5 px-4 text-center bg-emerald-50/70 font-semibold text-emerald-900">
-                      <Check className="h-5 w-5 text-emerald-700 mx-auto stroke-[2.5]" />
+                    <td className="py-3.5 px-4 text-center bg-emerald-50/70 font-semibold text-emerald-900 transition-all duration-200 group-hover:bg-emerald-100/80">
+                      <Check className="h-5 w-5 text-emerald-700 mx-auto stroke-[2.5] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-6" />
                     </td>
                   </tr>
                 ))}
@@ -934,7 +975,7 @@ export const LandingView: React.FC = () => {
       </section>
 
       {/* 8. The 5 Inviolable Rules & Technical Architecture CTA */}
-      <section className="bg-slate-900 text-white py-16">
+      <AnimatedSection delay={1000} direction="up" threshold={0.1}><section className="bg-slate-900 text-white py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-mono uppercase tracking-wider text-amber-400">Architectural Guarantees</span>
@@ -952,10 +993,13 @@ export const LandingView: React.FC = () => {
               { num: "04", title: "Single-Handed 390px Mobile UX", desc: "Designed specifically for 390px smartphone screens with 44px+ tap targets, compact viewport bounds, and zero counter clutter." },
               { num: "05", title: "Fail-Open Graceful Degradation", desc: "If AI models drop or rate limit, manual counter POS, barcoding, and tabular ledgers work without interruption." },
             ].map((rule, idx) => (
-              <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between">
+              <div
+                key={idx}
+                className="group rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between hover:border-emerald-700/60 hover:bg-slate-900/80 hover:-translate-y-1 transition-all duration-300"
+              >
                 <div>
-                  <span className="text-2xl font-bold text-amber-400 font-mono tabular-nums">{rule.num}</span>
-                  <h3 className="text-sm font-bold text-white mt-1 mb-2">{rule.title}</h3>
+                  <span className="inline-block text-2xl font-bold text-amber-400 font-mono tabular-nums group-hover:text-amber-300 group-hover:scale-110 transition-all duration-300">{rule.num}</span>
+                  <h3 className="text-sm font-bold text-white mt-1 mb-2 group-hover:text-emerald-200 transition-colors">{rule.title}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">{rule.desc}</p>
                 </div>
               </div>
@@ -977,6 +1021,7 @@ export const LandingView: React.FC = () => {
           </div>
         </div>
       </section>
+      </AnimatedSection>
 
       {/* 9. Dedicated New Retailer Customer Sign-Up Section */}
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">

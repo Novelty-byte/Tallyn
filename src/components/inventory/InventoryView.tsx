@@ -179,8 +179,8 @@ export const InventoryView: React.FC = () => {
                 const isLow = p.quantity <= p.minQuantity;
 
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                  <tr key={p.id} className="group hover:bg-emerald-50/50 hover:shadow-sm transition-all duration-200 border-l-2 border-l-transparent hover:border-l-emerald-700">
+                    <td className="py-3.5 px-4 font-bold text-slate-900 group-hover:translate-x-1 transition-transform duration-200">
                       <div>
                         <p>{p.name || p.nameEn}</p>
                         <p className="text-xs text-slate-400 font-normal">
@@ -189,7 +189,7 @@ export const InventoryView: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="capitalize rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                      <span className="capitalize rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 group-hover:bg-emerald-100 group-hover:text-emerald-800 transition-colors">
                         {p.category}
                       </span>
                     </td>
@@ -200,6 +200,15 @@ export const InventoryView: React.FC = () => {
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                         )}
                       </span>
+                      <span className="block mt-1 ms-auto h-1 w-16 rounded-full bg-slate-200 overflow-hidden" aria-hidden="true">
+                        <span
+                          className="block h-full rounded-full transition-all duration-500 group-hover:opacity-100"
+                          style={{
+                            width: `${Math.min(100, (p.quantity / Math.max(p.minQuantity * 4, 1)) * 100)}%`,
+                            backgroundColor: isLow ? '#f59e0b' : '#166534'
+                          }}
+                        />
+                      </span>
                     </td>
                     <td className="py-3.5 px-4 text-end text-slate-500">
                       {formatCurrency(p.buyPrice)}
@@ -208,7 +217,7 @@ export const InventoryView: React.FC = () => {
                       {formatCurrency(p.sellPrice)}
                     </td>
                     <td className="py-3.5 px-4 text-end">
-                      <span className="font-extrabold text-emerald-800">
+                      <span className="font-extrabold text-emerald-800 group-hover:text-emerald-600 transition-colors">
                         {marginPercent}%
                       </span>
                     </td>
@@ -218,7 +227,7 @@ export const InventoryView: React.FC = () => {
                           setAdjustModalProduct(p);
                           setAdjustDelta(0);
                         }}
-                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors min-h-[44px]"
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 hover:bg-emerald-800 hover:text-white hover:border-emerald-800 hover:-translate-y-0.5 transition-all duration-200 min-h-[44px]"
                       >
                         Adjust Stock
                       </button>

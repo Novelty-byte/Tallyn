@@ -254,13 +254,13 @@ export const Navbar: React.FC = () => {
           <nav className="hidden lg:flex items-center gap-1 text-xs font-bold text-slate-700">
             <button
               onClick={() => handleSaaSNavClick("capabilities")}
-              className="rounded-lg px-3 py-2 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+              className="rounded-lg px-3 py-2 hover:text-emerald-800 hover:bg-emerald-50 hover:-translate-y-0.5 transition-all duration-200"
             >
               {t("nav.features")}
             </button>
             <button
               onClick={() => handleSaaSNavClick("multi-store")}
-              className="rounded-lg px-3 py-2 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+              className="rounded-lg px-3 py-2 hover:text-emerald-800 hover:bg-emerald-50 hover:-translate-y-0.5 transition-all duration-200"
             >
               {t("nav.multiStore")}
             </button>

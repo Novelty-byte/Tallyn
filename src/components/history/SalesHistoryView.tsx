@@ -128,16 +128,22 @@ export const SalesHistoryView: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredSales.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-semibold text-slate-900">
+              {filteredSales.map((s, idx) => (
+                <tr
+                  key={s.id}
+                  className="group hover:bg-emerald-50/50 transition-all duration-200 border-l-2 border-l-transparent hover:border-l-emerald-700"
+                  style={{
+                    animation: idx < 25 ? `tn-fade-in 300ms var(--ease-out) ${Math.min(idx * 50, 800)}ms both` : undefined
+                  }}
+                >
+                  <td className="py-3.5 px-4 font-mono font-semibold text-slate-900 group-hover:translate-x-1 transition-transform duration-200">
                     #{s.id.slice(-6)}
                   </td>
                   <td className="py-3.5 px-4 text-slate-500 text-xs">
                     {new Date(s.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {new Date(s.createdAt).toLocaleDateString()}
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold uppercase ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold uppercase transition-transform group-hover:scale-105 ${
                       s.paymentType === "cash"
                         ? "bg-emerald-100 text-emerald-800"
                         : "bg-amber-100 text-amber-900"
@@ -168,7 +174,7 @@ export const SalesHistoryView: React.FC = () => {
                   <td className="py-3.5 px-4 text-center">
                     <button
                       onClick={() => setSelectedReceipt(s)}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1 mx-auto min-h-[36px]"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-emerald-800 hover:text-white hover:border-emerald-800 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-1 mx-auto min-h-[36px]"
                     >
                       <Receipt className="h-3.5 w-3.5" />
                       <span>View</span>

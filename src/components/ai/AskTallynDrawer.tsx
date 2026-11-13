@@ -329,7 +329,7 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
               key={idx}
               onClick={() => handleSend(chip)}
               disabled={isThinking}
-              className="whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-emerald-900 hover:bg-emerald-50 transition-colors font-medium shrink-0 disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
+              className="whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-emerald-900 hover:bg-emerald-50 hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 font-medium shrink-0 disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
             >
               {chip}
             </button>
@@ -341,7 +341,8 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`flex gap-2.5 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex gap-2.5 animate-slide-up ${m.sender === "user" ? "justify-end" : "justify-start"}`}
+              style={{ animationDelay: `${Math.min(i * 60, 300)}ms` }}
             >
               {m.sender === "tallyn" && (
                 <div className="h-7 w-7 rounded-lg bg-emerald-800 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
