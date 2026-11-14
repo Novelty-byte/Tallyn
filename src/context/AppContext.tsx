@@ -11,14 +11,14 @@ import { useToast } from "@/components/fx/Toast";
 import {
   SEEDED_PRODUCTS, SEEDED_BENCHMARKS,
   getBranchSeedData,
-} from "@/lib/seedData";
+} from "@/data/seedData";
 import {
   db, ensureProfile, mapProduct, mapCustomer, mapSale, mapPurchase, mapExpense,
   isServerRejection, serverErrorMessage,
-} from "@/services/supabase";
-import { defaultDueDate, toLocalYmd } from "@/lib/credit";
+} from "@/services/db";
+import { defaultDueDate, toLocalYmd } from "@/domain/credit";
 
-import { tabFromPath, TAB_ROUTE_MAP, type ActiveTab } from "@/lib/routes";
+import { tabFromPath, TAB_ROUTE_MAP, type ActiveTab } from "@/app/routes";
 import { readDemoSession, writeDemoSession, clearDemoSession } from "@/lib/demoSession";
 export type { ActiveTab };
 

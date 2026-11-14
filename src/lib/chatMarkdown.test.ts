@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, inlineMarkdownToSafeHtml } from "./chatMarkdown";
+import { escapeHtml, inlineMarkdownToSafeHtml } from "@/lib/chatMarkdown";
 
 describe("chat markdown", () => {
   it("neutralises HTML from names or model output", () => {

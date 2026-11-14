@@ -26,6 +26,9 @@
   --color-fern: #2f855a;
   --color-sage: #8dbf9e;
   --color-moss: #2f3a35;
+  /* Dark neutral for primary dark buttons (white text: 13.6:1 contrast). Was referenced
+     as bg-graphite-700 across the app but never defined, so those buttons had no background. */
+  --color-graphite-700: #26302c;
   --color-apricot: #f2a65a;
   --color-peach: #fbe3c8;
   --color-butter: #f4d35e;

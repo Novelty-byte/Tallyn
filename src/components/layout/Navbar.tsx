@@ -53,7 +53,9 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isLandingView = activeTab === "landing" || activeTab === "notfound";
+  const isLandingView = activeTab === "landing" || activeTab === "notfound" || activeTab === "docs";
+  // Docs link: public homepage navbar only — never inside a shop or the demo store.
+  const showDocsLink = isLandingView && !isDemoMode;
 
   const operationalNavLinks: { id: ActiveTab; label: string }[] = [
     { id: "pos", label: t("nav.pos") },
@@ -145,13 +147,13 @@ export const Navbar: React.FC = () => {
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-800 text-amber-300 shadow-2xs shrink-0">
                   <Store className="h-3.5 w-3.5" />
                 </div>
-                <div className="text-start hidden sm:block max-w-[170px] lg:max-w-[210px]">
+                <div className="text-start hidden sm:block max-w-[170px] lg:max-w-[260px] xl:max-w-[150px] 2xl:max-w-[220px]">
                   <div className="flex items-center gap-1.5">
                     <p className="font-semibold text-slate-900 text-xs leading-none truncate">
                       {shop.name}
                     </p>
                     {shop.city && (
-                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 uppercase shrink-0">
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 uppercase shrink-0 xl:hidden 2xl:inline">
                         {shop.city}
                       </span>
                     )}
@@ -259,7 +261,7 @@ export const Navbar: React.FC = () => {
 
         {/* Center Navigation Links:
             - Landing View: Modern SaaS Marketing Links
-            - In-Store View: Operational Tabs (POS, Dashboard, etc.) */}
+            - In-Store View: Operational Tabs (Checkout, Dashboard, etc.) */}
         {isLandingView ? (
           <nav className="hidden lg:flex items-center gap-1 text-xs font-bold text-slate-700">
             <button
@@ -281,15 +283,26 @@ export const Navbar: React.FC = () => {
               <Play className="h-3 w-3 fill-emerald-800" />
               <span>{t("nav.demoStore")}</span>
             </button>
+            {showDocsLink && (
+              <button
+                onClick={() => navigate("/docs")}
+                aria-current={activeTab === "docs" ? "page" : undefined}
+                className={`relative whitespace-nowrap rounded-lg px-3 py-2 transition-colors after:absolute after:inset-x-3 after:bottom-1 after:h-[2px] after:rounded-full ${
+                  activeTab === "docs" ? "text-slate-900 after:bg-slate-800" : "hover:text-slate-900 after:bg-transparent hover:after:bg-slate-300"
+                }`}
+              >
+                {t("nav.docs")}
+              </button>
+            )}
           </nav>
         ) : (
-          <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
+          <nav className="hidden xl:flex items-center gap-0.5 text-xs font-semibold" aria-label="Shop pages">
             {operationalNavLinks.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 aria-current={activeTab === tab.id ? "page" : undefined}
-                className={`relative rounded-lg px-2.5 py-1.5 transition-colors min-h-[38px] after:absolute after:inset-x-2.5 after:bottom-0.5 after:h-[2px] after:rounded-full after:transition-colors ${
+                className={`relative whitespace-nowrap rounded-lg px-2 py-1.5 transition-colors min-h-[38px] after:absolute after:inset-x-2 after:bottom-0.5 after:h-[2px] after:rounded-full after:transition-colors ${
                   activeTab === tab.id
                     ? "text-slate-900 font-bold after:bg-slate-800"
                     : "text-slate-600 hover:text-slate-900 after:bg-transparent hover:after:bg-slate-300"
@@ -320,23 +333,25 @@ export const Navbar: React.FC = () => {
           {!isLandingView && (
             <button
               onClick={() => setIsKiryanaRadioOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs min-h-[44px]"
-              title="Listen to Kiryana Radio Audio Briefing"
+              className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs min-h-[44px] min-w-[44px]"
+              title="Kiryana Radio: spoken briefing"
+              aria-label={t("nav.kiryanaRadio")}
             >
-              <Radio className="h-3.5 w-3.5 text-amber-700" />
-              <span className="hidden xl:inline">{t("nav.kiryanaRadio")}</span>
+              <Radio className="h-3.5 w-3.5 shrink-0 text-amber-700" />
+              <span className="hidden 2xl:inline">{t("nav.kiryanaRadio")}</span>
             </button>
           )}
 
-          {/* Ask Tallyn AI: Only visible inside store/demo (not on landing page) */}
+          {/* Tallyn AI: Only visible inside store/demo (not on landing page) */}
           {!isLandingView && (
             <button
               onClick={() => setIsAskTallynOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition-colors shadow-2xs min-h-[44px]"
-              title="Ask Tallyn AI Store Assistant"
+              className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition-colors shadow-2xs min-h-[44px] min-w-[44px]"
+              title="Tallyn AI store assistant"
+              aria-label={t("nav.askTallyn")}
             >
-              <MessageSquareCode className="h-3.5 w-3.5 text-emerald-700" />
-              <span className="hidden xl:inline">{t("nav.askTallyn")}</span>
+              <MessageSquareCode className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
+              <span className="hidden 2xl:inline">{t("nav.askTallyn")}</span>
             </button>
           )}
 
@@ -354,7 +369,7 @@ export const Navbar: React.FC = () => {
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-white text-xs font-semibold">
                   {user.name.charAt(0)}
                 </div>
-                <span className="hidden md:inline max-w-[90px] truncate">{user.name}</span>
+                <span className={`hidden max-w-[90px] truncate ${isLandingView ? "md:inline" : "md:inline xl:hidden 2xl:inline"}`}>{user.name}</span>
                 <ChevronDown className="h-3 w-3 text-slate-400" />
               </button>
 
@@ -489,6 +504,15 @@ export const Navbar: React.FC = () => {
               <Plus className="h-3.5 w-3.5" />
               <span>{t("nav.register")}</span>
             </button>
+            {showDocsLink && (
+              <button
+                onClick={() => navigate("/docs")}
+                aria-current={activeTab === "docs" ? "page" : undefined}
+                className={`whitespace-nowrap rounded-lg px-3 py-1.5 min-h-[44px] ${activeTab === "docs" ? "text-slate-900 underline decoration-2 underline-offset-4" : "text-slate-700 hover:bg-slate-200"}`}
+              >
+                {t("nav.docs")}
+              </button>
+            )}
             <button
               onClick={() => handleSaaSNavClick("capabilities")}
               className="whitespace-nowrap rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-200 min-h-[44px]"

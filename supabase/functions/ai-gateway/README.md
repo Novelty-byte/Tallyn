@@ -1,6 +1,6 @@
-# ai-gateway — Ask Tallyn (Edge Function)
+# ai-gateway — Tallyn AI (Edge Function)
 
-Server endpoint for the **Ask Tallyn** chat drawer. The AI key never reaches the browser.
+Server endpoint for the **Tallyn AI** chat drawer. The AI key never reaches the browser.
 
 ```
 POST /functions/v1/ai-gateway
@@ -18,7 +18,7 @@ POST /functions/v1/ai-gateway
 
 ## How numbers stay honest (Rule 1)
 
-The app computes a **store snapshot** in tested code (`src/lib/askContext.ts`): today's sales,
+The app computes a **store snapshot** in tested code (`src/domain/storeSnapshot.ts`): today's sales,
 last 7 days, udhaar and overdue counts, low stock, top sellers, items unsold for 30 days and the
 money tied up in them. The prompt tells the model to quote only those figures and never to
 calculate new ones; when a question needs a number that isn't there, it points to the right screen.

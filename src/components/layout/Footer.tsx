@@ -17,7 +17,7 @@ export const Footer: React.FC = () => {
               className="h-10 w-auto object-contain"
             />
             <p className="text-xs text-slate-500 max-w-sm text-center md:text-start">
-              Zero-typing counter checkout, deterministic profit math, voice POS, and smart inventory for neighbourhood retail.
+              Zero-typing counter checkout, deterministic profit math, voice checkout, and smart inventory for neighbourhood retail.
             </p>
           </div>
 
@@ -27,7 +27,7 @@ export const Footer: React.FC = () => {
               Overview
             </button>
             <button onClick={() => setActiveTab("pos")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
-              Counter POS
+              Checkout
             </button>
             <button onClick={() => setActiveTab("dashboard")} className="hover:text-emerald-800 hover:-translate-y-0.5 transition-all duration-200">
               Dashboard

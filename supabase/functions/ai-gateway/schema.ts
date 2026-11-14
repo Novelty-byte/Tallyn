@@ -1,8 +1,8 @@
 /**
- * Ask Tallyn — request contract (Deno Edge Function).
+ * Tallyn AI — request contract (Deno Edge Function).
  *
  * The browser sends the shopkeeper's question plus a STORE SNAPSHOT that the app
- * computed in tested code (src/lib/askContext.ts). Everything is clamped here so a
+ * computed in tested code (src/domain/storeSnapshot.ts). Everything is clamped here so a
  * hostile client can't smuggle huge payloads, non-finite numbers or markup into the
  * prompt. Names (products, customers, shop) are untrusted text: control characters,
  * angle brackets and backticks are stripped.

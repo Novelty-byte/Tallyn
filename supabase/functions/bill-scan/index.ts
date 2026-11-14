@@ -7,7 +7,7 @@
  * - The Gemini key stays here (GEMINI_API_KEY secret); the browser never sees it.
  * - The model only READS the bill. It is told to copy numbers exactly as printed and
  *   never to calculate; unit-cost derivation, catalog matching and price-rise alerts
- *   happen in tested app code (src/lib/billMatching.ts). Rule 1: zero hallucinated numbers.
+ *   happen in tested app code (src/domain/billMatching.ts). Rule 1: zero hallucinated numbers.
  * - Output is Zod-validated; anything malformed is rejected, never passed through.
  * - Text inside the photo is untrusted data, never instructions.
  * - Nothing is written to the shop's books here. The app shows an editable review

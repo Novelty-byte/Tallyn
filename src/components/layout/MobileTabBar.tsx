@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart, LayoutDashboard, BookUser, Boxes, Menu, History, Lightbulb, Truck, Settings, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { TAB_ROUTE_MAP, type ActiveTab } from "@/lib/routes";
+import { TAB_ROUTE_MAP, type ActiveTab } from "@/app/routes";
 
 const PRIMARY: { id: ActiveTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "pos", label: "Counter", icon: ShoppingCart },
+  { id: "pos", label: "Checkout", icon: ShoppingCart },
   { id: "dashboard", label: "Today", icon: LayoutDashboard },
   { id: "udhaar", label: "Udhaar", icon: BookUser },
   { id: "inventory", label: "Stock", icon: Boxes },
@@ -51,10 +51,10 @@ export const MobileTabBar: React.FC = () => {
   return (
     <>
       {/* spacer so page content never hides behind the fixed bar */}
-      <div className="h-[72px] lg:hidden" aria-hidden="true" />
+      <div className="h-[72px] xl:hidden" aria-hidden="true" />
 
       {moreOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden" role="presentation">
+        <div className="fixed inset-0 z-40 xl:hidden" role="presentation">
           <div className="absolute inset-0 bg-slate-700/30 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
           <div
             ref={sheetRef}
@@ -89,7 +89,7 @@ export const MobileTabBar: React.FC = () => {
 
       <nav
         aria-label="Primary"
-        className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md lg:hidden"
+        className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md xl:hidden"
       >
         <div className="relative mx-auto grid max-w-md grid-cols-5 px-2 pt-1.5 pb-1.5">
           {/* sliding pill */}

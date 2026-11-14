@@ -1,10 +1,10 @@
 /**
- * Tallyn AI Gateway — Ask Tallyn (Supabase Edge Function, Deno)
+ * Tallyn AI Gateway (Supabase Edge Function, Deno)
  *
  * POST { question, history[], snapshot }  →  200 { answer }
  *
  * - The AI key lives only here (GEMINI_API_KEY secret). The browser never sees it.
- * - `snapshot` is computed by the app in tested code (src/lib/askContext.ts) and is
+ * - `snapshot` is computed by the app in tested code (src/domain/storeSnapshot.ts) and is
  *   re-validated/clamped here (schema.ts). The model is told to quote only those
  *   numbers and never calculate new ones (Rule 1).
  * - Names inside the snapshot are untrusted text, sanitised and fenced as data.
@@ -68,7 +68,7 @@ serve(async (req: Request) => {
   const baseUrl = Deno.env.get("AI_BASE_URL") || undefined;
 
   if (!supabaseUrl || !anonKey || !serviceKey || !apiKey) {
-    return json(503, { error: "Ask Tallyn isn't configured on the server yet." });
+    return json(503, { error: "Tallyn AI isn't configured on the server yet." });
   }
 
   const raw = await req.text();
@@ -82,7 +82,7 @@ serve(async (req: Request) => {
   const parsed = AskRequestSchema.safeParse(body);
   if (!parsed.success) {
     return json(400, {
-      error: "Request rejected by the Ask Tallyn contract.",
+      error: "Request rejected by the Tallyn AI contract.",
       details: parsed.error.issues.slice(0, 5).map((i) => `${i.path.join(".")}: ${i.message}`),
     });
   }
@@ -98,7 +98,7 @@ serve(async (req: Request) => {
       .eq("user_id", userId).gte("created_at", since);
     if (error) return json(503, { error: "Usage check failed. Please try again." });
     if ((count ?? 0) >= USER_DAILY_LIMIT) {
-      return json(429, { error: `You've asked ${USER_DAILY_LIMIT} questions today. Ask Tallyn will be back tomorrow.` });
+      return json(429, { error: `You've asked ${USER_DAILY_LIMIT} questions today. Tallyn AI will be back tomorrow.` });
     }
   } else {
     ipHash = await sha256Hex(`${clientIp(req)}|${serviceKey.slice(-16)}`);

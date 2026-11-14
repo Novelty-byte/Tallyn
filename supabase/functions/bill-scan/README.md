@@ -43,8 +43,8 @@ POST /functions/v1/bill-scan
 ## Guardrails
 
 - The model only transcribes. It is told never to calculate; unit costs, catalog
-  matching, total checks and price-rise alerts are computed in `src/lib/billMatching.ts`
-  (unit-tested, including a real model answer in `src/lib/billScanFixture.test.ts`).
+  matching, total checks and price-rise alerts are computed in `src/domain/billMatching.ts`
+  (unit-tested, including a real model answer in `src/domain/billMatching.realScan.test.ts`).
 - Output must pass the Zod schema in `extract.ts` or the request fails with 502.
 - Text in the photo is treated as data (tested with an "ignore previous instructions" line).
 - Every attempt is counted before the model is called, so failures still count.
