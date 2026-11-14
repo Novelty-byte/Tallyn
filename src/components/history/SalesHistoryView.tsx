@@ -1,22 +1,17 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { Sale } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { 
-  FileSpreadsheet, 
   Search, 
-  Filter, 
   Receipt, 
   CheckCircle2, 
   XCircle, 
   Download,
-  Calendar,
   X
 } from "lucide-react";
 
 export const SalesHistoryView: React.FC = () => {
-  const { t } = useTranslation();
   const { sales } = useApp();
 
   const [searchQuery, setSearchQuery] = useState("");

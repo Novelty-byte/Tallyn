@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { db } from "@/services/supabase";
 import { 
@@ -10,17 +9,15 @@ import {
   Check, 
   AlertCircle, 
   ArrowRight, 
-  Sparkles, 
-  ShieldCheck, 
   Eye, 
   EyeOff,
   Clock
 } from "lucide-react";
 
 export const LoginPage: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const returnTo = (location.state as { from?: string } | null)?.from || "/dashboard";
   const { user, loginWithGoogle } = useApp();
 
   const [email, setEmail] = useState("");
@@ -36,9 +33,9 @@ export const LoginPage: React.FC = () => {
   // If already logged in, redirect to dashboard
   useEffect(() => {
     if (user && !user.isDemo) {
-      navigate("/dashboard");
+      navigate(returnTo, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, returnTo]);
 
   // Read email param from URL if redirected
   useEffect(() => {
@@ -77,7 +74,7 @@ export const LoginPage: React.FC = () => {
         return;
       }
       if (data?.session) {
-        navigate("/dashboard");
+        navigate(returnTo, { replace: true });
       }
     } catch (err) {
       // Trigger 5-second account not found prompt

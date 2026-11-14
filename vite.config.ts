@@ -15,6 +15,18 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
+    strictPort: true,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          i18n: ["i18next", "react-i18next"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
   },
 });

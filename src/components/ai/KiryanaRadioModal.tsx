@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
@@ -47,12 +47,12 @@ function speakWithFallback(text: string): Promise<void> {
 }
 
 export const KiryanaRadioModal: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   
   const { isKiryanaRadioOpen, setIsKiryanaRadioOpen, sales, customers, products, shop } = useApp();
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentText, setCurrentText] = useState<string>("");
+  const [, setCurrentText] = useState<string>("");
   const [bars, setBars] = useState<number[]>(Array.from({ length: 14 }, (_, i) => [40, 70, 95, 60, 80, 50, 90, 65, 85, 45, 75, 55, 90, 60][i]));
   const animFrameRef = useRef<number | null>(null);
 
@@ -63,7 +63,6 @@ export const KiryanaRadioModal: React.FC = () => {
   const totalTransactions = sales.filter(s => s.status === "completed").length;
   const totalUdhaar = customers.reduce((s, c) => s + c.creditBalance, 0);
   const overdueCustomers = customers.filter(c => (c.overdueDays || 0) > 7);
-  const overdueDebt = overdueCustomers.reduce((s, c) => s + c.creditBalance, 0);
   const topDebtor = [...customers].sort((a, b) => b.creditBalance - a.creditBalance)[0];
   const lowStockItems = products.filter(p => p.quantity <= p.minQuantity);
   const totalProducts = products.length;

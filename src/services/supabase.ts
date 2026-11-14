@@ -203,7 +203,10 @@ export const db = {
     });
   },
   async signInWithOtp(email: string) {
-    return supabase.auth.signInWithOtp({ email });
+    return supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
   },
   async signInWithGoogle(redirectTo?: string) {
     return supabase.auth.signInWithOAuth({

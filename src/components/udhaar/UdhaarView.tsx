@@ -4,8 +4,6 @@ import { useApp } from "@/context/AppContext";
 import { Customer } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { 
-  Users, 
-  CreditCard, 
   MessageSquare, 
   CheckCircle2, 
   Search, 

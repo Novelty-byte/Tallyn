@@ -1,21 +1,15 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { 
   X, 
-  Store, 
   MapPin, 
-  Phone, 
   Plus, 
   Check, 
-  ExternalLink,
   Trash2,
   Building,
-  Layers
 } from "lucide-react";
 
 export const StoreManagementModal: React.FC = () => {
-  const { t } = useTranslation();
   const { 
     shop, 
     shops, 

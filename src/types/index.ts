@@ -28,7 +28,8 @@ export type ProductCategory = "staples" | "beverages" | "dairy" | "spices" | "ho
 
 export interface Product {
   id: string;
-  name: string;
+  /** Optional display alias; `nameEn` is the canonical name. */
+  name?: string;
   nameEn: string;
   nameUr?: string;
   category: ProductCategory;

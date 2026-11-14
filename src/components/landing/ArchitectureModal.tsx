@@ -5,14 +5,8 @@ import {
   Cpu, 
   Database, 
   Sparkles, 
-  Lock, 
-  CheckCircle2, 
   Smartphone, 
   Layers, 
-  Scale, 
-  FileCheck,
-  Server,
-  Zap,
   Check
 } from "lucide-react";
 

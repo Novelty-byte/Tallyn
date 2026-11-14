@@ -1,4 +1,4 @@
-import { Product, Customer, Sale, Expense, WholesalePriceBenchmark, SeasonalForecast } from "@/types";
+import { Product, Customer, Sale, Expense, Purchase, WholesalePriceBenchmark, SeasonalForecast } from "@/types";
 
 // ==========================================
 // BRANCH 1: Main Branch (G-9/4 Islamabad)
@@ -333,7 +333,15 @@ function patchSaleDates<T extends { createdAt?: string }>(
 // ==========================================
 // Helper function to get branch seed data
 // ==========================================
-export function getBranchSeedData(shopId: string) {
+export interface BranchSeed {
+  products: Product[];
+  customers: Customer[];
+  sales: Sale[];
+  expenses: Expense[];
+  purchases?: Purchase[];
+}
+
+export function getBranchSeedData(shopId: string): BranchSeed {
   const enrichProducts = (list: Product[]) => list.map(p => ({ ...p, name: p.name || p.nameEn }));
   if (shopId === "shop-al-madina-02") {
     return {

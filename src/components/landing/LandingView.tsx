@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { audio } from "@/lib/audio";
 import { formatCurrency } from "@/lib/utils";
@@ -11,10 +10,8 @@ import {
   ArrowRight, 
   Smartphone, 
   Sparkles, 
-  ShieldCheck, 
   Zap, 
   Mic, 
-  FileText, 
   Radio, 
   Check, 
   X as CloseIcon,
@@ -26,24 +23,13 @@ import {
   Camera,
   Coins,
   Store,
-  ExternalLink,
-  Mail,
-  Lock,
-  Plus,
-  Minus,
   Trash2,
   RotateCcw,
   Building2,
-  Users,
   CheckCircle2,
   Layers,
   Award,
   Star,
-  Clock,
-  Wallet,
-  ChevronRight,
-  TrendingDown,
-  RefreshCw
 } from "lucide-react";
 
 interface PhoneCartItem {
@@ -55,12 +41,9 @@ interface PhoneCartItem {
 
 export const LandingView: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const {
     openSeededDemoShop,
-    setIsAuthModalOpen,
     loginWithGoogle,
-    login,
     setIsKiryanaRadioOpen
   } = useApp();
 
@@ -72,7 +55,6 @@ export const LandingView: React.FC = () => {
   const mousePosition = useMousePosition();
 
   // Hero interactive ticker state (retained for comparison table elsewhere on page)
-  const [activeTickerAlert, setActiveTickerAlert] = useState<string | null>(null);
 
   // Phone Simulator Interactive State
   const [phoneCart, setPhoneCart] = useState<PhoneCartItem[]>([
@@ -171,15 +153,6 @@ export const LandingView: React.FC = () => {
 
   const phoneSubtotal = phoneCart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  // Wholesale Ticker Data (used in comparison table)
-  const tickerItems = [
-    { name: "Sugar (Cheeni)", rate: "PKR 140/kg", change: "Stable", changeColor: "text-emerald-400", market: "Akbari Mandi, Lahore" },
-    { name: "Dalda Cooking Oil", rate: "PKR 510/kg", change: "-2% Drop", changeColor: "text-emerald-400", market: "Karachi Port Mills" },
-    { name: "Super Basmati Rice", rate: "PKR 320/kg", change: "+1% Slight", changeColor: "text-amber-400", market: "Gujranwala Rice Market" },
-    { name: "Fine Atta (Wheat)", rate: "PKR 122/kg", change: "Stable", changeColor: "text-emerald-400", market: "Rawalpindi Flour Mills" },
-    { name: "Tapal Danedar 450g", rate: "PKR 650/box", change: "Stable", changeColor: "text-emerald-400", market: "Official Wholesale List" },
-    { name: "Daal Chana Special", rate: "PKR 240/kg", change: "-1.5%", changeColor: "text-emerald-400", market: "Faisalabad Mandi" },
-  ];
 
   return (
     <div className="space-y-16 sm:space-y-28 pb-24 overflow-hidden bg-slate-50 text-slate-900">

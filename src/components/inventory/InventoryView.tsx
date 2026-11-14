@@ -6,14 +6,11 @@ import { formatCurrency } from "@/lib/utils";
 import { 
   Plus, 
   Search, 
-  Sparkles, 
-  Package, 
   Percent,
-  Check
 } from "lucide-react";
 
 export const InventoryView: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   
   const { products, addProduct, updateStock } = useApp();
 
@@ -31,9 +28,9 @@ export const InventoryView: React.FC = () => {
   const [quantity, setQuantity] = useState<number>(10);
   const [buyPrice, setBuyPrice] = useState<number>(100);
   const [sellPrice, setSellPrice] = useState<number>(120);
-  const [minQuantity, setMinQuantity] = useState<number>(5);
+  const [minQuantity] = useState<number>(5);
   const [unit, setUnit] = useState("pack");
-  const [barcode, setBarcode] = useState("");
+  const [barcode] = useState("");
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();

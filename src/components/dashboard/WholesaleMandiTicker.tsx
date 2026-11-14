@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus, MapPin, Sparkles } from "lucide-react";
@@ -16,7 +15,6 @@ interface MandiBenchmarkItem {
 }
 
 export const WholesaleMandiTicker: React.FC = () => {
-  const { t } = useTranslation();
   const { shop, products, activeTab } = useApp();
 
   const [activeItemDetail, setActiveItemDetail] = useState<MandiBenchmarkItem | null>(null);

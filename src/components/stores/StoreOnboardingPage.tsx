@@ -1,20 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import {
   Store,
   MapPin,
   Phone,
-  Package,
   Boxes,
   Plus,
   Trash2,
   Check,
   Building2,
   ArrowRight,
-  Layers,
   Sparkles,
-  HelpCircle
 } from "lucide-react";
 
 const POPULAR_CITIES = [
@@ -42,7 +39,6 @@ interface BranchFormState {
 }
 
 export const StoreOnboardingPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
     const navigate = useNavigate();
   const { user, createShop, createMultipleShops } = useApp();
 
@@ -50,7 +46,7 @@ export const StoreOnboardingPage: React.FC = () => {
   const [hasMultipleStores, setHasMultipleStores] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [isLoadingAccount, setIsLoadingAccount] = useState(!user);
+  const [, setIsLoadingAccount] = useState(!user);
 
   // Wait for Supabase auth session to populate the user profile before creating shops.
   useEffect(() => {

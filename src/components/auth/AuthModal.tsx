@@ -6,7 +6,7 @@ import { X, Mail, Lock, Store, Check } from "lucide-react";
 
 export const AuthModal: React.FC = () => {
   const { t } = useTranslation();
-  const { isAuthModalOpen, setIsAuthModalOpen, login, loginWithGoogle } = useApp();
+  const { isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle } = useApp();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");

@@ -1,11 +1,7 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { computeRunRate, computeRecommendedReorder } from "@/lib/deterministicMath";
-import { formatCurrency } from "@/lib/utils";
 import { 
-  Sparkles, 
-  TrendingUp, 
   AlertTriangle, 
   Calendar, 
   Package, 
@@ -15,9 +11,8 @@ import {
 } from "lucide-react";
 
 export const InsightsView: React.FC = () => {
-  const { t, i18n } = useTranslation();
   
-  const { products, sales, expenses, seasonalForecasts, setActiveTab } = useApp();
+  const { products, sales, setActiveTab } = useApp();
 
   // Low stock products with run rate
   const stockInsights = products.slice(0, 10).map((p) => {

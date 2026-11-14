@@ -278,14 +278,14 @@ export const DashboardView: React.FC = () => {
                 <div className="w-full max-w-[36px] flex flex-col items-center justify-end h-[130px]">
                   {creditH > 0 && (
                     <div
-                      style={{ height: `${creditH}px`, '--target-height': `${creditH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` }}
+                      style={{ height: `${creditH}px`, '--target-height': `${creditH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` } as React.CSSProperties}
                       className="w-full rounded-t bg-amber-500 transition-all duration-200 group-hover/bar:brightness-110"
                       title={`${bar.day} Credit: ${formatCurrency(bar.credit)}`}
                     />
                   )}
                   {cashH > 0 && (
                     <div
-                      style={{ height: `${cashH}px`, '--target-height': `${cashH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` }}
+                      style={{ height: `${cashH}px`, '--target-height': `${cashH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` } as React.CSSProperties}
                       className={`w-full bg-emerald-800 transition-all duration-200 group-hover/bar:brightness-110 group-hover/bar:shadow-md ${creditH > 0 ? "rounded-b" : "rounded"}`}
                       title={`${bar.day} Cash: ${formatCurrency(bar.cash)}`}
                     />

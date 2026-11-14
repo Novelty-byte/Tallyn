@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { db } from "@/services/supabase";
 import { 
@@ -9,15 +8,11 @@ import {
   Lock, 
   User, 
   ArrowRight, 
-  Check, 
   Eye, 
   EyeOff,
-  Sparkles,
-  ShieldCheck
 } from "lucide-react";
 
 export const RegisterPage: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();
@@ -51,7 +46,7 @@ export const RegisterPage: React.FC = () => {
     setErrorMsg("");
 
     try {
-      const { data, error } = await db.signUp(email.trim(), password, fullName.trim() || "Retail Owner");
+      const { error } = await db.signUp(email.trim(), password, fullName.trim() || "Retail Owner");
       if (error) throw error;
 
       // Upon successful account creation, redirect directly to the Full Store Setup Form (form.PNG)

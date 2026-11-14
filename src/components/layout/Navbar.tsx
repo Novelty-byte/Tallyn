@@ -12,10 +12,7 @@ import {
   Plus,
   Check,
   Building,
-  Sparkles,
-  ArrowRight,
   Play,
-  Layers,
   Settings
 } from "lucide-react";
 
@@ -29,7 +26,6 @@ export const Navbar: React.FC = () => {
     switchShop,
     activeTab,
     setActiveTab,
-    setIsAuthModalOpen,
     setIsAddStoreModalOpen,
     setIsStoreManagementModalOpen,
     setIsAskTallynOpen,
@@ -43,7 +39,7 @@ export const Navbar: React.FC = () => {
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  const isLandingView = activeTab === "landing";
+  const isLandingView = activeTab === "landing" || activeTab === "notfound";
 
   const operationalNavLinks: { id: ActiveTab; label: string }[] = [
     { id: "pos", label: t("nav.pos") },

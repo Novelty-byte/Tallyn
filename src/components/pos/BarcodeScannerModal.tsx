@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { audio } from "@/lib/audio";
-import { X, Camera, Scan, Check, RefreshCw } from "lucide-react";
+import { X, Camera, Scan, Check } from "lucide-react";
 
 interface BarcodeScannerModalProps {
   onScanItem: (productId: string) => void;
 }
 
 export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ onScanItem }) => {
-  const { t } = useTranslation();
   const { isBarcodeScannerOpen, setIsBarcodeScannerOpen, products } = useApp();
 
   const [scannedCode, setScannedCode] = useState<string | null>(null);

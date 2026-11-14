@@ -1,10 +1,8 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { ShieldCheck, Heart } from "lucide-react";
 
 export const Footer: React.FC = () => {
-  const { t } = useTranslation();
   const { setActiveTab } = useApp();
 
   return (

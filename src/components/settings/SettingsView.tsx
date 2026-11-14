@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { db } from "@/services/supabase";
 import { 
   Store, 
-  Settings as SettingsIcon, 
-  Globe, 
   ShieldCheck, 
   Plus, 
   Save, 
   CheckCircle2,
-  Users,
   User,
   Mail,
   MapPin,
@@ -18,12 +14,9 @@ import {
   Building,
   Check,
   Layers,
-  ArrowRight,
-  ShieldAlert
 } from "lucide-react";
 
 export const SettingsView: React.FC = () => {
-  const { t } = useTranslation();
   const {
     shop,
     shops,

@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 *.env
+!.env.example
 
 # Dependencies
 node_modules/
@@ -13,6 +14,7 @@ node_modules/
 dist/
 dist-ssr/
 build/
+build.log
 *.local
 
 # Logs

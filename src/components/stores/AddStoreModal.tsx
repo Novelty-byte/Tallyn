@@ -1,14 +1,11 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { 
   X, 
   Store, 
   MapPin, 
   Phone, 
-  Package, 
   Boxes, 
-  Layers, 
   Check, 
   Sparkles,
   Coins,
@@ -29,7 +26,6 @@ const POPULAR_CITIES = [
 ];
 
 export const AddStoreModal: React.FC = () => {
-  const { t } = useTranslation();
   const { 
     isAddStoreModalOpen, 
     setIsAddStoreModalOpen, 

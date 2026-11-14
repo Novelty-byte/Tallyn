@@ -114,7 +114,7 @@ class AudioEngine {
   }
 
   // Speak text via browser SpeechSynthesis API with robust voice loading and Urdu fallback
-  speak(text: string, lang: string = "en"): Promise<void> {
+  speak(text: string, _lang: string = "en"): Promise<void> {
     return new Promise((resolve) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) {
         console.warn("SpeechSynthesis not supported on this browser");

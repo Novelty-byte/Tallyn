@@ -1,6 +1,7 @@
 import React, {
-  createContext, useContext, useState, useEffect, useRef, ReactNode,
+  createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode,
 } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import type {
   UserProfile, Shop, Product, Customer, Sale, Purchase, Expense,
   WholesalePriceBenchmark, SeasonalForecast,
@@ -14,10 +15,8 @@ import {
   db, ensureProfile, mapProduct, mapCustomer, mapSale, mapPurchase, mapExpense,
 } from "@/services/supabase";
 
-export type ActiveTab =
-  | "landing" | "pos" | "dashboard" | "insights"
-  | "inventory" | "udhaar" | "purchases" | "history" | "settings"
-  | "login" | "register" | "onboarding";
+import { tabFromPath, TAB_ROUTE_MAP, type ActiveTab } from "@/lib/routes";
+export type { ActiveTab };
 
 export const DEMO_SHOPS: Shop[] = [
   {
@@ -72,6 +71,8 @@ interface AppContextType {
   shops: Shop[];
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  authReady: boolean;
+  hasLiveShop: boolean;
   products: Product[];
   customers: Customer[];
   sales: Sale[];
@@ -122,38 +123,27 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const getInitialActiveTab = (): ActiveTab => {
-  if (typeof window !== "undefined") {
-    const path = window.location.pathname.toLowerCase().replace(/\/$/, "");
-    const map: Record<string, ActiveTab> = {
-      "": "landing",
-      "/pos": "pos",
-      "/dashboard": "dashboard",
-      "/insights": "insights",
-      "/inventory": "inventory",
-      "/udhaar": "udhaar",
-      "/purchases": "purchases",
-      "/history": "history",
-      "/settings": "settings",
-      "/login": "login",
-      "/signin": "login",
-      "/register": "register",
-      "/signup": "register",
-      "/onboarding": "onboarding",
-      "/register-store": "onboarding",
-    };
-    if (map[path]) return map[path];
-  }
-  return "landing";
-};
-
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const branch1 = getBranchSeedData("shop-al-madina-01");
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
   const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
-  const [activeTab, setActiveTab] = useState<ActiveTab>(getInitialActiveTab);
+  // The URL is the single source of truth for the active page.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = useMemo<ActiveTab>(() => tabFromPath(location.pathname), [location.pathname]);
+  const setActiveTab = useCallback(
+    (tab: ActiveTab) => {
+      const target = TAB_ROUTE_MAP[tab];
+      if (target && target !== location.pathname) navigate(target);
+    },
+    [navigate, location.pathname],
+  );
+  // Auth bootstrap: false until Supabase has reported the initial session (or lack of one).
+  const [authReady, setAuthReady] = useState(false);
+  // For a signed-in (non-demo) user: does at least one real shop exist?
+  const [hasLiveShop, setHasLiveShop] = useState(false);
   const [products, setProducts] = useState<Product[]>(branch1.products);
   const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
   const [sales, setSales] = useState<Sale[]>(branch1.sales);
@@ -213,44 +203,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  // Subscribe to Supabase Auth state change on mount
+  // Subscribe to Supabase Auth state change on mount.
+  // NOTE: the callback must stay synchronous — awaiting Supabase calls inside it can
+  // deadlock the auth client — so the async loading is deferred with setTimeout(0).
   useEffect(() => {
+    const loadLiveUser = async (u: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }) => {
+      const profileName = (u.user_metadata?.full_name as string) || u.email?.split("@")[0] || "Owner";
+      try {
+        await ensureProfile(u.id, profileName, u.email || "");
+      } catch {
+        // profile upsert is best-effort; shop fetch below will surface real problems
+      }
+
+      setUser({ id: u.id, name: profileName, email: u.email || "", role: "owner", isDemo: false });
+      setIsDemoMode(false);
+
+      try {
+        const userShops = await db.getShops(u.id);
+        if (userShops.length > 0) {
+          const mappedShops: Shop[] = userShops.map((s) => ({
+            id: s.id,
+            name: s.name,
+            ownerName: profileName,
+            currency: s.currency,
+            phone: "",
+            address: "",
+            lowStockThreshold: s.low_stock_threshold,
+            leadTimeDays: s.lead_time_days,
+          }));
+          setShops(mappedShops);
+          setShop(mappedShops[0]);
+          setHasLiveShop(true);
+          await refreshLiveShopData(mappedShops[0].id);
+        } else {
+          // Brand-new account: never show seeded demo data to a real user.
+          setHasLiveShop(false);
+          setShops([]);
+          setProducts([]);
+          setCustomers([]);
+          setSales([]);
+          setPurchases([]);
+          setExpenses([]);
+        }
+      } catch {
+        // DB unreachable: keep the session, don't force onboarding on a transient failure.
+        setHasLiveShop(true);
+      } finally {
+        setAuthReady(true);
+      }
+    };
+
     const { data: listener } = db.onAuthChange(async (event, session) => {
       if (session?.user) {
         const u = session.user;
-        const profileName = (u.user_metadata?.full_name as string) || u.email?.split("@")[0] || "Owner";
-        await ensureProfile(u.id, profileName, u.email || "");
-
-        setUser({
-          id: u.id,
-          name: profileName,
-          email: u.email || "",
-          role: "owner",
-          isDemo: false,
-        });
-        setIsDemoMode(false);
-
-        // Fetch live user's shops
-        try {
-          const userShops = await db.getShops(u.id);
-          if (userShops.length > 0) {
-            const mappedShops: Shop[] = userShops.map((s) => ({
-              id: s.id,
-              name: s.name,
-              ownerName: profileName,
-              currency: s.currency,
-              phone: "",
-              address: "",
-              lowStockThreshold: s.low_stock_threshold,
-              leadTimeDays: s.lead_time_days,
-            }));
-            setShops(mappedShops);
-            setShop(mappedShops[0]);
-            await refreshLiveShopData(mappedShops[0].id);
-          }
-        } catch {
-          // ignore if DB is offline
-        }
+        setTimeout(() => { void loadLiveUser(u); }, 0);
+      } else {
+        if (event === "SIGNED_OUT") setHasLiveShop(false);
+        setAuthReady(true);
       }
     });
 
@@ -672,7 +681,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   /* --------------------------------- Auth --------------------------------- */
 
-  const login = async (email: string, name = "Store Owner") => {
+  const login = async (email: string, _name = "Store Owner") => {
     const { error } = await db.signInWithOtp(email);
     if (error) throw error;
     // Magic-link sign-in: the Supabase onAuthChange listener will set the real
@@ -696,6 +705,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try { await db.signOut(); } catch { /* ignore */ }
     setUser(null);
     setIsDemoMode(false);
+    setHasLiveShop(false);
+    setShops(DEMO_SHOPS);
+    setShop(DEMO_SHOPS[0]);
+    const seed = getBranchSeedData("shop-al-madina-01");
+    setProducts(seed.products);
+    setCustomers(seed.customers);
+    setSales(seed.sales);
+    setPurchases(seed.purchases ?? []);
+    setExpenses(seed.expenses);
     setActiveTab("landing");
   };
 
@@ -707,6 +725,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         shops,
         activeTab,
         setActiveTab,
+        authReady,
+        hasLiveShop,
         products,
         customers,
         sales,

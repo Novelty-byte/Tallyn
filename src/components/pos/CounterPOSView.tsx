@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export const CounterPOSView: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   
   const { 
     shop,
