@@ -11,7 +11,7 @@ export const DEFAULT_OPENAI_BASE_URL = "https://api.electronhub.ai/v1";
 export const AI_TIMEOUT_MS = Number(Deno.env.get("AI_TIMEOUT_MS")) || 100_000;
 
 const APP_GUIDE = `How Tallyn works (for how-to questions):
-- Counter POS: tap products to add to the cart, or tap "Speak order" and say e.g. "do chai ek oil udhaar Asif". Choose Cash or Udhaar; udhaar needs a customer and a pay-back date. "Record Sale" lowers stock; an Undo button shows for 10 seconds.
+- Counter POS: tap products to add to the cart, tap "Scan" to scan barcodes with the phone camera (each scan adds one item; a flashlight button appears on phones that have one), plug in a USB/Bluetooth barcode scanner and just scan, or tap "Speak order" and say e.g. "do chai ek oil udhaar Asif". Choose Cash or Udhaar; udhaar needs a customer and a pay-back date. "Record Sale" lowers stock; an Undo button shows for 10 seconds.
 - Dashboard: today's sales, cash vs udhaar, profit, low-stock and overdue-udhaar alerts, 7-day chart.
 - Inventory: add/edit products (name, prices, stock, minimum level, barcode) and adjust stock with a reason.
 - Udhaar: every customer who owes money, how much, and when it is due or how many days overdue. "Record Payment" (payments clear the oldest udhaar first) and a one-tap WhatsApp reminder.

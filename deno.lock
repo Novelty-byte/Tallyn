@@ -50,6 +50,8 @@
         "npm:@types/react-dom@^19.0.3",
         "npm:@types/react@^19.0.8",
         "npm:@vitejs/plugin-react@^4.3.4",
+        "npm:@zxing/browser@0.2.1",
+        "npm:@zxing/library@0.23.0",
         "npm:clsx@^2.1.1",
         "npm:i18next@^24.2.2",
         "npm:lucide-react@0.475",

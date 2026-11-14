@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
 import { addDays, defaultDueDate, toLocalYmd } from "@/lib/credit";
 import { audio } from "@/lib/audio";
-import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
+import { BarcodeScannerModal, type AddToCartResult } from "@/components/pos/BarcodeScannerModal";
+import { createKeyboardWedgeDetector, findProductByBarcode } from "@/lib/barcode";
 import { VoiceConfirmSheet, type ConfirmedVoiceOrder } from "@/components/pos/VoiceConfirmSheet";
 import { useToast } from "@/components/fx/Toast";
 import { ConfettiBurst } from "@/components/animations/ConfettiBurst";
@@ -37,6 +38,7 @@ export const CounterPOSView: React.FC = () => {
     lastSaleUndo, 
     undoSeconds,
     addCustomer,
+    isBarcodeScannerOpen,
     setIsBarcodeScannerOpen
   } = useApp();
 
@@ -79,17 +81,59 @@ export const CounterPOSView: React.FC = () => {
     setTimeout(() => setCheckoutNotice(null), 4000);
   };
 
-  const addToCart = (productId: string) => {
+  // Mirror of the cart for back-to-back adds (camera / handheld scanner) that happen
+  // faster than React re-renders, so the stock check never reads a stale count.
+  const cartRef = useRef(cart);
+  useEffect(() => { cartRef.current = cart; }, [cart]);
+
+  const addToCart = (productId: string): AddToCartResult => {
     const product = products.find((p) => p.id === productId);
-    if (!product || product.quantity <= (cart[productId] || 0)) return;
+    if (!product) return { status: "not_found" };
+    const inCart = cartRef.current[productId] || 0;
+    if (product.quantity <= inCart) return { status: "out_of_stock", name: product.nameEn, inCart };
 
     audio.playBarcodeBeep();
     try { navigator.vibrate?.(8); } catch { /* haptics unsupported */ }
-    setCart((prev) => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1,
-    }));
+    const next = { ...cartRef.current, [productId]: inCart + 1 };
+    cartRef.current = next;
+    setCart(next);
+    return { status: "added", name: product.nameEn, inCart: inCart + 1 };
   };
+
+  /** Barcode from the search box or a handheld scanner → straight into the cart. */
+  const addByBarcode = (raw: string): boolean => {
+    const product = findProductByBarcode(products, raw);
+    if (!product) return false;
+    const r = addToCart(product.id);
+    if (r.status === "added") toast.success(`Added ${r.name}`, { description: `${r.inCart} in cart`, duration: 1800 });
+    else if (r.status === "out_of_stock") toast.warning(`No more ${r.name} in stock`, { description: `All ${r.inCart} are already in the cart.` });
+    return true;
+  };
+
+  // Handheld USB/Bluetooth barcode scanners type the code + Enter very fast.
+  // Catch those bursts anywhere on the POS screen (except other form fields).
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const addByBarcodeRef = useRef(addByBarcode);
+  addByBarcodeRef.current = addByBarcode;
+  useEffect(() => {
+    const wedge = createKeyboardWedgeDetector();
+    const onKey = (e: KeyboardEvent) => {
+      if (isBarcodeScannerOpen) return; // the camera sheet handles its own input
+      if (e.defaultPrevented) return; // the search box already added this barcode
+      const t = e.target as HTMLElement | null;
+      const inOtherField =
+        t && t !== searchInputRef.current &&
+        (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+      if (inOtherField) return;
+      const code = wedge.feed(e.key, e.timeStamp);
+      if (code && addByBarcodeRef.current(code)) {
+        e.preventDefault();
+        setSearchQuery(""); // the scanner also typed into the search box
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isBarcodeScannerOpen]);
 
   const removeFromCart = (productId: string) => {
     setCart((prev) => {
@@ -445,9 +489,17 @@ export const CounterPOSView: React.FC = () => {
                 <div className="relative flex-1">
                   <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" aria-hidden="true" />
                   <input
+                    ref={searchInputRef}
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      // A typed full barcode + Enter adds the item directly.
+                      if (e.key === "Enter" && searchQuery.trim() && addByBarcode(searchQuery)) {
+                        e.preventDefault();
+                        setSearchQuery("");
+                      }
+                    }}
                     placeholder={t("pos.searchPlaceholder")}
                     aria-label="Search products"
                     className="w-full rounded-lg border border-slate-300 bg-white py-2 ps-10 pe-4 text-base placeholder:text-slate-400 focus:border-emerald-700 focus:outline-hidden min-h-[44px]"
@@ -824,7 +876,7 @@ export const CounterPOSView: React.FC = () => {
       )}
 
       {/* Interactive Barcode Scanner Modal */}
-      <BarcodeScannerModal onScanItem={(productId) => addToCart(productId)} />
+      <BarcodeScannerModal onScanItem={addToCart} />
     </div>
   );
 };
