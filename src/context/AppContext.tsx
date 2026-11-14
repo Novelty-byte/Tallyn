@@ -4,12 +4,12 @@ import React, {
 import { useLocation, useNavigate } from "react-router-dom";
 import type {
   UserProfile, Shop, Product, Customer, Sale, Purchase, Expense,
-  WholesalePriceBenchmark, SeasonalForecast,
+  WholesalePriceBenchmark,
 } from "@/types";
 import { audio } from "@/lib/audio";
 import { useToast } from "@/components/fx/Toast";
 import {
-  SEEDED_PRODUCTS, SEEDED_BENCHMARKS, SEEDED_SEASONAL_FORECASTS,
+  SEEDED_PRODUCTS, SEEDED_BENCHMARKS,
   getBranchSeedData,
 } from "@/lib/seedData";
 import {
@@ -86,7 +86,6 @@ interface AppContextType {
   purchases: Purchase[];
   expenses: Expense[];
   wholesaleBenchmarks: WholesalePriceBenchmark[];
-  seasonalForecasts: SeasonalForecast[];
   lastSaleUndo: Sale | null;
   undoSeconds: number;
   isDemoMode: boolean;
@@ -180,7 +179,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [purchases, setPurchases] = useState<Purchase[]>(branch1.purchases ?? []);
   const [expenses, setExpenses] = useState<Expense[]>(branch1.expenses);
   const [wholesaleBenchmarks] = useState(SEEDED_BENCHMARKS);
-  const [seasonalForecasts] = useState<SeasonalForecast[]>(SEEDED_SEASONAL_FORECASTS);
   const [lastSaleUndo, setLastSaleUndo] = useState<Sale | null>(null);
   const [undoSeconds, setUndoSeconds] = useState<number>(0);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(restoredDemoShop !== null);
@@ -931,7 +929,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         purchases,
         expenses,
         wholesaleBenchmarks,
-        seasonalForecasts,
         lastSaleUndo,
         undoSeconds,
         isDemoMode,

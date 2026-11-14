@@ -2,7 +2,9 @@
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { computeDailyPulse } from "@/lib/deterministicMath";
-import { customerOverdueDays } from "@/lib/credit";
+import { dailySeries, periodSummary, percentChange, previousWindow, saleDay, windowEnding } from "@/lib/insights";
+import { LineChart } from "@/components/charts/LineChart";
+import { addDays, customerOverdueDays, toLocalYmd } from "@/lib/credit";
 import { formatCurrency } from "@/lib/utils";
 import { MetricCounter } from "@/components/animations/MetricCounter";
 import { 
@@ -21,7 +23,9 @@ export const DashboardView: React.FC = () => {
   const { t } = useTranslation();
   const { sales, customers, products, setActiveTab, openSeededDemoShop } = useApp();
 
-  const metrics = computeDailyPulse(sales);
+  // Today's pulse = today's sales only (shop-local calendar day), never all-time.
+  const today = toLocalYmd();
+  const metrics = computeDailyPulse(sales.filter((s) => saleDay(s) === today));
 
   // Customers past their promised pay-back date, most overdue first
   const overdueCustomers = customers
@@ -31,60 +35,25 @@ export const DashboardView: React.FC = () => {
   // Low stock products
   const lowStockProducts = products.filter((p) => p.quantity <= p.minQuantity);
 
-  // Dynamic 7-Day Sales Trend Calculation
-  const last7DaysData = useMemo(() => {
-    const days: { day: string; dateStr: string; cash: number; credit: number }[] = [];
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const now = new Date();
+  // Last 7 days vs the 7 before, from the deterministic insights engine.
+  const week = useMemo(() => {
+    const points = dailySeries(sales, windowEnding(today, 7));
+    // Compare complete days only: today is still in progress.
+    const full = windowEnding(addDays(today, -1), 7);
+    const current = periodSummary(sales, [], full).revenue;
+    const previous = periodSummary(sales, [], previousWindow(full)).revenue;
+    return { points, current, change: percentChange(current, previous) };
+  }, [sales, today]);
 
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
-      const dayLabel = i === 0 ? "Today" : dayNames[d.getDay()];
-      days.push({ day: dayLabel, dateStr, cash: 0, credit: 0 });
-    }
-
-    const completed = sales.filter((s) => s.status === "completed");
-
-    let matchedAny = false;
-    for (const sale of completed) {
-      const saleDate = sale.createdAt ? sale.createdAt.split("T")[0] : "";
-      const match = days.find((d) => d.dateStr === saleDate);
-      if (match) {
-        matchedAny = true;
-        if (sale.paymentType === "cash") {
-          match.cash += sale.totalAmount;
-        } else {
-          match.credit += sale.totalAmount;
-        }
-      }
-    }
-
-    // Fallback: If sales exist but dates are historical or fixed in seed data,
-    // ensure the chart dynamically displays those real figures
-    if (!matchedAny && completed.length > 0) {
-      days[6].cash = metrics.cashReceived;
-      days[6].credit = metrics.creditExtended;
-
-      const otherSales = completed.filter((_, idx) => idx % 7 !== 0);
-      otherSales.forEach((sale, idx) => {
-        const targetDay = days[idx % 6];
-        if (sale.paymentType === "cash") {
-          targetDay.cash += sale.totalAmount;
-        } else {
-          targetDay.credit += sale.totalAmount;
-        }
-      });
-    }
-
-    return days;
-  }, [sales, metrics.cashReceived, metrics.creditExtended]);
-
-  const maxVal = Math.max(
-    ...last7DaysData.map((bar) => bar.cash + bar.credit),
-    1000
-  );
+  const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dayOf = (ymd: string) => new Date(Number(ymd.slice(0, 4)), Number(ymd.slice(5, 7)) - 1, Number(ymd.slice(8, 10)));
+  const weekHeadline =
+    week.current === 0
+      ? "No sales in the last 7 full days."
+      : week.change === null
+      ? `${formatCurrency(week.current)} in sales over the last 7 full days.`
+      : `${formatCurrency(week.current)} over the last 7 full days, ${week.change >= 0 ? "up" : "down"} ${Math.abs(week.change)}% on the 7 days before.`;
 
   return (
     <main className="max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -249,61 +218,34 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Visual Sales Performance Graph (SVG Pure Renderer) */}
+      {/* 7-day sales trend: interactive line chart */}
       <div className="surface-l1 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-base font-medium text-slate-900">
-              {t("dashboard.salesTrend")}
-            </h3>
-            <p className="text-xs text-slate-500">
-              Last 7 days of daily retail transaction totals
-            </p>
-          </div>
-          <div className="flex items-center gap-3 text-xs font-semibold">
-            <span className="flex items-center gap-1.5 text-emerald-800">
-              <span className="h-2 w-2 rounded-full bg-emerald-800" /> Cash Sales
-            </span>
-            <span className="flex items-center gap-1.5 text-amber-600">
-              <span className="h-2 w-2 rounded-full bg-amber-500" /> Credit (Udhaar)
-            </span>
-          </div>
+        <div className="mb-4">
+          <h3 className="text-base font-medium text-slate-900">{t("dashboard.salesTrend")}</h3>
+          <p className="text-sm text-slate-600">{weekHeadline}</p>
         </div>
-
-        {/* Dynamic SVG Bar Chart */}
-        <div className="h-48 w-full flex items-end justify-between gap-2 pt-6 pb-2 px-2 border-b border-slate-100">
-          {last7DaysData.map((bar, i) => {
-            const cashH = bar.cash > 0 ? Math.max(Math.min(Math.round((bar.cash / maxVal) * 120), 120), 4) : 0;
-            const creditH = bar.credit > 0 ? Math.max(Math.min(Math.round((bar.credit / maxVal) * 120), 120), 4) : 0;
-
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1 group/bar">
-                <div className="w-full max-w-[36px] flex flex-col items-center justify-end h-[130px]">
-                  {creditH > 0 && (
-                    <div
-                      style={{ height: `${creditH}px`, '--target-height': `${creditH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` } as React.CSSProperties}
-                      className="w-full rounded-t bg-amber-500 transition-all duration-200 group-hover/bar:brightness-110"
-                      title={`${bar.day} Credit: ${formatCurrency(bar.credit)}`}
-                    />
-                  )}
-                  {cashH > 0 && (
-                    <div
-                      style={{ height: `${cashH}px`, '--target-height': `${cashH}px`, animation: `bar-grow 600ms var(--ease-out) ${i * 60}ms both` } as React.CSSProperties}
-                      className={`w-full bg-emerald-800 transition-all duration-200 group-hover/bar:brightness-110 group-hover/bar:shadow-md ${creditH > 0 ? "rounded-b" : "rounded"}`}
-                      title={`${bar.day} Cash: ${formatCurrency(bar.cash)}`}
-                    />
-                  )}
-                  {creditH === 0 && cashH === 0 && (
-                    <div className="w-full h-1 bg-slate-200 rounded" title={`${bar.day}: No sales`} />
-                  )}
-                </div>
-                <span className="text-sm font-medium text-slate-500 mt-2 group-hover/bar:text-emerald-800 transition-colors">
-                  {bar.day}
-                </span>
-              </div>
-            );
+        <LineChart
+          labels={week.points.map((p, i) => (i === week.points.length - 1 ? "Today" : DAY[dayOf(p.date).getDay()]))}
+          fullLabels={week.points.map((p, i) => {
+            const d = dayOf(p.date);
+            return `${i === week.points.length - 1 ? "Today" : DAY[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}`;
           })}
-        </div>
+          series={[
+            { key: "cash", label: "Cash sales", color: "#166534", values: week.points.map((p) => p.cash), area: true },
+            { key: "credit", label: "Udhaar (credit) sales", color: "#D97706", values: week.points.map((p) => p.credit) },
+          ]}
+          formatValue={(n) => formatCurrency(n)}
+          ariaLabel="Cash and udhaar sales per day, last 7 days"
+          height={240}
+          showTotal
+        />
+        <button
+          onClick={() => setActiveTab("insights")}
+          className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+        >
+          See 30 and 60-day trends in Smart Insights
+          <span aria-hidden="true" className="inline-block rtl:rotate-180">→</span>
+        </button>
       </div>
 
       {/* Quick Navigation Cards */}

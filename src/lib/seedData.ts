@@ -1,5 +1,6 @@
-import { Product, Customer, Sale, Expense, Purchase, WholesalePriceBenchmark, SeasonalForecast } from "@/types";
+import { Product, Customer, Sale, Expense, Purchase, WholesalePriceBenchmark } from "@/types";
 import { addDays, toLocalYmd } from "@/lib/credit";
+import { generateDemoHistory } from "@/lib/demoHistory";
 
 /** Demo due dates stay relative to the day the demo is opened (negative = already overdue). */
 const dueInDays = (n: number): string => addDays(toLocalYmd(), n);
@@ -83,54 +84,7 @@ export const BRANCH_01_CUSTOMERS: Customer[] = [
   },
 ];
 
-export const BRANCH_01_SALES: Sale[] = [
-  {
-    id: "b1-s1",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T08:30:00Z",
-    paymentType: "cash",
-    totalAmount: 1890,
-    items: [
-      { productId: "b1-p8", productName: "Tapal Danedar Tea 450g", quantity: 2, unitPrice: 650, unitCost: 570 },
-      { productId: "b1-p11", productName: "Dalda Cooking Oil 1L", quantity: 1, unitPrice: 540, unitCost: 480 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "b1-s2",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T09:15:00Z",
-    paymentType: "credit",
-    customerId: "b1-c1",
-    customerName: "Asif Bhai (Makan #12)",
-    totalAmount: 2430,
-    items: [
-      { productId: "b1-p1", productName: "Fine Wheat Flour (Aata) 10kg", quantity: 1, unitPrice: 1350, unitCost: 1240 },
-      { productId: "b1-p11", productName: "Dalda Cooking Oil 1L", quantity: 2, unitPrice: 540, unitCost: 480 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "b1-s3",
-    shopId: "shop-al-madina-01",
-    createdAt: "2026-11-09T10:45:00Z",
-    paymentType: "cash",
-    totalAmount: 3105,
-    items: [
-      { productId: "b1-p4", productName: "Super Kernel Basmati Rice 5kg", quantity: 1, unitPrice: 1800, unitCost: 1600 },
-      { productId: "b1-p3", productName: "White Refined Sugar 1kg", quantity: 5, unitPrice: 155, unitCost: 140 },
-      { productId: "b1-p15", productName: "Shan Biryani Masala", quantity: 4, unitPrice: 130, unitCost: 105 },
-    ],
-    status: "completed",
-  },
-];
 
-export const BRANCH_01_EXPENSES: Expense[] = [
-  { id: "b1-e1", title: "G-9 Shop Rent (November)", amount: 35000, category: "Rent", date: "2026-11-01" },
-  { id: "b1-e2", title: "IESCO Commercial Electricity Bill", amount: 14200, category: "Electricity", date: "2026-11-05" },
-  { id: "b1-e3", title: "Shop Assistant (Chotu) Weekly Stipend", amount: 4000, category: "Staff", date: "2026-11-08" },
-  { id: "b1-e4", title: "Wholesale Mandi Suzuki Freight", amount: 2500, category: "Transportation", date: "2026-11-07" },
-];
 
 
 // ==========================================
@@ -191,40 +145,7 @@ export const BRANCH_02_CUSTOMERS: Customer[] = [
   },
 ];
 
-export const BRANCH_02_SALES: Sale[] = [
-  {
-    id: "b2-s1",
-    shopId: "shop-al-madina-02",
-    createdAt: "2026-11-09T09:20:00Z",
-    paymentType: "cash",
-    totalAmount: 1420,
-    items: [
-      { productId: "b2-p1", productName: "Olper's Full Cream Milk 1L", quantity: 3, unitPrice: 290, unitCost: 260 },
-      { productId: "b2-p9", productName: "Lays Classic Potato Chips", quantity: 5, unitPrice: 60, unitCost: 52 },
-      { productId: "b2-p14", productName: "Cadbury Dairy Milk", quantity: 1, unitPrice: 220, unitCost: 180 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "b2-s2",
-    shopId: "shop-al-madina-02",
-    createdAt: "2026-11-09T11:10:00Z",
-    paymentType: "cash",
-    totalAmount: 2250,
-    items: [
-      { productId: "b2-p6", productName: "Red Bull Energy Drink", quantity: 4, unitPrice: 450, unitCost: 380 },
-      { productId: "b2-p3", productName: "Coca Cola Regular 1.5L", quantity: 2, unitPrice: 180, unitCost: 155 },
-      { productId: "b2-p17", productName: "Rose Petal Tissue Box", quantity: 1, unitPrice: 205, unitCost: 170 },
-    ],
-    status: "completed",
-  },
-];
 
-export const BRANCH_02_EXPENSES: Expense[] = [
-  { id: "b2-e1", title: "F-10 Markaz Commercial Rent", amount: 65000, category: "Rent", date: "2026-11-01" },
-  { id: "b2-e2", title: "Heavy Commercial Chiller Power", amount: 28500, category: "Electricity", date: "2026-11-04" },
-  { id: "b2-e3", title: "POS Thermal Paper Rolls & Bags", amount: 2400, category: "Packaging", date: "2026-11-06" },
-];
 
 
 // ==========================================
@@ -277,62 +198,8 @@ export const BRANCH_03_CUSTOMERS: Customer[] = [
   },
 ];
 
-export const BRANCH_03_SALES: Sale[] = [
-  {
-    id: "b3-s1",
-    shopId: "shop-al-madina-03",
-    createdAt: "2026-11-09T07:45:00Z",
-    paymentType: "credit",
-    customerId: "b3-c1",
-    customerName: "Saddar Royal Chai Khana",
-    totalAmount: 38900,
-    items: [
-      { productId: "b3-p6", productName: "Tapal Danedar Master Carton", quantity: 2, unitPrice: 14400, unitCost: 13200 },
-      { productId: "b3-p7", productName: "MilkPak Dairy Carton", quantity: 3, unitPrice: 3350, unitCost: 3000 },
-    ],
-    status: "completed",
-  },
-  {
-    id: "b3-s2",
-    shopId: "shop-al-madina-03",
-    createdAt: "2026-11-09T10:15:00Z",
-    paymentType: "cash",
-    totalAmount: 43250,
-    items: [
-      { productId: "b3-p1", productName: "Refined White Sugar 50kg Sack", quantity: 4, unitPrice: 7250, unitCost: 6800 },
-      { productId: "b3-p3", productName: "Dalda Banaspati 16L Tin", quantity: 1, unitPrice: 8200, unitCost: 7600 },
-      { productId: "b3-p8", productName: "Fresh Eggs Golden Crate", quantity: 1, unitPrice: 9300, unitCost: 8400 },
-    ],
-    status: "completed",
-  },
-];
-
-export const BRANCH_03_EXPENSES: Expense[] = [
-  { id: "b3-e1", title: "Haider Road Warehouse Godown Rent", amount: 45000, category: "Rent", date: "2026-11-01" },
-  { id: "b3-e2", title: "Ganj Mandi Loader / Mazdoor Wages", amount: 12000, category: "Staff", date: "2026-11-07" },
-  { id: "b3-e3", title: "Mazda Truck Goods Freight from Mandi", amount: 6500, category: "Transportation", date: "2026-11-06" },
-];
 
 
-// ==========================================
-// Helper: returns an ISO timestamp N days ago from now
-// ==========================================
-function daysAgo(n: number, timeStr = "09:00:00"): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.toISOString().split("T")[0]}T${timeStr}Z`;
-}
-
-// Patch sale dates so they always fall within the last 7 days window
-function patchSaleDates<T extends { createdAt?: string }>(
-  sales: T[],
-  offsets: number[]
-): T[] {
-  return sales.map((s, i) => ({
-    ...s,
-    createdAt: daysAgo(offsets[i] ?? 0),
-  }));
-}
 
 // ==========================================
 // Helper function to get branch seed data
@@ -345,37 +212,35 @@ export interface BranchSeed {
   purchases?: Purchase[];
 }
 
+const historyCache = new Map<string, { sales: Sale[]; expenses: Expense[] }>();
+
+/** Demo shop data: fixed catalogue + customers, and 60 days of generated history ending today. */
 export function getBranchSeedData(shopId: string): BranchSeed {
   const enrichProducts = (list: Product[]) => list.map(p => ({ ...p, name: p.name || p.nameEn }));
-  if (shopId === "shop-al-madina-02") {
-    return {
-      products: enrichProducts(BRANCH_02_PRODUCTS),
-      customers: BRANCH_02_CUSTOMERS,
-      sales: patchSaleDates(BRANCH_02_SALES, [4, 2]),
-      expenses: BRANCH_02_EXPENSES,
-    };
+  const branch =
+    shopId === "shop-al-madina-02" ? { id: shopId, products: BRANCH_02_PRODUCTS, customers: BRANCH_02_CUSTOMERS }
+    : shopId === "shop-al-madina-03" ? { id: shopId, products: BRANCH_03_PRODUCTS, customers: BRANCH_03_CUSTOMERS }
+    : { id: "shop-al-madina-01", products: BRANCH_01_PRODUCTS, customers: BRANCH_01_CUSTOMERS };
+
+  // Regenerate once per day so "today" and "yesterday" stay current; same data within a day.
+  const key = `${branch.id}|${toLocalYmd()}`;
+  let history = historyCache.get(key);
+  if (!history) {
+    history = generateDemoHistory({ shopId: branch.id, products: branch.products, customers: branch.customers });
+    historyCache.set(key, history);
   }
-  if (shopId === "shop-al-madina-03") {
-    return {
-      products: enrichProducts(BRANCH_03_PRODUCTS),
-      customers: BRANCH_03_CUSTOMERS,
-      sales: patchSaleDates(BRANCH_03_SALES, [4, 1]),
-      expenses: BRANCH_03_EXPENSES,
-    };
-  }
-  // Default to Branch 01 (Main G-9/4)
   return {
-    products: enrichProducts(BRANCH_01_PRODUCTS),
-    customers: BRANCH_01_CUSTOMERS,
-    sales: patchSaleDates(BRANCH_01_SALES, [4, 4, 2]),
-    expenses: BRANCH_01_EXPENSES,
+    products: enrichProducts(branch.products),
+    customers: branch.customers,
+    // Copies, so local edits (a new sale, an undo) never mutate the cached history.
+    sales: [...history.sales],
+    expenses: [...history.expenses],
   };
 }
 
 // Global default fallbacks
 export const SEEDED_PRODUCTS = BRANCH_01_PRODUCTS.map(p => ({ ...p, name: p.name || p.nameEn }));
 export const SEEDED_CUSTOMERS = BRANCH_01_CUSTOMERS;
-export const SEEDED_EXPENSES = BRANCH_01_EXPENSES;
 
 export const SEEDED_BENCHMARKS: WholesalePriceBenchmark[] = [
   {
@@ -468,22 +333,5 @@ export const SEEDED_BENCHMARKS: WholesalePriceBenchmark[] = [
     trend: "stable",
     recommendation: "Mandi benchmark aligned.",
     marketHub: "Faisalabad Ghalla Mandi",
-  },
-];
-
-export const SEEDED_SEASONAL_FORECASTS: SeasonalForecast[] = [
-  {
-    event: "Upcoming Ramadan & Fasting Season",
-    period: "Starts in ~4 weeks",
-    impactItems: ["Rooh Afza Syrup", "White Sugar (Cheeni)", "Basmati Rice", "Gram Flour (Besan)", "Cooking Oil"],
-    recommendedSurgeMultiplier: 2.8,
-    advice: "Historical Kiryana velocity for red syrups, sugar, and chickpea flour jumps 280% in Ramadan. Wholesale prices rise by 12-15% 10 days before moon sighting. Recommend locking supplier bulk purchase order now.",
-  },
-  {
-    event: "Winter Chai & Tea Surge",
-    period: "Active Season (November - February)",
-    impactItems: ["Tapal Danedar Tea", "MilkPak Dairy", "Everyday Milk Powder"],
-    recommendedSurgeMultiplier: 1.6,
-    advice: "Daily hot beverage consumption in neighbourhood counters rises 60%. Maintain buffer stock of at least 4 master cartons of tea.",
   },
 ];

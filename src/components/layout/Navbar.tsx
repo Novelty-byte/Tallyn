@@ -288,10 +288,11 @@ export const Navbar: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`rounded-lg px-2.5 py-1.5 transition-colors min-h-[38px] ${
+                aria-current={activeTab === tab.id ? "page" : undefined}
+                className={`relative rounded-lg px-2.5 py-1.5 transition-colors min-h-[38px] after:absolute after:inset-x-2.5 after:bottom-0.5 after:h-[2px] after:rounded-full after:transition-colors ${
                   activeTab === tab.id
-                    ? "bg-emerald-800 text-white font-bold shadow-2xs"
-                    : "text-slate-600 hover:text-emerald-900 hover:bg-slate-100"
+                    ? "text-slate-900 font-bold after:bg-slate-800"
+                    : "text-slate-600 hover:text-slate-900 after:bg-transparent hover:after:bg-slate-300"
                 }`}
               >
                 {tab.label}
@@ -506,10 +507,11 @@ export const Navbar: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 min-h-[44px] transition-colors ${
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              className={`relative whitespace-nowrap rounded-lg px-3 py-1.5 min-h-[44px] transition-colors after:absolute after:inset-x-3 after:bottom-1 after:h-[2px] after:rounded-full after:transition-colors ${
                 activeTab === tab.id
-                  ? "bg-emerald-800 text-white font-semibold"
-                  : "text-slate-600 hover:bg-slate-200"
+                  ? "text-slate-900 font-semibold after:bg-slate-800"
+                  : "text-slate-600 hover:text-slate-900 after:bg-transparent hover:after:bg-slate-300"
               }`}
             >
               {tab.label}

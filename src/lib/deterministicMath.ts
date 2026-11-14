@@ -1,7 +1,7 @@
 // Deterministic Financial & Inventory Math Engine (Module 3.1)
 // Inviolable Rule 1: Zero Hallucinated Numbers. Pure TypeScript calculation.
 
-import { Sale, Product } from "@/types";
+import { Sale } from "@/types";
 
 export interface DailyPulseMetrics {
   totalRevenue: number;
@@ -46,37 +46,4 @@ export function computeDailyPulse(sales: Sale[]): DailyPulseMetrics {
     netMarginPercent: Math.round(netMarginPercent * 10) / 10,
     transactionCount: completedSales.length,
   };
-}
-
-export function computeRunRate(product: Product, sales: Sale[]): { daysLeft: number; avgDailyUnits: number } {
-  // Aggregate sales for this product
-  let unitsSold = 0;
-  for (const sale of sales) {
-    if (sale.status !== "completed") continue;
-    for (const item of sale.items) {
-      if (item.productId === product.id) {
-        unitsSold += item.quantity;
-      }
-    }
-  }
-
-  // Assume 14-day window for calculation
-  const avgDailyUnits = Math.max(unitsSold / 14, 0.5);
-  const daysLeft = Math.round(product.quantity / avgDailyUnits);
-
-  return {
-    daysLeft,
-    avgDailyUnits: Math.round(avgDailyUnits * 10) / 10,
-  };
-}
-
-export function computeRecommendedReorder(
-  product: Product,
-  avgDailyUnits: number,
-  leadDays: number = 2,
-  bufferDays: number = 3
-): number {
-  const targetInventory = avgDailyUnits * (leadDays + bufferDays);
-  const reorderQty = Math.ceil(targetInventory - product.quantity);
-  return Math.max(reorderQty, 0);
 }
