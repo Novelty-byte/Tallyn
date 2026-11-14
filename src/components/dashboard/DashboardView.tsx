@@ -214,7 +214,7 @@ export const DashboardView: React.FC = () => {
                 className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 hover:underline"
               >
                 <span>Restock via Supplier Scanner</span>
-                <span aria-hidden="true">â†’</span>
+                <span aria-hidden="true" className="inline-block rtl:rotate-180">→</span>
               </button>
             </div>
           )}
@@ -239,7 +239,7 @@ export const DashboardView: React.FC = () => {
                 className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-rose-900 hover:underline"
               >
                 <span>Send WhatsApp Reminder</span>
-                <span aria-hidden="true">â†’</span>
+                <span aria-hidden="true" className="inline-block rtl:rotate-180">→</span>
               </button>
             </div>
           )}

@@ -5,7 +5,8 @@ import { audio } from "@/lib/audio";
 import { formatCurrency } from "@/lib/utils";
 import { ArchitectureModal } from "@/components/landing/ArchitectureModal";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
-import { useMousePosition } from "@/lib/animations";
+import { AmbientBackground } from "@/components/fx/AmbientBackground";
+import { CounterScene } from "@/components/fx/CounterScene";
 import { 
   ArrowRight, 
   Smartphone, 
@@ -50,9 +51,6 @@ export const LandingView: React.FC = () => {
   // Tab & Modal States
   const [activeFeatureTab, setActiveFeatureTab] = useState<number>(0);
   const [isArchitectureModalOpen, setIsArchitectureModalOpen] = useState(false);
-
-  // Mouse position tracking for ambient glow
-  const mousePosition = useMousePosition();
 
   // Hero interactive ticker state (retained for comparison table elsewhere on page)
 
@@ -155,65 +153,36 @@ export const LandingView: React.FC = () => {
 
 
   return (
-    <div className="space-y-16 sm:space-y-28 pb-24 overflow-hidden bg-slate-50 text-slate-900">
+    <div className="space-y-16 sm:space-y-28 pb-24 overflow-hidden bg-transparent text-slate-900">
 
       {/* 2. Hero Section */}
-      <section className="relative pt-6 sm:pt-14 pb-8 overflow-hidden">
-        {/* Dynamic Background Glow with Mouse Tracking */}
-        <div
-          className="pointer-events-none absolute top-0 start-1/2 -translate-x-1/2 w-full max-w-7xl h-[680px] opacity-25 blur-3xl"
-          style={{
-            background: `radial-gradient(circle at ${50 + mousePosition.x / 100}% ${25 + mousePosition.y / 100}%, #047857 0%, #d97706 45%, transparent 75%)`,
-            transition: 'background 0.3s ease-out'
-          }}
-        />
+      <section data-fx="cursor-zone" className="relative pt-6 sm:pt-14 pb-8 overflow-hidden">
+        {/* Calm Tech ambient layer: drifting light tints + cursor-reactive dot grid */}
+        <AmbientBackground variant="hero" />
 
-        {/* Floating gradient blobs for ambient depth */}
-        <div
-          className="pointer-events-none absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 animate-float"
-          style={{
-            background: 'radial-gradient(circle, #166534 0%, transparent 70%)',
-            filter: 'blur(40px)'
-          }}
-        />
-        <div
-          className="pointer-events-none absolute top-1/2 right-1/4 w-80 h-80 rounded-full opacity-15 animate-float"
-          style={{
-            background: 'radial-gradient(circle, #d97706 0%, transparent 70%)',
-            filter: 'blur(40px)',
-            animationDelay: '-10s'
-          }}
-        />
-        <div
-          className="pointer-events-none absolute bottom-1/4 left-1/3 w-64 h-64 rounded-full opacity-10 animate-pulse-glow"
-          style={{
-            background: 'radial-gradient(circle, #22c55e 0%, transparent 70%)',
-            filter: 'blur(40px)'
-          }}
-        />
-
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative text-center">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center lg:text-start lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:items-center">
+         <div>
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/90 px-4 py-1.5 text-xs font-semibold text-emerald-950 shadow-xs mb-6">
-            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-            <span>Autonomous Retail Operating System for Pakistani Kiryana & Chains</span>
-            <span className="text-emerald-700">•</span>
-            <span>Zero-Typing Counter POS</span>
+            <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" /></span>
+            <span className="mono-label text-emerald-900">Live · built for kiryana counters</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="max-w-4xl mx-auto text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.12]">
-            Zero-Typing Counter POS & Voice Clarity for Neighbourhood Retail
+          <h1 className="max-w-4xl mx-auto lg:mx-0 text-4xl sm:text-5xl lg:text-[3.5rem] font-semibold tracking-[-0.03em] text-slate-900 leading-[1.08]">
+            Run the counter.<br className="hidden sm:block" />{" "}
+            <span className="text-emerald-800">Not the paperwork.</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-5 max-w-3xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
-            Multi-store retail operating system built for single-handed 390px mobile phone screens. Pure deterministic profit & stock calculations. Multimodal AI eliminates counter typing, parses crumpled paper supplier invoices, and drafts culturally respectful WhatsApp debt collection reminders.
+          <p className="mt-5 max-w-xl mx-auto lg:mx-0 text-base sm:text-lg text-slate-600 leading-relaxed">
+            Tap or speak to bill a customer. Stock, profit and udhaar are calculated by exact code, never guessed by AI, so the numbers on your phone are the numbers in your till.
           </p>
 
           {/* --- THE CENTRALIZED BIG SEEDED DEMO BUTTON --- */}
-          <div className="mt-10 flex flex-col items-center justify-center">
+          <div className="mt-9 flex flex-col items-center lg:items-start justify-center">
             <button
+              data-fx="magnetic"
               onClick={openSeededDemoShop}
               className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-amber-100 px-8 py-4 text-base sm:text-lg font-semibold shadow-lift hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 active:scale-98 border border-emerald-700/60 min-h-[64px] overflow-hidden"
             >
@@ -236,7 +205,7 @@ export const LandingView: React.FC = () => {
             </button>
 
             {/* Sub-Actions */}
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-600">
+            <div className="mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-semibold text-slate-600">
               <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-white/80 px-3 py-1 rounded-full border border-emerald-200 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 cursor-default">
                 <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> 60 Realistic Commodities Seeded
               </span>
@@ -252,8 +221,12 @@ export const LandingView: React.FC = () => {
             </div>
           </div>
 
+          <CounterScene className="mt-8 mx-auto h-48 w-full max-w-sm xl:hidden" />
+         </div>
+
           {/* 3. Interactive 390px Counter POS Phone Simulator */}
-          <div className="mt-14 max-w-lg mx-auto relative">
+          <div className="mt-12 lg:mt-0 max-w-lg mx-auto relative w-full">
+            <CounterScene className="pointer-events-none absolute -bottom-10 -end-44 -z-10 hidden h-[300px] w-[400px] opacity-80 xl:block" />
             <div className="text-center mb-3">
               <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-full border border-emerald-300">
                 <Smartphone className="h-3.5 w-3.5" /> Interactive 390px Counter Phone Simulator
@@ -262,12 +235,12 @@ export const LandingView: React.FC = () => {
             </div>
 
             {/* Mobile Handset Bezel */}
-            <div className="w-full max-w-[390px] mx-auto rounded-[42px] border-[9px] border-slate-900 bg-slate-950 p-3 shadow-2xl text-white relative overflow-hidden ring-4 ring-emerald-900/20">
+            <div className="w-full max-w-[390px] mx-auto rounded-[42px] border-[9px] border-[#3d4a45] bg-white p-3 shadow-2xl text-slate-900 relative overflow-hidden ring-4 ring-emerald-900/10">
               
               {/* Phone Dynamic Island / Notch */}
-              <div className="flex items-center justify-between px-3 pt-1 pb-2 border-b border-slate-900 text-xs font-mono text-slate-400">
+              <div className="flex items-center justify-between px-3 pt-1 pb-2 border-b border-slate-200 text-xs font-mono text-slate-500">
                 <span>09:41</span>
-                <div className="h-4 w-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
+                <div className="h-4 w-20 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 </div>
                 <div className="flex items-center gap-1 text-xs">
@@ -277,14 +250,14 @@ export const LandingView: React.FC = () => {
               </div>
 
               {/* Counter App Header inside phone */}
-              <div className="pt-2 pb-3 px-1 flex items-center justify-between border-b border-slate-800">
+              <div className="pt-2 pb-3 px-1 flex items-center justify-between border-b border-slate-200">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-xl bg-emerald-700 text-amber-300 flex items-center justify-center font-bold">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-700 text-amber-700 flex items-center justify-center font-bold">
                     <Store className="h-4 w-4" />
                   </div>
                   <div className="text-start">
-                    <h3 className="text-xs font-semibold text-white">Al-Madina Kiryana</h3>
-                    <p className="text-xs text-emerald-400 flex items-center gap-1">
+                    <h3 className="text-xs font-semibold text-slate-900">Al-Madina Kiryana</h3>
+                    <p className="text-xs text-emerald-700 flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Counter POS #1
                     </p>
                   </div>
@@ -305,15 +278,15 @@ export const LandingView: React.FC = () => {
 
               {/* Voice Notice bubble */}
               {phoneVoiceNotice && (
-                <div className="my-2 rounded-xl bg-amber-950/80 border border-amber-500/50 p-2 text-xs font-semibold text-amber-200 flex items-center justify-between">
+                <div className="my-2 rounded-xl bg-cream border border-amber-300 p-2 text-xs font-semibold text-amber-900 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <Volume2 className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <Volume2 className="h-3.5 w-3.5 text-amber-700 shrink-0" />
                     <span>{phoneVoiceNotice}</span>
                   </div>
                   <button 
                     onClick={() => setPhoneVoiceNotice(null)} 
                     aria-label="Dismiss voice notice"
-                    className="text-amber-400 hover:text-white p-1"
+                    className="text-amber-700 hover:text-slate-900 p-1"
                   >
                     <CloseIcon className="h-3 w-3" />
                   </button>
@@ -323,10 +296,10 @@ export const LandingView: React.FC = () => {
               {/* Clickable Product Shelf inside phone */}
               <div className="my-2 text-start">
                 <div className="flex items-center justify-between px-1 mb-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Quick Counter Items (Tap to Add)
                   </span>
-                  <span className="text-xs text-emerald-400 font-mono">Web Audio Active</span>
+                  <span className="text-xs text-emerald-700 font-mono">Web Audio Active</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-1.5">
@@ -339,29 +312,29 @@ export const LandingView: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => handleAddPhoneItem(item)}
-                      className="text-start p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/80 hover:bg-slate-800/80 transition-all active:scale-95 cursor-pointer group min-h-[44px]"
+                      className="text-start p-2 rounded-xl bg-mist border border-slate-200 hover:border-emerald-500 hover:bg-mint transition-all active:scale-95 cursor-pointer group min-h-[44px]"
                     >
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
                         <span>{item.cat}</span>
-                        <span className="text-emerald-400 font-semibold group-hover:scale-105 transition-transform">+ Add</span>
+                        <span className="text-emerald-700 font-semibold group-hover:scale-105 transition-transform">+ Add</span>
                       </div>
-                      <p className="text-xs font-semibold text-white mt-0.5 truncate">{item.name}</p>
-                      <p className="text-xs font-bold text-amber-300 font-mono tabular-nums">{formatCurrency(item.price)}</p>
+                      <p className="text-xs font-semibold text-slate-900 mt-0.5 truncate">{item.name}</p>
+                      <p className="text-xs font-bold text-amber-700 font-mono tabular-nums">{formatCurrency(item.price)}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Cart Summary inside phone */}
-              <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-2.5 my-2">
-                <div className="flex items-center justify-between text-xs mb-1.5 pb-1 border-b border-slate-800">
-                  <span className="font-semibold text-slate-300 flex items-center gap-1">
-                    <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
+              <div className="rounded-xl bg-mist border border-slate-200 p-2.5 my-2">
+                <div className="flex items-center justify-between text-xs mb-1.5 pb-1 border-b border-slate-200">
+                  <span className="font-semibold text-slate-700 flex items-center gap-1">
+                    <ShoppingBag className="h-3.5 w-3.5 text-emerald-700" />
                     <span>Cart ({phoneCart.reduce((sum, i) => sum + i.qty, 0)} items)</span>
                   </span>
                   <button 
                     onClick={() => setPhoneCart([])}
-                    className="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-0.5 p-1"
+                    className="text-xs text-slate-500 hover:text-rose-600 flex items-center gap-0.5 p-1"
                   >
                     <Trash2 className="h-3 w-3" /> Clear
                   </button>
@@ -375,16 +348,16 @@ export const LandingView: React.FC = () => {
                   <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-none pr-1">
                     {phoneCart.map((item) => (
                       <div key={item.id} className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300 truncate max-w-[170px]">
+                        <span className="text-slate-700 truncate max-w-[170px]">
                           {item.qty}x {item.name}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono tabular-nums text-amber-300 font-bold">
+                          <span className="font-mono tabular-nums text-amber-700 font-bold">
                             {formatCurrency(item.price * item.qty)}
                           </span>
                           <button 
                             onClick={() => handleRemovePhoneItem(item.id)}
-                            className="text-slate-500 hover:text-rose-400 p-1"
+                            className="text-slate-500 hover:text-rose-600 p-1"
                           >
                             ×
                           </button>
@@ -394,9 +367,9 @@ export const LandingView: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-300">Total Payable:</span>
-                  <span className="text-sm font-mono tabular-nums text-amber-300 font-bold">
+                <div className="mt-2 pt-1.5 border-t border-slate-200 flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slate-700">Total Payable:</span>
+                  <span className="text-sm font-mono tabular-nums text-amber-700 font-bold">
                     {formatCurrency(phoneSubtotal)}
                   </span>
                 </div>
@@ -404,23 +377,23 @@ export const LandingView: React.FC = () => {
 
               {/* Sale Success / Undo Banner inside phone */}
               {phoneSaleCompleted && (
-                <div className="my-2 rounded-xl bg-emerald-950 border border-emerald-600/60 p-2 text-start">
+                <div className="my-2 rounded-xl bg-mint border border-emerald-400 p-2 text-start">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-xs">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <div className="flex items-center gap-1.5 text-emerald-900 font-semibold text-xs">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700" />
                       <span>Sale Completed: {formatCurrency(lastCompletedTotal)}</span>
                     </div>
                     {phoneUndoAvailable && (
                       <button
                         onClick={handlePhoneUndoSale}
-                        className="flex items-center gap-1 rounded-lg bg-rose-900/80 hover:bg-rose-800 text-rose-200 px-2 py-0.5 text-xs font-semibold transition-colors"
+                        className="flex items-center gap-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-0.5 text-xs font-semibold transition-colors"
                       >
                         <RotateCcw className="h-3 w-3" />
                         <span>Undo Sale</span>
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-emerald-200/80 mt-0.5">
+                  <p className="text-xs text-emerald-800 mt-0.5">
                     Stock atomically decremented. 10-second safety window open.
                   </p>
                 </div>
@@ -440,7 +413,7 @@ export const LandingView: React.FC = () => {
 
               {/* Phone Home Bar */}
               <div className="pt-3 pb-1 flex justify-center">
-                <div className="h-1 w-28 rounded-full bg-slate-800" />
+                <div className="h-1 w-28 rounded-full bg-slate-300" />
               </div>
             </div>
 
@@ -475,7 +448,7 @@ export const LandingView: React.FC = () => {
         </div>
 
         {/* Tab Strip */}
-        <div className="flex justify-start sm:justify-center overflow-x-auto gap-2 pb-2 scrollbar-none mb-8">
+        <div className="flex justify-start overflow-x-auto gap-2 px-1 pt-1 pb-2 scrollbar-none mb-8 [&>*:first-child]:ms-auto [&>*:last-child]:me-auto">
           {[
             { id: 0, label: "Say-It Voice POS", icon: Mic },
             { id: 1, label: "Paper Bill Scanner", icon: Camera },
@@ -524,7 +497,7 @@ export const LandingView: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-emerald-950 text-white p-6 rounded-2xl border border-emerald-800 shadow-inner">
+              <div className="bg-emerald-950 text-white p-6 rounded-2xl border border-emerald-800 shadow-inner soft-panel">
                 <div className="flex items-center gap-2 text-amber-300 font-mono text-xs mb-3">
                   <Mic className="h-4 w-4" />
                   <span>Speech Transcription Stream:</span>
@@ -560,7 +533,7 @@ export const LandingView: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-inner">
+              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-inner soft-panel">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
                   <span>Vision OCR Extraction Preview</span>
                   <span className="text-emerald-400 font-bold">100% Parsed</span>
@@ -599,7 +572,7 @@ export const LandingView: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 text-center shadow-inner">
+              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 text-center shadow-inner soft-panel">
                 <Radio className="h-10 w-10 text-amber-400 mx-auto mb-2" />
                 <p className="text-xs font-semibold text-amber-300">Spoken Memo Synthesizer</p>
                 <p className="text-xs text-slate-400 mt-1 italic">
@@ -656,7 +629,7 @@ export const LandingView: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2 text-xs shadow-inner">
+              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2 text-xs shadow-inner soft-panel">
                 <div className="flex justify-between border-b border-slate-800 pb-2">
                   <span>Fine Flour 20kg Bag</span>
                   <span className="text-rose-400 font-bold">Supplier +18.7% Overpriced</span>
@@ -716,7 +689,7 @@ export const LandingView: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-3 text-xs shadow-inner">
+              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-3 text-xs shadow-inner soft-panel">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-emerald-400" />
@@ -782,7 +755,7 @@ export const LandingView: React.FC = () => {
               color: "bg-slate-50 border-slate-200",
             },
           ].map((branch, i) => (
-            <div key={i} className={`rounded-2xl border p-6 ${branch.color} group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col justify-between`}>
+            <div key={i} data-fx="tilt spot" className={`rounded-2xl border p-6 ${branch.color} group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col justify-between`}>
               <div>
                 <div className="text-3xl mb-3">{branch.icon}</div>
                 <div className="flex items-center gap-2 mb-2">
@@ -859,7 +832,7 @@ export const LandingView: React.FC = () => {
           ].map((item, idx) => (
             <div
               key={idx}
-              className="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-soft hover:shadow-lift hover:-translate-y-1.5 hover:border-emerald-300/80 transition-all duration-300 group"
+              data-fx="tilt spot" className="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-soft hover:shadow-lift hover:-translate-y-1.5 hover:border-emerald-300/80 transition-all duration-300 group"
             >
               <div>
                 {/* 5-star rating */}
@@ -948,7 +921,7 @@ export const LandingView: React.FC = () => {
       </section>
 
       {/* 8. The 5 Inviolable Rules & Technical Architecture CTA */}
-      <AnimatedSection delay={1000} direction="up" threshold={0.1}><section className="bg-slate-900 text-white py-16">
+      <AnimatedSection delay={1000} direction="up" threshold={0.1}><section className="bg-slate-900 text-white py-16 soft-panel">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-mono uppercase tracking-wider text-amber-400">Architectural Guarantees</span>
@@ -968,7 +941,7 @@ export const LandingView: React.FC = () => {
             ].map((rule, idx) => (
               <div
                 key={idx}
-                className="group rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between hover:border-emerald-700/60 hover:bg-slate-900/80 hover:-translate-y-1 transition-all duration-300"
+                data-fx="tilt spot" className="group rounded-2xl border border-slate-200 bg-white/75 p-5 flex flex-col justify-between hover:border-emerald-700/60 hover:bg-slate-900/80 hover:-translate-y-1 transition-all duration-300"
               >
                 <div>
                   <span className="inline-block text-2xl font-bold text-amber-400 font-mono tabular-nums group-hover:text-amber-300 group-hover:scale-110 transition-all duration-300">{rule.num}</span>
@@ -998,7 +971,7 @@ export const LandingView: React.FC = () => {
 
       {/* 9. Dedicated New Retailer Customer Sign-Up Section */}
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-emerald-800/40 bg-slate-950 text-white p-8 sm:p-12 shadow-lift relative">
+        <div className="rounded-3xl border border-emerald-800/40 bg-slate-950 text-white p-8 sm:p-12 shadow-lift relative soft-panel">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <span className="inline-block rounded-full bg-emerald-900/80 px-3 py-1 text-xs font-semibold text-amber-300 mb-3 border border-emerald-700/60">
               Retailer Onboarding
@@ -1032,7 +1005,7 @@ export const LandingView: React.FC = () => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-700" />
             </div>
-            <span className="relative bg-slate-950 px-3 text-xs uppercase font-semibold text-slate-400">
+            <span className="relative bg-[#f4f9f6] px-3 text-xs uppercase font-semibold text-slate-500">
               Or Register With Email
             </span>
           </div>
@@ -1053,7 +1026,7 @@ export const LandingView: React.FC = () => {
                   if (!signUpShopName.trim()) setSignUpErrors(prev => ({ ...prev, shopName: "Enter your shop name (e.g. Al-Madina Kiryana)" }));
                 }}
                 placeholder="e.g. Madina Grocers & General Store"
-                className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 min-h-[44px]"
+                className="w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-600 min-h-[44px]"
               />
               {signUpErrors.shopName && (
                 <p className="text-xs text-rose-400 mt-1">{signUpErrors.shopName}</p>
@@ -1074,7 +1047,7 @@ export const LandingView: React.FC = () => {
                   if (!signUpEmail.trim()) setSignUpErrors(prev => ({ ...prev, email: "Enter your email address" }));
                 }}
                 placeholder="storeowner@gmail.com"
-                className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 min-h-[44px]"
+                className="w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-600 min-h-[44px]"
               />
               {signUpErrors.email && (
                 <p className="text-xs text-rose-400 mt-1">{signUpErrors.email}</p>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useApp, ActiveTab } from "@/context/AppContext";
@@ -33,11 +33,25 @@ export const Navbar: React.FC = () => {
     openSeededDemoShop,
     isDemoMode,
     exitDemoMode,
-    logout
+    logout,
+    unsyncedCount,
+    dismissUnsynced
   } = useApp();
 
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Header condenses and gains a soft shadow once the page scrolls.
+  useEffect(() => {
+    const onScroll = () => setScrolled((prev) => {
+      const next = window.scrollY > 12;
+      return prev === next ? prev : next;
+    });
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const isLandingView = activeTab === "landing" || activeTab === "notfound";
 
@@ -70,10 +84,10 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
+    <header data-scrolled={scrolled ? "1" : "0"} className="nav-shell sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
       {/* Demo Mode Persistent Banner */}
       {isDemoMode && (
-        <div className="bg-emerald-900 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between border-b border-emerald-950 shadow-xs">
+        <div className="bg-emerald-800 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between border-b border-emerald-950 shadow-xs">
           <div className="mx-auto flex items-center gap-2">
             <span className="flex h-2 w-2 relative">
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
@@ -90,7 +104,7 @@ export const Navbar: React.FC = () => {
       )}
 
       {/* Main Header Container */}
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
+      <div className="nav-inner mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
         
         {/* Left Side: Brand Logo + Conditional Store Switcher */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -103,7 +117,7 @@ export const Navbar: React.FC = () => {
             <img 
               src="/tallyn-full-logo.png" 
               alt="Tallyn Autonomous Retail OS" 
-              className="h-12 sm:h-14 w-auto object-contain transition-transform group-hover:scale-102"
+              className="nav-logo h-12 sm:h-14 w-auto object-contain transition-transform group-hover:scale-102"
             />
           </button>
 
@@ -288,6 +302,19 @@ export const Navbar: React.FC = () => {
 
         {/* Right Side: Tools & CTAs */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Honest sync state: shown only when a server write failed and was kept locally */}
+          {unsyncedCount > 0 && (
+            <button
+              onClick={dismissUnsynced}
+              title="These changes are on this device only. Click to dismiss."
+              className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-cream px-3 py-2 text-xs font-semibold text-amber-900 min-h-[44px]"
+            >
+              <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+              <span className="hidden sm:inline">{unsyncedCount} saved on this device only</span>
+              <span className="sm:hidden">{unsyncedCount} local</span>
+            </button>
+          )}
+
           {/* Kiryana Radio: Only visible inside store/demo (not on landing page) */}
           {!isLandingView && (
             <button
@@ -444,7 +471,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Sub-Navigation Bar */}
-      <div className="flex lg:hidden overflow-x-auto border-t border-slate-100 bg-slate-50/90 px-2 py-1.5 text-xs font-semibold scrollbar-none gap-1">
+      <div className={`${isLandingView ? "flex" : "hidden"} lg:hidden overflow-x-auto border-t border-slate-100 bg-slate-50/90 px-2 py-1.5 text-xs font-semibold scrollbar-none gap-1`}>
         {isLandingView ? (
           <>
             <button

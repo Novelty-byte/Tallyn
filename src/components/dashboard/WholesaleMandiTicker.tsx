@@ -297,7 +297,7 @@ export const WholesaleMandiTicker: React.FC = () => {
   // If store has no matching items yet
   if (activeStoreMandiItems.length === 0) {
     return (
-      <div className="w-full bg-slate-900 border-b border-slate-800 py-1.5 px-4 text-xs text-slate-400 flex items-center justify-between">
+      <div className="w-full soft-panel soft-panel--cream bg-slate-900 border-b border-slate-800 py-1.5 px-4 text-xs text-slate-400 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MapPin className="h-3.5 w-3.5 text-emerald-400" />
           <span>{mandiHubInfo.marketName}</span>
@@ -309,7 +309,7 @@ export const WholesaleMandiTicker: React.FC = () => {
   }
 
   return (
-    <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 text-white relative shadow-inner overflow-hidden select-none">
+    <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 text-white relative shadow-inner overflow-hidden select-none soft-panel soft-panel--cream">
       <div className="max-w-7xl mx-auto flex items-center h-10 px-3 sm:px-4 text-xs">
         
         {/* Left Market Anchor Badge */}
@@ -380,11 +380,11 @@ export const WholesaleMandiTicker: React.FC = () => {
       {/* Item Inspection Overlay Modal */}
       {activeItemDetail && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm"
           onClick={() => setActiveItemDetail(null)}
         >
           <div 
-            className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-700 p-5 text-white shadow-2xl animate-fade-in text-start"
+            className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-700 p-5 text-white shadow-2xl animate-fade-in text-start soft-panel"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">

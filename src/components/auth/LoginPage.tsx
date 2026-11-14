@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { db } from "@/services/supabase";
+import { useToast } from "@/components/fx/Toast";
 import { 
   Store, 
   Mail, 
@@ -16,6 +17,7 @@ import {
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const location = useLocation();
   const returnTo = (location.state as { from?: string } | null)?.from || "/dashboard";
   const { user, loginWithGoogle } = useApp();
@@ -87,7 +89,7 @@ export const LoginPage: React.FC = () => {
 
   const handleSendMagicLink = async () => {
     if (!email.trim()) {
-      alert("Please enter your email address first.");
+      toast.info("Enter your email first", { description: "We'll send a sign-in link to that address." });
       return;
     }
 

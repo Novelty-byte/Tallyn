@@ -69,7 +69,7 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm animate-fade-in">
       <div
         className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200"
         role="dialog"
@@ -189,7 +189,7 @@ export const AuthModal: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors min-h-[44px] disabled:opacity-50"
+              className="flex-1 rounded-xl bg-graphite-700 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors min-h-[44px] disabled:opacity-50"
             >
               {isLoading ? "..." : mode === "login" ? t("auth.loginBtn") : t("auth.createOne")}
             </button>

@@ -4,6 +4,8 @@ import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
 import { audio } from "@/lib/audio";
 import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
+import { VoiceConfirmSheet, type ConfirmedVoiceOrder } from "@/components/pos/VoiceConfirmSheet";
+import { useToast } from "@/components/fx/Toast";
 import { ConfettiBurst } from "@/components/animations/ConfettiBurst";
 import { 
   ShoppingCart, 
@@ -50,12 +52,23 @@ export const CounterPOSView: React.FC = () => {
   const [newCustPhone, setNewCustPhone] = useState("");
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const toast = useToast();
+  const [voiceLang, setVoiceLang] = useState<"ur" | "en">(() => {
+    try { return window.localStorage.getItem("tallyn.voiceLang") === "en" ? "en" : "ur"; } catch { return "ur"; }
+  });
+  // When set, the confirm sheet is open. Empty transcript = "type it" mode.
+  const [voiceSheet, setVoiceSheet] = useState<{ transcript: string } | null>(null);
+  const chooseVoiceLang = (l: "ur" | "en") => {
+    setVoiceLang(l);
+    try { window.localStorage.setItem("tallyn.voiceLang", l); } catch { /* ignore */ }
+  };
 
   const addToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (!product || product.quantity <= (cart[productId] || 0)) return;
 
     audio.playBarcodeBeep();
+    try { navigator.vibrate?.(8); } catch { /* haptics unsupported */ }
     setCart((prev) => ({
       ...prev,
       [productId]: (prev[productId] || 0) + 1,
@@ -119,66 +132,36 @@ export const CounterPOSView: React.FC = () => {
     clearCart();
   };
 
-  // Parse a spoken transcript into cart items via keyword matching
-  const parseVoiceToCart = (transcript: string) => {
-    const lc = transcript.toLowerCase();
-
-    // Quantity word map (English + Roman Urdu)
-    const qtyWords: Record<string, number> = {
-      one: 1, two: 2, three: 3, four: 4, five: 5,
-      six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
-      ek: 1, do: 2, teen: 3, char: 4, paanch: 5,
-      chhe: 6, saat: 7, aath: 8, nau: 9, das: 10,
-    };
-
-    // Detect quantity mentioned anywhere near a product keyword
-    const extractQty = (before: string): number => {
-      for (const [word, num] of Object.entries(qtyWords)) {
-        if (before.includes(word)) return num;
+  // The microphone only PROPOSES a cart. This runs when the cashier taps "Add to cart"
+  // in the confirm sheet; quantities are clamped to shelf stock.
+  const applyVoiceOrder = (order: ConfirmedVoiceOrder) => {
+    setCart((prev) => {
+      const next = { ...prev };
+      for (const it of order.items) {
+        const stock = products.find((p) => p.id === it.productId)?.quantity ?? 0;
+        next[it.productId] = Math.min((prev[it.productId] || 0) + it.qty, stock);
       }
-      const numMatch = before.match(/\b(\d+)\b/);
-      return numMatch ? parseInt(numMatch[1], 10) : 1;
-    };
-
-    const newCartItems: { [id: string]: number } = {};
-
-    for (const p of products) {
-      // Build keyword list from product name parts
-      const names = [p.name, p.nameEn].filter(Boolean) as string[];
-      const keywords = names
-        .flatMap(n => n.toLowerCase().split(/[\s\-\/,()]+/))
-        .filter(k => k.length >= 3);
-
-      const matched = keywords.some(kw => lc.includes(kw));
-      if (matched) {
-        // Find quantity: scan the substring before this keyword occurrence
-        let qty = 1;
-        for (const kw of keywords) {
-          const idx = lc.indexOf(kw);
-          if (idx !== -1) {
-            const before = lc.slice(Math.max(0, idx - 20), idx);
-            qty = extractQty(before || lc);
-            break;
-          }
-        }
-        newCartItems[p.id] = Math.max(1, qty);
-      }
-    }
-
-    if (Object.keys(newCartItems).length > 0) {
-      setCart(prev => ({ ...prev, ...newCartItems }));
-      const names = Object.keys(newCartItems)
-        .map(id => products.find(p => p.id === id)?.name || id)
-        .join(", ");
-      setVoiceNotice(`✅ Added: ${names}`);
-      // Auto-detect credit/udhaar intent
-      if (lc.includes("udhaar") || lc.includes("credit") || lc.includes("baad mein") || lc.includes("later")) {
-        setPaymentType("credit");
-      }
+      return next;
+    });
+    if (order.paymentType === "credit") {
+      setPaymentType("credit");
+      if (order.customerId) setSelectedCustomerId(order.customerId);
     } else {
-      setVoiceNotice("❌ No products recognised. Try saying product names clearly (e.g. \"two tea one oil\").");
+      setPaymentType("cash");
     }
-    setTimeout(() => setVoiceNotice(null), 7000);
+    audio.playBarcodeBeep();
+    const count = order.items.reduce((n, i) => n + i.qty, 0);
+    toast.success(`Added ${count} item${count === 1 ? "" : "s"} to the cart`, {
+      description: order.paymentType === "credit" ? "Payment set to udhaar — review and record the sale." : "Review the cart and record the sale.",
+    });
+    if (order.clamped.length > 0) {
+      const names = order.clamped
+        .map((c) => `${products.find((p) => p.id === c.productId)?.nameEn ?? "Item"} (${c.granted} of ${c.requested})`)
+        .join(", ");
+      toast.warning("Some quantities were limited to stock on the shelf", { description: names });
+    }
+    setVoiceSheet(null);
+    setVoiceNotice(null);
   };
 
   // Real microphone voice POS using Web Speech API
@@ -188,24 +171,25 @@ export const CounterPOSView: React.FC = () => {
       (window as unknown as Record<string, unknown>).webkitSpeechRecognition as (new () => SpeechRecognition) | undefined;
 
     if (!SpeechRecognitionCtor) {
-      setVoiceNotice("⚠️ Voice input requires Chrome or Edge. Please switch browsers.");
-      setTimeout(() => setVoiceNotice(null), 6000);
+      // Fail open: no microphone support → let the cashier type the same sentence.
+      toast.info("Voice needs Chrome or Edge", { description: "You can type the order instead — it is read the same way." });
+      setVoiceSheet({ transcript: "" });
       return;
     }
 
     setIsSpeakingVoice(true);
-    setVoiceNotice("🎙 Listening… speak the order now");
+    setVoiceNotice(voiceLang === "ur" ? "🎙 Listening… اپنا آرڈر بولیں" : "🎙 Listening… speak the order now");
 
     const recognition = new SpeechRecognitionCtor();
-    recognition.lang = "en-PK";
+    recognition.lang = voiceLang === "ur" ? "ur-PK" : "en-PK";
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = event.results[0][0].transcript;
-      setVoiceNotice(`🎙 Heard: "${transcript}"`);
-      parseVoiceToCart(transcript);
+      setVoiceNotice(null);
+      setVoiceSheet({ transcript });
       setIsSpeakingVoice(false);
     };
 
@@ -252,6 +236,16 @@ export const CounterPOSView: React.FC = () => {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       {/* Sale Success Confetti Burst */}
       <ConfettiBurst trigger={showConfetti} particleCount={100} duration={2500} />
+
+      {/* Voice POS: tap-to-confirm sheet */}
+      <VoiceConfirmSheet
+        open={voiceSheet !== null}
+        transcript={voiceSheet?.transcript ?? ""}
+        products={products}
+        customers={customers}
+        onConfirm={applyVoiceOrder}
+        onCancel={() => setVoiceSheet(null)}
+      />
 
       {/* Top Controls Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -306,7 +300,7 @@ export const CounterPOSView: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="mb-6 rounded-xl bg-slate-900 p-4 text-white flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+          className="mb-6 rounded-xl bg-graphite-700 p-4 text-white flex flex-wrap items-center justify-between gap-3 animate-fade-in soft-panel"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
@@ -338,7 +332,7 @@ export const CounterPOSView: React.FC = () => {
           {/* Products Panel */}
           <div className={`flex-1 flex flex-col ${!is390pxMobileFrame ? "border-b lg:border-b-0 lg:border-e border-slate-200" : ""}`}>
             {/* Say-It Voice POS Banner with Speech Synthesis */}
-            <div className="bg-emerald-900 px-4 py-3 text-white flex items-center justify-between gap-3 border-b border-emerald-800">
+            <div className="soft-panel bg-emerald-900 px-4 py-3 text-white flex items-center justify-between gap-3 border-b border-emerald-800">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-800 text-amber-300 ${isSpeakingVoice ? "ring-2 ring-amber-400" : ""}`}>
                   <Mic className="h-5 w-5" aria-hidden="true" />
@@ -361,6 +355,31 @@ export const CounterPOSView: React.FC = () => {
               >
                 <Mic className="h-4 w-4" aria-hidden="true" />
                 <span className="hidden sm:inline">{isSpeakingVoice ? "Listening…" : "Speak Order"}</span>
+              </button>
+            </div>
+
+            {/* Voice language + type-it fallback */}
+            <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
+              <span className="mono-label text-slate-500">Speak in</span>
+              <div role="group" aria-label="Voice language" className="inline-flex rounded-xl border border-slate-200 bg-mist p-0.5">
+                {([["ur", "اردو"], ["en", "English / Roman"]] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => chooseVoiceLang(id)}
+                    aria-pressed={voiceLang === id}
+                    className={`min-h-[36px] rounded-lg px-3 text-xs font-semibold transition-colors ${
+                      voiceLang === id ? "bg-white text-emerald-900 shadow-2xs ring-1 ring-emerald-200" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setVoiceSheet({ transcript: "" })}
+                className="ms-auto min-h-[36px] rounded-lg px-3 text-xs font-semibold text-emerald-800 underline-offset-2 hover:bg-mint hover:underline"
+              >
+                Type it
               </button>
             </div>
 
@@ -392,7 +411,7 @@ export const CounterPOSView: React.FC = () => {
                   type="button"
                   onClick={() => setIsBarcodeScannerOpen(true)}
                   aria-label="Scan barcode with camera"
-                  className="flex items-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white px-3 text-sm font-medium shrink-0 min-h-[44px]"
+                  className="flex items-center gap-2 rounded-lg bg-graphite-700 hover:bg-moss text-white px-3 text-sm font-medium shrink-0 min-h-[44px]"
                 >
                   <Camera className="h-4 w-4 text-amber-300" aria-hidden="true" />
                   <span className="hidden sm:inline">Scan</span>
@@ -568,7 +587,7 @@ export const CounterPOSView: React.FC = () => {
                   aria-pressed={paymentType === "cash"}
                   className={`rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                     paymentType === "cash"
-                      ? "bg-slate-900 text-white"
+                      ? "bg-emerald-800 text-white"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
@@ -655,7 +674,7 @@ export const CounterPOSView: React.FC = () => {
       {/* Inline Add Customer Modal */}
       {isNewCustomerModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="new-customer-title"

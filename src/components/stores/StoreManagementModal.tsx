@@ -23,7 +23,7 @@ export const StoreManagementModal: React.FC = () => {
   if (!isStoreManagementModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-700/40 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div 
         className="relative w-full max-w-2xl rounded-3xl bg-white p-5 sm:p-7 shadow-2xl border border-slate-200 my-8 text-start"
         role="dialog"
@@ -106,7 +106,7 @@ export const StoreManagementModal: React.FC = () => {
                         switchShop(s.id);
                         setIsStoreManagementModalOpen(false);
                       }}
-                      className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2 transition-colors min-h-[36px]"
+                      className="rounded-xl bg-graphite-700 hover:bg-moss text-white font-bold text-xs px-3.5 py-2 transition-colors min-h-[36px]"
                     >
                       Switch Here
                     </button>

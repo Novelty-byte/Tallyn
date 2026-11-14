@@ -43,7 +43,7 @@ export const InsightsView: React.FC = () => {
       </div>
 
       {/* Feature 8: Seasonal & Ramadan Demand Forecaster */}
-      <div className="rounded-3xl border-2 border-emerald-700/30 bg-emerald-950 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden">
+      <div className="rounded-3xl border-2 border-emerald-700/30 bg-emerald-950 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden soft-panel">
         <div 
           className="absolute -end-10 -bottom-10 h-64 w-64 rounded-full bg-emerald-600/10 blur-3xl pointer-events-none" 
         />

@@ -20,8 +20,22 @@
   --color-amber-light: #f59e0b;
   --color-amber-surface: #fef3c7;
 
+  --color-mist: #f4f7f5;
+  --color-sagemist: #eaf1ec;
+  --color-mint: #ddf1e4;
+  --color-fern: #2f855a;
+  --color-sage: #8dbf9e;
+  --color-moss: #2f3a35;
+  --color-apricot: #f2a65a;
+  --color-peach: #fbe3c8;
+  --color-butter: #f4d35e;
+  --color-cream: #fff4cc;
+  --color-sky: #5b9bd5;
+  --color-steel: #2f6b9a;
+  --color-mistblue: #dcebf7;
+
   /* --- Surfaces (60 / 30 / 10 roles) --- */
-  --color-surface-bg: #f9fafb;     /* L0 canvas — 60% */
+  --color-surface-bg: #f4f7f5;     /* L0 canvas — 60% */
   --color-surface-card: #ffffff;   /* L1 raised — 30% */
   --color-surface-inset: #f3f4f6;  /* sunken wells, table headers */
   --color-surface-border: #e5e7eb; /* whisper border (~8% fg) */
@@ -730,3 +744,202 @@ p, li, .prose {
     overflow-x: auto;
   }
 }
+
+
+/* ===================================================================
+   CALM TECH — palettes, ambient background, interaction layer
+   Light-first. Four palettes swap these variables on <html data-palette>.
+   =================================================================== */
+
+:root {
+  --canvas: #f4f7f5;
+  --canvas-alt: #eaf1ec;
+  --tint-a: #ddf1e4;   /* mint   */
+  --tint-b: #fbe3c8;   /* peach  */
+  --tint-c: #dcebf7;   /* mistblue */
+  --tint-d: #fff4cc;   /* cream  */
+  --accent: #166534;
+  --accent-soft: #ddf1e4;
+  --fx-grid: rgba(47, 58, 53, 0.07);
+  --fx-shadow: 0 10px 30px -12px rgba(47, 58, 53, 0.18);
+}
+:root[data-palette="dusk"] {
+  --canvas: #f2f6fa; --canvas-alt: #e6eef6;
+  --tint-a: #dcebf7; --tint-b: #ddf1e4; --tint-c: #fff4cc; --tint-d: #fbe3c8;
+  --accent: #2f6b9a; --accent-soft: #dcebf7;
+}
+:root[data-palette="harvest"] {
+  --canvas: #fbf8f1; --canvas-alt: #f7efdc;
+  --tint-a: #fff4cc; --tint-b: #fbe3c8; --tint-c: #ddf1e4; --tint-d: #dcebf7;
+  --accent: #b45f06; --accent-soft: #fbe3c8;
+}
+:root[data-palette="slate"] {
+  --canvas: #f3f5f4; --canvas-alt: #e8ecea;
+  --tint-a: #e3e7e5; --tint-b: #ddf1e4; --tint-c: #dcebf7; --tint-d: #eaf1ec;
+  --accent: #3d4a45; --accent-soft: #e3e7e5;
+}
+
+html, body { background-color: var(--canvas); }
+.bg-canvas { background-color: var(--canvas); }
+.bg-canvas-alt { background-color: var(--canvas-alt); }
+
+/* ---- Ambient background ------------------------------------------------ */
+.fx-ambient { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.fx-ambient--fixed { position: fixed; }
+.fx-blob {
+  position: absolute; border-radius: 9999px; filter: blur(60px); opacity: 0.55;
+  will-change: transform;
+  transform: translate3d(calc(var(--nx, 0) * var(--depth, -14) * 1px), calc(var(--ny, 0) * var(--depth, -14) * 1px), 0);
+  transition: transform 600ms var(--ease-out);
+}
+.fx-blob > i { display: block; width: 100%; height: 100%; border-radius: inherit; animation: fx-drift var(--dur, 40s) ease-in-out infinite alternate; }
+.fx-blob--a { width: 520px; height: 520px; top: -140px; left: -80px;  background: var(--tint-a); --depth: -16; --dur: 46s; }
+.fx-blob--b { width: 460px; height: 460px; top: 40px;   right: -120px; background: var(--tint-b); --depth: 12; --dur: 38s; opacity: .5; }
+.fx-blob--c { width: 420px; height: 420px; bottom: -160px; left: 30%;  background: var(--tint-c); --depth: -8; --dur: 52s; opacity: .55; }
+.fx-blob--d { width: 300px; height: 300px; top: 35%; left: 55%; background: var(--tint-d); --depth: 20; --dur: 34s; opacity: .6; }
+.fx-ambient[data-tod="morning"] .fx-blob--b { background: #fbe3c8; opacity: .65; }
+.fx-ambient[data-tod="evening"] .fx-blob--a { background: #fbe3c8; }
+.fx-ambient[data-tod="evening"] .fx-blob--d { background: #f6cf9a; opacity: .5; }
+@keyframes fx-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(40px, 28px, 0) scale(1.08); }
+}
+.fx-grid {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(var(--fx-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+}
+.fx-grid--spot {
+  background-image: radial-gradient(rgba(22, 101, 52, 0.38) 1.2px, transparent 1.4px);
+  -webkit-mask-image: radial-gradient(circle 190px at var(--mx, -999px) var(--my, -999px), #000, transparent);
+  mask-image: radial-gradient(circle 190px at var(--mx, -999px) var(--my, -999px), #000, transparent);
+  opacity: 0; transition: opacity 300ms ease;
+}
+.fx-ambient[data-hover="1"] .fx-grid--spot { opacity: 1; }
+:root[data-fx="off"] .fx-blob > i { animation: none; }
+:root[data-fx="off"] .fx-blob { transition: none; transform: none; }
+:root[data-fx="off"] .fx-grid--spot { display: none; }
+
+/* ---- Spotlight sheen on every card ------------------------------------ */
+.surface-l1, .surface-overlay, [data-fx~="spot"] { position: relative; }
+.surface-l1::after, [data-fx~="spot"]::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgba(22, 101, 52, 0.09), transparent 70%);
+  opacity: 0; transition: opacity 250ms ease;
+}
+.surface-l1:hover::after, [data-fx~="spot"]:hover::after { opacity: 1; }
+:root[data-fx="off"] .surface-l1::after, :root[data-fx="off"] [data-fx~="spot"]::after { display: none; }
+
+/* ---- Tilt cards -------------------------------------------------------- */
+[data-fx~="tilt"] {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 180ms var(--ease-out), box-shadow 200ms ease;
+  will-change: transform;
+}
+[data-fx~="tilt"]:hover { box-shadow: var(--fx-shadow); }
+
+/* ---- Magnetic buttons -------------------------------------------------- */
+[data-fx~="magnetic"] {
+  transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0);
+  transition: transform 220ms var(--ease-out);
+}
+
+/* ---- Click ping (tap registers) --------------------------------------- */
+.fx-ping {
+  position: fixed; z-index: 9999; width: 28px; height: 28px; margin: -14px 0 0 -14px;
+  border-radius: 9999px; pointer-events: none;
+  border: 2px solid var(--accent); opacity: .55;
+  animation: fx-ping 520ms var(--ease-out) forwards;
+}
+@keyframes fx-ping { to { transform: scale(2.6); opacity: 0; } }
+
+/* ---- Cursor follower (desktop hero) ----------------------------------- */
+.fx-cursor {
+  position: fixed; top: 0; left: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  border-radius: 9999px; background: rgba(47, 133, 90, 0.55); pointer-events: none; z-index: 60;
+  transition: width 160ms ease, height 160ms ease, margin 160ms ease, background 160ms ease;
+}
+.fx-cursor[data-big="1"] { width: 34px; height: 34px; margin: -17px 0 0 -17px; background: rgba(242, 166, 90, 0.35); }
+
+/* ---- Counter scene (animated hero illustration) ----------------------- */
+.scene-bob  { animation: scene-bob 5s ease-in-out infinite; transform-box: fill-box; transform-origin: center bottom; }
+.scene-bob.d2 { animation-delay: -1.4s; } .scene-bob.d3 { animation-delay: -2.8s; } .scene-bob.d4 { animation-delay: -3.6s; }
+@keyframes scene-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.scene-laser { animation: scene-laser 2.6s ease-in-out infinite; }
+@keyframes scene-laser { 0%,100% { transform: translateX(-34px); opacity: .2; } 50% { transform: translateX(34px); opacity: .95; } }
+.scene-receipt { animation: scene-print 6s ease-in-out infinite; transform-box: fill-box; transform-origin: top; }
+@keyframes scene-print { 0% { transform: scaleY(.15); } 35%,80% { transform: scaleY(1); } 100% { transform: scaleY(.15); } }
+.scene-steam { animation: scene-steam 3.2s ease-in-out infinite; transform-box: fill-box; }
+@keyframes scene-steam { 0% { transform: translateY(6px); opacity: 0; } 40% { opacity: .7; } 100% { transform: translateY(-10px); opacity: 0; } }
+.fx-paused * { animation-play-state: paused !important; }
+:root[data-fx="off"] .scene-bob, :root[data-fx="off"] .scene-laser, :root[data-fx="off"] .scene-receipt, :root[data-fx="off"] .scene-steam { animation: none; }
+
+/* ---- Navbar shrink ---------------------------------------------------- */
+.nav-shell { transition: box-shadow 220ms ease, background-color 220ms ease; }
+.nav-shell[data-scrolled="1"] { box-shadow: 0 6px 24px -14px rgba(47, 58, 53, 0.35); background-color: rgba(255,255,255,0.92); }
+
+/* ---- Toasts ----------------------------------------------------------- */
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.toast-in { animation: toast-in 220ms var(--ease-out) both; }
+
+/* ---- Page accents ----------------------------------------------------- */
+.mono-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.band-sage  { background: linear-gradient(180deg, var(--canvas-alt), var(--canvas)); }
+.band-cream { background: linear-gradient(180deg, #fff9e0, var(--canvas)); }
+.band-forest{ background: linear-gradient(135deg, #166534 0%, #2f855a 100%); }
+
+/* Remove the double-tap-zoom delay without blocking pinch zoom */
+button, a, [role="button"] { touch-action: manipulation; }
+
+/* Safe-area padding for the mobile tab bar */
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-blob > i, .scene-bob, .scene-laser, .scene-receipt, .scene-steam, .fx-ping { animation: none !important; }
+  .fx-cursor { display: none; }
+}
+
+/* ===================================================================
+   SOFT PANELS — former dark "terminal" blocks, re-skinned light & calm.
+   Add class `soft-panel` to a container; light-on-dark utility classes
+   inside it are remapped to readable dark-on-light colours.
+   =================================================================== */
+.soft-panel {
+  background: linear-gradient(160deg, #e9f5ee 0%, #f6faf7 55%, #fff5de 100%) !important;
+  color: #1f2d27 !important;
+  border-color: rgba(47, 58, 53, 0.14) !important;
+  box-shadow: var(--fx-shadow) !important;
+}
+.soft-panel--cream { background: linear-gradient(90deg, #fff6d9, #fff1d2 50%, #fff6d9) !important; box-shadow: none !important; }
+.soft-panel .text-white:not([class*="bg-"]):not(button *) { color: #14291f; }
+.soft-panel .text-slate-100, .soft-panel .text-slate-200, .soft-panel .text-slate-300 { color: #3a4742; }
+.soft-panel .text-slate-400 { color: #55635d; }
+.soft-panel .text-emerald-100, .soft-panel .text-emerald-200 { color: #14532d; }
+.soft-panel .text-emerald-300, .soft-panel .text-emerald-400 { color: #166534; }
+.soft-panel .text-amber-200, .soft-panel .text-amber-300, .soft-panel .text-amber-400 { color: #a15c07; }
+.soft-panel .text-rose-300, .soft-panel .text-rose-400 { color: #be123c; }
+.soft-panel .text-sky-300, .soft-panel .text-sky-400 { color: #2f6b9a; }
+.soft-panel [class*="bg-slate-950"]:not(button), .soft-panel [class*="bg-slate-900"]:not(button), .soft-panel [class*="bg-slate-800"]:not(button) {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+.soft-panel [class*="bg-emerald-950"]:not(button), .soft-panel [class*="bg-emerald-900"]:not(button) { background: #ddf1e4 !important; }
+.soft-panel [class*="bg-amber-950"]:not(button), .soft-panel [class*="bg-amber-900"]:not(button) { background: #fff4cc !important; }
+.soft-panel [class*="bg-rose-950"]:not(button), .soft-panel [class*="bg-rose-900"]:not(button) { background: #fde7ec !important; }
+.soft-panel [class*="bg-white/"] { background: rgba(47, 58, 53, 0.05) !important; }
+.soft-panel [class*="border-slate-8"], .soft-panel [class*="border-slate-7"],
+.soft-panel [class*="border-emerald-8"], .soft-panel [class*="border-emerald-7"] { border-color: rgba(47, 58, 53, 0.14) !important; }
+.soft-panel [class*="border-t"][class*="border-slate-"], .soft-panel [class*="divide-slate-"] > * { border-color: rgba(47, 58, 53, 0.12) !important; }
+
+/* Navbar condense on scroll */
+.nav-inner, .nav-logo { transition: height 220ms var(--ease-out); }
+.nav-shell[data-scrolled="1"] .nav-inner { height: 3.5rem; }
+.nav-shell[data-scrolled="1"] .nav-logo { height: 2.75rem; }
+
+/* <main> receives programmatic focus on navigation (for screen readers) — never draw a ring around the whole page */
+#main-content:focus, #main-content:focus-visible { outline: none; }
+
+/* App-wide ambient layer sits behind all content inside the root's isolated stacking
+   context, so page modals keep their own z-index relative to the header/tab bar. */
+.fx-ambient--fixed { z-index: -1; }

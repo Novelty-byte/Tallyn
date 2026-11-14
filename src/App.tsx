@@ -2,8 +2,12 @@ import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { TAB_TITLES, tabFromPath } from "@/lib/routes";
+import { FxProvider } from "@/components/fx/FxProvider";
+import { ToastProvider } from "@/components/fx/Toast";
+import { AmbientBackground } from "@/components/fx/AmbientBackground";
 import { NotFoundPage } from "@/components/system/NotFoundPage";
 import { Navbar } from "@/components/layout/Navbar";
+import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { AskTallynDrawer } from "@/components/ai/AskTallynDrawer";
@@ -65,7 +69,8 @@ const guard = (el: React.ReactElement) => <RequireSession>{el}</RequireSession>;
 
 function AppContent() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-emerald-700 selection:text-white">
+    <div className="relative isolate min-h-screen flex flex-col bg-canvas selection:bg-emerald-700 selection:text-white">
+      <AmbientBackground variant="app" fixed />
       <RouteEffects />
       <a
         href="#main-content"
@@ -113,6 +118,7 @@ function AppContent() {
 
       {/* Global Footer */}
       <Footer />
+      <MobileTabBar />
     </div>
   );
 }
@@ -120,9 +126,13 @@ function AppContent() {
 export function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <FxProvider>
+        <ToastProvider>
+          <AppProvider>
+            <AppContent />
+          </AppProvider>
+        </ToastProvider>
+      </FxProvider>
     </BrowserRouter>
   );
 }

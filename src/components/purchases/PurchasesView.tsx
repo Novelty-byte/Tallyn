@@ -345,7 +345,7 @@ export const PurchasesView: React.FC = () => {
 
       {/* Multimodal Bill Scanner Modal */}
       {isScannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-lift border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">

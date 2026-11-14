@@ -209,7 +209,7 @@ export const UdhaarView: React.FC = () => {
 
       {/* Record Payment Modal */}
       {selectedCustPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm">
           <div className="w-full max-w-sm surface-overlay p-6">
             <h4 className="text-base font-semibold text-slate-900">{t("udhaar.recordPayment")}</h4>
             <p className="text-xs text-slate-500 mb-3">
@@ -250,7 +250,7 @@ export const UdhaarView: React.FC = () => {
 
       {/* Add Customer Modal */}
       {isAddCustomerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm">
           <div className="w-full max-w-sm surface-overlay p-6">
             <h4 className="text-base font-semibold text-slate-900">Add Customer Account</h4>
             <form onSubmit={handleAddCustomerSubmit} className="space-y-3">

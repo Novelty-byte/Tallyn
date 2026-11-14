@@ -33,13 +33,13 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-700/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-slate-900 border border-slate-700/80 shadow-lift text-slate-100 overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-slate-900 border border-slate-700/80 shadow-lift text-slate-100 overflow-hidden soft-panel"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 sticky top-0 z-10">
+        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-700/40 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <Layers className="h-5 w-5" />
@@ -81,7 +81,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {/* Tier 1 */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-2.5">
+              <div className="rounded-xl border border-slate-800 bg-slate-700/40 backdrop-blur-sm p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs">
                     <Smartphone className="h-4 w-4" />
@@ -102,7 +102,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
               </div>
 
               {/* Tier 2 */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-2.5">
+              <div className="rounded-xl border border-slate-800 bg-slate-700/40 backdrop-blur-sm p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
                     <Cpu className="h-4 w-4" />
@@ -124,7 +124,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
               </div>
 
               {/* Tier 3 */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-2.5">
+              <div className="rounded-xl border border-slate-800 bg-slate-700/40 backdrop-blur-sm p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sky-400 font-semibold text-xs">
                     <Database className="h-4 w-4" />
@@ -146,7 +146,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
               </div>
 
               {/* Tier 4 */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-2.5">
+              <div className="rounded-xl border border-slate-800 bg-slate-700/40 backdrop-blur-sm p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-purple-400 font-semibold text-xs">
                     <Sparkles className="h-4 w-4" />
@@ -263,7 +263,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs">
+        <div className="px-6 py-4 bg-slate-700/40 backdrop-blur-sm border-t border-slate-800 flex items-center justify-between text-xs">
           <span className="text-slate-400">
             Engineered for high-volume neighbourhood grocery resilience.
           </span>

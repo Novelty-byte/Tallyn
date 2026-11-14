@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { db } from "@/services/supabase";
+import { AppearanceCard } from "@/components/settings/AppearanceCard";
 import { 
   Store, 
   ShieldCheck, 
@@ -116,10 +117,12 @@ export const SettingsView: React.FC = () => {
         </div>
       )}
 
+      <AppearanceCard />
+
       {/* User Account & Merchant Identity Section (Reflects DB Profile) */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-          <div className="h-11 w-11 rounded-2xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold shadow-xs">
+          <div className="h-11 w-11 rounded-2xl bg-emerald-800 text-amber-300 flex items-center justify-center font-bold shadow-xs">
             <User className="h-5 w-5" />
           </div>
           <div>
@@ -197,7 +200,7 @@ export const SettingsView: React.FC = () => {
             <button
               type="submit"
               disabled={isUpdatingProfile}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 text-xs hover:-translate-y-0.5 active:scale-95 transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-graphite-700 hover:bg-moss text-white font-bold px-4 py-2 text-xs hover:-translate-y-0.5 active:scale-95 transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-50"
             >
               <Save className="h-3.5 w-3.5" />
               <span>{isUpdatingProfile ? "Saving..." : "Update Owner Name"}</span>
@@ -281,7 +284,7 @@ export const SettingsView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => switchShop(s.id)}
-                        className="rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-2.5 py-2 transition-colors min-h-[44px]"
+                        className="rounded-lg bg-graphite-700 hover:bg-moss text-white text-xs font-bold px-2.5 py-2 transition-colors min-h-[44px]"
                       >
                         Switch Here
                       </button>
@@ -412,7 +415,7 @@ export const SettingsView: React.FC = () => {
         <div className="pt-4 border-t border-slate-100 flex justify-end">
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-md min-h-[44px]"
+            className="inline-flex items-center gap-2 rounded-xl bg-graphite-700 px-6 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-md min-h-[44px]"
           >
             <Save className="h-4 w-4" />
             <span>Save Store Configuration</span>

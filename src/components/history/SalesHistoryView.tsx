@@ -96,7 +96,7 @@ export const SalesHistoryView: React.FC = () => {
               onClick={() => setPaymentFilter(f.id)}
               className={`rounded-xl px-3.5 py-2 font-semibold transition-colors min-h-[44px] ${
                 paymentFilter === f.id
-                  ? "bg-slate-900 text-white font-semibold"
+                  ? "bg-emerald-800 text-white font-semibold"
                   : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
               }`}
             >
@@ -184,7 +184,7 @@ export const SalesHistoryView: React.FC = () => {
 
       {/* Itemized Receipt Modal */}
       {selectedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lift border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ export const SalesHistoryView: React.FC = () => {
 
             <button
               onClick={() => setSelectedReceipt(null)}
-              className="mt-6 w-full rounded-xl bg-slate-900 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 min-h-[44px]"
+              className="mt-6 w-full rounded-xl bg-graphite-700 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 min-h-[44px]"
             >
               Close Receipt
             </button>

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { Product, ProductCategory } from "@/types";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/components/fx/Toast";
 import { 
   Plus, 
   Search, 
@@ -12,7 +13,41 @@ import {
 export const InventoryView: React.FC = () => {
   const { t } = useTranslation();
   
-  const { products, addProduct, updateStock } = useApp();
+  const { products, addProduct, updateStock, shop } = useApp();
+  const toast = useToast();
+
+  // Dead-stock bundle: computed from REAL inventory (never invented by AI).
+  // Slowest-moving flagged item + the best-stocked staple, 5% off the pair, rounded to Rs 5.
+  const deadItem = [...products]
+    .filter((p) => p.isDeadStock && p.quantity > 0)
+    .sort((a, b) => b.quantity * b.buyPrice - a.quantity * a.buyPrice)[0];
+  const partnerItem = deadItem
+    ? [...products]
+        .filter((p) => p.id !== deadItem.id && p.category === "staples" && p.quantity > 0)
+        .sort((a, b) => b.quantity - a.quantity)[0]
+    : undefined;
+  const bundle = deadItem && partnerItem
+    ? (() => {
+        const regular = deadItem.sellPrice + partnerItem.sellPrice;
+        const price = Math.round((regular * 0.95) / 5) * 5;
+        const message =
+          `${shop.name} — Special Deal!\n` +
+          `${deadItem.nameEn} + ${partnerItem.nameEn}\n` +
+          `Regular ${formatCurrency(regular)} → only ${formatCurrency(price)}\n` +
+          `While stock lasts.`;
+        return { regular, price, message };
+      })()
+    : null;
+
+  const copyPromo = async () => {
+    if (!bundle) return;
+    try {
+      await navigator.clipboard.writeText(bundle.message);
+      toast.success("Promo message copied", { description: "Paste it into your WhatsApp status or customer group." });
+    } catch {
+      toast.info("Select and copy the message", { description: bundle.message, duration: 10000 });
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -93,28 +128,39 @@ export const InventoryView: React.FC = () => {
         </button>
       </div>
 
-      {/* Dead-Stock Combo Bundler Notice (Feature 7) */}
-      <div className="rounded-2xl border border-amber-300 bg-amber-50/70 p-4 shadow-2xs flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
-            <Percent className="h-5 w-5" />
+      {/* Dead-Stock Combo Bundler (real data) */}
+      {bundle && deadItem && partnerItem && (
+        <div className="rounded-2xl border border-amber-300 bg-cream p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+              <Percent className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-amber-950">Slow-moving stock: bundle it</p>
+              <p className="text-xs text-amber-900">
+                {deadItem.nameEn} ({deadItem.quantity} left) + {partnerItem.nameEn} at {formatCurrency(bundle.price)}{" "}
+                <span className="text-amber-800">(5% off {formatCurrency(bundle.regular)})</span>
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold text-amber-950">
-              Clearance & Dead-Stock Combo Bundler Active
-            </p>
-            <p className="text-xs text-amber-900">
-              Suggested Bundle: Pair Rooh Afza Syrup (15 bottles left) with White Sugar for a 5% discount promotional flyer.
-            </p>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={copyPromo}
+              className="rounded-xl border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors min-h-[44px]"
+            >
+              Copy message
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(bundle.message)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-xl bg-emerald-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-900 transition-colors min-h-[44px]"
+            >
+              Share on WhatsApp
+            </a>
           </div>
         </div>
-        <button
-          onClick={() => alert("WhatsApp broadcast draft generated: 'Special Deal: 1 Rooh Afza + 2kg White Sugar only Rs. 700!'")}
-          className="rounded-xl border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shrink-0"
-        >
-          Draft Promo
-        </button>
-      </div>
+      )}
 
       {/* Search & Categories Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -144,7 +190,7 @@ export const InventoryView: React.FC = () => {
               onClick={() => setSelectedCategory(cat.id)}
               className={`rounded-lg px-3 py-1.5 font-semibold transition-colors min-h-[34px] ${
                 selectedCategory === cat.id
-                  ? "bg-slate-900 text-white"
+                  ? "bg-emerald-800 text-white"
                   : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
               }`}
             >
@@ -239,7 +285,7 @@ export const InventoryView: React.FC = () => {
 
       {/* Add Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 mb-4">{t("inventory.addProduct")}</h3>
             <form onSubmit={handleAddSubmit} className="space-y-3.5">
@@ -341,7 +387,7 @@ export const InventoryView: React.FC = () => {
 
       {/* Adjust Stock Modal */}
       {adjustModalProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 mb-1">Adjust Inventory Count</h4>
             <p className="text-xs text-slate-500 mb-3">{adjustModalProduct.nameEn}</p>
@@ -380,7 +426,7 @@ export const InventoryView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                  className="rounded-xl bg-graphite-700 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
                 >
                   Update Stock
                 </button>

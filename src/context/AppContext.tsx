@@ -7,6 +7,7 @@ import type {
   WholesalePriceBenchmark, SeasonalForecast,
 } from "@/types";
 import { audio } from "@/lib/audio";
+import { useToast } from "@/components/fx/Toast";
 import {
   SEEDED_PRODUCTS, SEEDED_BENCHMARKS, SEEDED_SEASONAL_FORECASTS,
   getBranchSeedData,
@@ -73,6 +74,9 @@ interface AppContextType {
   setActiveTab: (tab: ActiveTab) => void;
   authReady: boolean;
   hasLiveShop: boolean;
+  /** Changes that only reached this device (server write failed). */
+  unsyncedCount: number;
+  dismissUnsynced: () => void;
   products: Product[];
   customers: Customer[];
   sales: Sale[];
@@ -144,6 +148,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [authReady, setAuthReady] = useState(false);
   // For a signed-in (non-demo) user: does at least one real shop exist?
   const [hasLiveShop, setHasLiveShop] = useState(false);
+  const toast = useToast();
+  // Live-mode writes that failed on the server and were applied locally only (Rule 5: fail open).
+  const [unsyncedCount, setUnsyncedCount] = useState(0);
+  const dismissUnsynced = () => setUnsyncedCount(0);
+  const markUnsynced = (what: string) => {
+    setUnsyncedCount((n) => n + 1);
+    toast.warning(`${what} saved on this device only`, {
+      description: "We couldn't reach the server. Keep working — but don't clear this browser's data until you're back online.",
+      duration: 8000,
+    });
+  };
   const [products, setProducts] = useState<Product[]>(branch1.products);
   const [customers, setCustomers] = useState<Customer[]>(branch1.customers);
   const [sales, setSales] = useState<Sale[]>(branch1.sales);
@@ -410,12 +425,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     for (const item of saleData.items) {
       const p = products.find((x) => x.id === item.productId);
       if (p && p.quantity < item.quantity) {
-        alert(`Insufficient stock for ${p.nameEn}. Available: ${p.quantity}, requested: ${item.quantity}`);
+        toast.error(`Not enough stock: ${p.nameEn}`, { description: `Available ${p.quantity}, requested ${item.quantity}.` });
         return;
       }
     }
 
     let createdSaleId = "sale-" + Date.now();
+    // True once the atomic RPC succeeded and local state was re-read from the server.
+    let serverSynced = false;
 
     if (user && !isDemoMode) {
       try {
@@ -427,8 +444,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         );
         createdSaleId = rpcRes.sale_id;
         await refreshLiveShopData(shop.id);
+        serverSynced = true;
       } catch (err) {
         console.warn("RPC record_sale failed, mutating state locally:", err);
+        markUnsynced("Sale");
       }
     }
 
@@ -440,39 +459,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       status: "completed",
     };
 
-    setProducts((prev) =>
-      prev.map((p) => {
-        const item = saleData.items.find((i) => i.productId === p.id);
-        return item ? { ...p, quantity: Math.max(p.quantity - item.quantity, 0) } : p;
-      })
-    );
-
-    if (saleData.paymentType === "credit" && saleData.customerId) {
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === saleData.customerId
-            ? {
-                ...c,
-                creditBalance: c.creditBalance + saleData.totalAmount,
-                lastPurchaseDate: new Date().toISOString().split("T")[0],
-                history: [
-                  {
-                    id: "h-" + Date.now(),
-                    date: new Date().toISOString().split("T")[0],
-                    description: `Credit Sale (${saleData.items.length} items)`,
-                    amount: saleData.totalAmount,
-                    type: "credit_purchase",
-                  },
-                  ...(c.history || []),
-                ],
-              }
-            : c
-        )
+    // Only mirror locally when the server did NOT already apply (and we re-read) the sale —
+    // otherwise stock and udhaar would be counted twice.
+    if (!serverSynced) {
+      setProducts((prev) =>
+        prev.map((p) => {
+          const item = saleData.items.find((i) => i.productId === p.id);
+          return item ? { ...p, quantity: Math.max(p.quantity - item.quantity, 0) } : p;
+        })
       );
+
+      if (saleData.paymentType === "credit" && saleData.customerId) {
+        setCustomers((prev) =>
+          prev.map((c) =>
+            c.id === saleData.customerId
+              ? {
+                  ...c,
+                  creditBalance: c.creditBalance + saleData.totalAmount,
+                  lastPurchaseDate: new Date().toISOString().split("T")[0],
+                  history: [
+                    {
+                      id: "h-" + Date.now(),
+                      date: new Date().toISOString().split("T")[0],
+                      description: `Credit Sale (${saleData.items.length} items)`,
+                      amount: saleData.totalAmount,
+                      type: "credit_purchase",
+                    },
+                    ...(c.history || []),
+                  ],
+                }
+              : c
+          )
+        );
+      }
+
     }
 
     audio.playCashRegisterChime();
-    setSales((prev) => [newSale, ...prev]);
+    if (!serverSynced) setSales((prev) => [newSale, ...prev]);
     setLastSaleUndo(newSale);
     setUndoSeconds(10);
 
@@ -494,33 +518,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const undoSale = async () => {
     if (!lastSaleUndo) return;
 
+    let undoSynced = false;
     if (user && !isDemoMode) {
       try {
         await db.rpcUndoSale(lastSaleUndo.id, shop.id);
         await refreshLiveShopData(shop.id);
+        undoSynced = true;
       } catch (err) {
         console.warn("RPC undo_sale failed, un-doing locally:", err);
+        markUnsynced("Undo");
       }
     }
 
-    setProducts((prev) =>
-      prev.map((p) => {
-        const item = lastSaleUndo.items.find((i) => i.productId === p.id);
-        return item ? { ...p, quantity: p.quantity + item.quantity } : p;
-      })
-    );
-
-    if (lastSaleUndo.paymentType === "credit" && lastSaleUndo.customerId) {
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === lastSaleUndo.customerId
-            ? { ...c, creditBalance: Math.max(c.creditBalance - lastSaleUndo.totalAmount, 0) }
-            : c
-        )
+    // Server already restored stock/udhaar and we re-read it: don't reverse it a second time.
+    if (!undoSynced) {
+      setProducts((prev) =>
+        prev.map((p) => {
+          const item = lastSaleUndo.items.find((i) => i.productId === p.id);
+          return item ? { ...p, quantity: p.quantity + item.quantity } : p;
+        })
       );
-    }
+
+      if (lastSaleUndo.paymentType === "credit" && lastSaleUndo.customerId) {
+        setCustomers((prev) =>
+          prev.map((c) =>
+            c.id === lastSaleUndo.customerId
+              ? { ...c, creditBalance: Math.max(c.creditBalance - lastSaleUndo.totalAmount, 0) }
+              : c
+          )
+        );
+      }
 
     setSales((prev) => prev.map((s) => (s.id === lastSaleUndo.id ? { ...s, status: "undone" } : s)));
+    }
     audio.playUndoSound();
     clearUndoTimer();
     setLastSaleUndo(null);
@@ -608,7 +638,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         await refreshLiveShopData(shop.id);
         audio.playCashRegisterChime();
         return;
-      } catch { /* ignore */ }
+      } catch { markUnsynced("Payment"); }
     }
     setCustomers((prev) =>
       prev.map((c) =>
@@ -727,6 +757,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveTab,
         authReady,
         hasLiveShop,
+        unsyncedCount,
+        dismissUnsynced,
         products,
         customers,
         sales,
