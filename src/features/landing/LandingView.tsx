@@ -7,6 +7,11 @@ import { ArchitectureModal } from "@/features/landing/ArchitectureModal";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { AmbientBackground } from "@/components/fx/AmbientBackground";
 import { CounterScene } from "@/components/fx/CounterScene";
+import { CounterDayShowcase } from "@/features/landing/CounterDayShowcase";
+import { addDays, toLocalYmd } from "@/domain/credit";
+import { buildUdhaarReminder, formatFriendlyDate } from "@/domain/whatsapp";
+import { costChangePercent, marginKeepingPrice } from "@/domain/billMatching";
+import { nextRamadan } from "@/domain/insights";
 import { 
   ArrowRight, 
   Smartphone, 
@@ -29,8 +34,6 @@ import {
   Building2,
   CheckCircle2,
   Layers,
-  Award,
-  Star,
 } from "lucide-react";
 
 interface PhoneCartItem {
@@ -47,6 +50,7 @@ export const LandingView: React.FC = () => {
     loginWithGoogle,
     setIsKiryanaRadioOpen
   } = useApp();
+  const ramadan = nextRamadan(toLocalYmd());
 
   // Tab & Modal States
   const [activeFeatureTab, setActiveFeatureTab] = useState<number>(0);
@@ -602,9 +606,9 @@ export const LandingView: React.FC = () => {
                 </div>
               </div>
               <div className="bg-emerald-50 border border-emerald-300 p-5 rounded-2xl text-xs text-emerald-950 text-start shadow-inner">
-                <p className="font-bold text-emerald-900 mb-2">WhatsApp Pre-Composed Template:</p>
-                <p className="italic leading-relaxed">
-                  "Dear Asif Sahib, greetings. Hope you are well. Al-Madina Kiryana Store would like to remind you that a total of Rs. 3,400 is due on your account. Please clear your balance at your convenience. Thank you."
+                <p className="font-bold text-emerald-900 mb-2">WhatsApp reminder (exactly what Tallyn sends):</p>
+                <p className="whitespace-pre-line leading-relaxed">
+                  {buildUdhaarReminder({ customerName: "Asif Bhai", shopName: "Al-Madina Kiryana", balance: 3400, nextDueDate: addDays(toLocalYmd(), -7) })}
                 </p>
               </div>
             </div>
@@ -615,28 +619,30 @@ export const LandingView: React.FC = () => {
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 5: Mahngai Watchdog</span>
                 <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Wholesale Benchmark Comparison
+                  Supplier Price-Rise Check
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Tallyn compares your supplier purchase costs against curated wholesale mandi benchmark rates (sugar, flour, cooking oil, rice) and flags whenever a distributor charges your store above the fair market band.
+                  When you scan or enter a supplier bill, Tallyn compares each cost with what you paid last time. A rise above 5% is flagged before you save, with a selling price that keeps your margin.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={openSeededDemoShop}
                     className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
                   >
-                    Check Live Wholesale Rates
+                    Try It in Purchases
                   </button>
                 </div>
               </div>
               <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2 text-xs shadow-inner soft-panel">
-                <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span>Fine Flour 20kg Bag</span>
-                  <span className="text-rose-400 font-bold">Supplier +18.7% Overpriced</span>
+                <p className="text-slate-400">Example bill line vs your last buy price</p>
+                <div className="flex justify-between gap-3 border-b border-slate-800 pb-2">
+                  <span>Dalda Cooking Oil 1L · PKR 480 → 525</span>
+                  <span className="text-rose-400 font-bold whitespace-nowrap">Cost up {costChangePercent(525, 480)}%</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span>White Sugar 50kg</span>
-                  <span className="text-emerald-400 font-bold">Fair Wholesale Benchmark</span>
+                <p className="text-slate-300">Keep your margin: sell at about PKR {marginKeepingPrice(525, 480, 540)} (now PKR 540).</p>
+                <div className="flex justify-between gap-3 border-t border-slate-800 pt-2">
+                  <span>Tapal Danedar Tea 450g · PKR 570 → 585</span>
+                  <span className="text-emerald-400 font-bold whitespace-nowrap">+{costChangePercent(585, 570)}%, normal</span>
                 </div>
               </div>
             </div>
@@ -647,24 +653,26 @@ export const LandingView: React.FC = () => {
               <div>
                 <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 6: Cultural Calendar</span>
                 <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Ramadan & Seasonal Demand Forecaster
+                  Ramadan Stock Planner
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Anticipates seasonal volume surges weeks ahead of moon sighting, recommending precise bulk buffer stock procurement so your store never experiences stockouts during peak retail windows.
+                  Counts down to Ramadan and shows how many days of stock you have left for staples like sugar, oil, besan, Rooh Afza and dates, so you can buy in bulk before wholesale prices rise.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={openSeededDemoShop}
                     className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
                   >
-                    View Ramadan Forecast
+                    View Ramadan Planner
                   </button>
                 </div>
               </div>
               <div className="bg-amber-950/80 border border-amber-500/40 text-amber-100 p-5 rounded-2xl text-xs shadow-inner">
-                <p className="font-bold text-amber-300">Ramadan Surge Warning:</p>
+                <p className="font-bold text-amber-300">Ramadan countdown</p>
                 <p className="mt-1 leading-relaxed">
-                  Syrup and Flour demand surges +280%. Lock distributor orders 14 days before moon sighting to save Rs. 14,000 in seasonal price escalation.
+                  {ramadan
+                    ? `Expected around ${formatFriendlyDate(ramadan.start)}, in ${ramadan.daysUntil} days (±1 day, moon sighting). Plan bulk buying 2–3 weeks before.`
+                    : "No upcoming Ramadan date on file."}
                 </p>
               </div>
             </div>
@@ -780,88 +788,9 @@ export const LandingView: React.FC = () => {
       </section>
       </AnimatedSection>
 
-      {/* 6. Real Kiryana Testimonial Grid */}
+      {/* 6. A day at the counter: animated walkthrough with live demo-shop numbers */}
       <AnimatedSection delay={600} direction="up" threshold={0.1}>
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 border border-emerald-300 mb-3">
-            <Award className="h-3.5 w-3.5 text-amber-600" /> Pakistani Retailer Stories
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-semibold text-slate-900">
-            Trusted by Kiryana Owners from Islamabad to Lahore
-          </h2>
-          <p className="mt-3 text-sm sm:text-base text-slate-600">
-            Hear how counter merchants transformed their daily ledger routine and eliminated bad debt.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            {
-              name: "Haji Aslam",
-              shop: "Al-Madina Traders",
-              location: "Main Bazar, G-9 Islamabad",
-              quote: "Since switching to Tallyn's Say-It Voice Checkout, my counter wait times dropped by 70%. Customers are amazed when their bill speaks back to them!",
-              badge: "Voice Checkout User",
-              initials: "HA"
-            },
-            {
-              name: "Tariq Mehmood",
-              shop: "Mehmood General Store",
-              location: "Anarkali Bazar, Lahore",
-              quote: "The WhatsApp Udhaar reminder alone collected Rs. 45,000 of stuck credit in the first week without any awkward phone calls. The polite tone preserves neighbourhood relationships.",
-              badge: "Udhaar Ledger",
-              initials: "TM"
-            },
-            {
-              name: "Chaudhry Bilal",
-              shop: "Bilal Karyana & Super Store",
-              location: "Commercial Market, Rawalpindi",
-              quote: "The paper bill scanner scanned 18 items from my wholesale invoice in 3 seconds. It caught a Rs. 40/kg price hike on ghee immediately before I paid the distributor.",
-              badge: "Vision Bill Scanner",
-              initials: "CB"
-            },
-            {
-              name: "Muhammad Rizwan",
-              shop: "Bismillah Cash & Carry",
-              location: "I-8 & F-10 Branches, Islamabad",
-              quote: "Managing 2 branches used to mean double the notebook headaches. With Tallyn's multi-store switching, I can check evening cash counts from both counters on my phone in seconds.",
-              badge: "Multi-Store Chain",
-              initials: "MR"
-            }
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              data-fx="tilt spot" className="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-soft hover:shadow-lift hover:-translate-y-1.5 hover:border-emerald-300/80 transition-all duration-300 group"
-            >
-              <div>
-                {/* 5-star rating */}
-                <div className="flex items-center gap-1 text-amber-500 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400 group-hover:scale-110 transition-transform" style={{ transitionDelay: `${i * 40}ms` }} />
-                  ))}
-                  <span className="ms-1.5 text-xs font-semibold text-slate-400">5.0</span>
-                </div>
-
-                <p className="text-xs text-slate-700 leading-relaxed italic">
-                  "{item.quote}"
-                </p>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-800 text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-emerald-700 group-hover:rotate-3 transition-all duration-300">
-                  {item.initials}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-xs font-semibold text-slate-900 truncate">{item.name}</h4>
-                  <p className="text-xs text-slate-500 truncate">{item.shop}</p>
-                  <p className="text-xs text-emerald-800 font-medium truncate">{item.location}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+        <CounterDayShowcase onTryDemo={openSeededDemoShop} />
       </AnimatedSection>
 
       {/* 7. Comparison Matrix: Pen & Paper vs Generic SaaS vs Tallyn */}
