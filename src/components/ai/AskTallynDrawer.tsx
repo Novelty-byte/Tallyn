@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
-import { customerOverdueDays } from "@/lib/credit";
+import { supabase } from "@/lib/supabase";
+import { buildStoreSnapshot, type StoreSnapshot } from "@/lib/askContext";
+import { askTallyn, AskTallynError, type ChatTurn } from "@/lib/gateway";
+import { inlineMarkdownToSafeHtml } from "@/lib/chatMarkdown";
 import {
   X,
   Send,
@@ -18,106 +21,6 @@ interface Message {
   isLoading?: boolean;
 }
 
-// ─── App Feature Knowledge Base ────────────────────────────────────────────
-// This is injected into every system prompt so Tallyn can answer how-to questions.
-const APP_FEATURE_GUIDE = `
-## Tallyn App — Feature Guide (How-To Knowledge)
-
-### Counter POS (Point of Sale)
-- Go to the "Counter POS" tab in the top navigation.
-- You will see a product grid. Tap any product card to add it to the cart.
-- To use **Voice POS**: tap the amber "🎙 Speak Order" button at the top of the product panel. The mic activates — say the order clearly, e.g. "two tea one oil udhaar Asif". Products matching your words are auto-added to the cart.
-- Use the search bar to find products by name or barcode.
-- Tap the camera icon to scan a barcode with the device camera.
-- Select "Cash Sale" or "Credit (Udhaar)" for payment type.
-- For credit sales, choose the customer from the dropdown.
-- Tap "Record Sale" to commit the sale — inventory is deducted automatically.
-- An undo banner appears for 10 seconds after each sale. Tap "Undo Sale" to reverse it.
-
-### Dashboard
-- Shows today's KPI cards: Total Revenue, Cash Received, Credit Extended, Gross Profit, Net Margin.
-- The 7-Day Sales Performance bar chart shows the last 7 days of cash (green) and credit/udhaar (amber) sales.
-- Action cards show urgent alerts: low-stock items and overdue udhaar accounts.
-- Quick navigation cards at the bottom link to POS, Udhaar, and Inventory.
-
-### Smart Inventory
-- Go to "Inventory" tab to see all products with stock levels, buy price, sell price, and margin.
-- Items below minimum stock are highlighted in amber — these need restocking.
-- Tap "Add New Product" to add a product (name, category, buy price, sell price, stock quantity, minimum alert level, barcode).
-- Tap the edit (pencil) icon on any product to update its details.
-- Tap the stock adjustment button to add or remove units (e.g. after a supplier delivery).
-
-### Udhaar Ledger (Customer Credit)
-- Go to "Udhaar Ledger" tab.
-- See all credit customers with outstanding balances and overdue days.
-- Tap "Record Debt Payment" on a customer's card to log a cash payment received.
-- Tap "Send WhatsApp Reminder" to open a pre-written WhatsApp message to the customer — it's culturally respectful and ready to send.
-
-### Sales History
-- Go to "Sales History" tab to see every completed sale with date, items, amount, and payment type.
-
-### Smart Insights
-- Go to "Smart Insights" tab for wholesale price benchmarks (Mandi rate comparisons) and seasonal demand forecasts.
-
-### Purchases & Scanner
-- Go to "Purchases & Scanner" tab to log wholesale supplier purchases and use the bill scanner.
-
-### Store Settings
-- Go to "Store Settings" tab to update store name, address, city, and other details.
-
-### Store Switcher
-- In the top-left of the navbar, click the store name dropdown to switch between your branches.
-- Each branch has its own inventory, customers, and sales data.
-
-### Kiryana Radio
-- Click the amber "Kiryana Radio" button in the top navbar to hear an AI audio briefing of today's store performance.
-
-### Ask Tallyn AI (this feature)
-- Click "Ask Tallyn AI" in the navbar from anywhere in the app.
-- Ask about your store data, how to use features, or get retail advice.
-`;
-
-// ─── AI API call (OpenAI-compatible / ElectronHub) ─────────────────────────
-async function callGeminiDirect(
-  apiKey: string,
-  systemPrompt: string,
-  history: { role: "user" | "assistant"; content: string }[],
-  userMessage: string
-): Promise<string> {
-  const baseUrl = (import.meta.env.VITE_AI_BASE_URL as string) || "https://api.electronhub.ai/v1";
-  const model = "gemini-3.5-flash-lite";
-
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...history,
-    { role: "user", content: userMessage },
-  ];
-
-  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.7,
-      max_tokens: 600,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`AI API ${res.status}: ${errText.slice(0, 150)}`);
-  }
-
-  const json = await res.json();
-  const text = json?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("AI returned empty response");
-  return text as string;
-}
-
 // ─── Component ──────────────────────────────────────────────────────────────
 export const AskTallynDrawer: React.FC = () => {
   const {
@@ -128,74 +31,13 @@ export const AskTallynDrawer: React.FC = () => {
     sales,
     shop,
     expenses,
+    isDemoMode,
   } = useApp();
 
   const [inputQuery, setInputQuery] = useState("");
   const [isThinking, setIsThinking] = useState(false);
-  const [geminiHistory, setGeminiHistory] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([]);
+  const [history, setHistory] = useState<ChatTurn[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // ── Build rich store context snapshot ─────────────────────────────────────
-  const buildSystemPrompt = () => {
-    const completedSales = sales.filter((s) => s.status === "completed");
-    const totalRevenue = completedSales.reduce((s, x) => s + x.totalAmount, 0);
-    const cashRevenue = completedSales.filter((s) => s.paymentType === "cash").reduce((s, x) => s + x.totalAmount, 0);
-    const creditRevenue = completedSales.filter((s) => s.paymentType === "credit").reduce((s, x) => s + x.totalAmount, 0);
-    const totalUdhaar = customers.reduce((s, c) => s + c.creditBalance, 0);
-    const lowStock = products.filter((p) => p.quantity <= p.minQuantity);
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-
-    // Build full product list (capped at 60 for prompt size)
-    const productLines = products.slice(0, 60).map(
-      (p) => `  - ${p.name || p.nameEn} | Category: ${p.category} | Stock: ${p.quantity} ${p.unit} | Buy: Rs${p.buyPrice} | Sell: Rs${p.sellPrice} | Min Alert: ${p.minQuantity}${p.quantity <= p.minQuantity ? " ⚠️ LOW STOCK" : ""}${p.isDeadStock ? " 🔴 DEAD STOCK" : ""}`
-    ).join("\n");
-
-    // Build full customer list
-    const customerLines = customers.map(
-      (c) => `  - ${c.name} | Phone: ${c.phone} | Udhaar: Rs${c.creditBalance.toLocaleString()} | Overdue: ${customerOverdueDays(c)} days${c.nextDueDate ? ` (next due ${c.nextDueDate})` : ""}`
-    ).join("\n");
-
-    // Build recent sales summary (last 10)
-    const recentSales = completedSales.slice(-10).map(
-      (s) => `  - Rs${s.totalAmount} | ${s.paymentType} | ${s.items.length} items | ${s.customerName || "walk-in"} | ${s.createdAt ? s.createdAt.split("T")[0] : "today"}`
-    ).join("\n");
-
-    return `You are "Tallyn AI" — the intelligent retail advisor built into the Tallyn Retail OS app for Pakistani kiryana (neighbourhood grocery) store owners.
-
-## YOUR IDENTITY & SCOPE
-- You are a helpful, warm, conversational AI assistant.
-- You have full access to the store owner's live data (shown below).
-- You can answer questions about: store data, inventory, customers, sales, udhaar/credit, how to use app features, retail advice, supplier tips, pricing strategy, Ramadan/seasonal planning — anything related to this app or their kiryana business.
-- If someone asks something COMPLETELY unrelated to retail, this app, or business (e.g. "who is Lebron James?", "what's the weather?", cricket scores, general knowledge) — politely decline and say you're focused on helping with their store and the Tallyn app.
-- You may answer greetings, pleasantries, and conversational messages warmly.
-- Do NOT use JSON output. Just reply in plain conversational text.
-- Keep replies concise and helpful — typically 2–5 sentences unless detail is needed.
-- Use **bold** for emphasis where helpful.
-
-## CURRENT STORE: ${shop.name}
-- Address: ${shop.address || "N/A"} | City: ${shop.city || "Pakistan"}
-- Total SKUs: ${products.length}
-- Today's Revenue: Rs${totalRevenue.toLocaleString()} (${completedSales.length} sales)
-- Cash Collected: Rs${cashRevenue.toLocaleString()} | Credit Extended: Rs${creditRevenue.toLocaleString()}
-- Total Outstanding Udhaar: Rs${totalUdhaar.toLocaleString()}
-- Low Stock Items: ${lowStock.length > 0 ? lowStock.map(p => p.name || p.nameEn).join(", ") : "None"}
-- Total Expenses Logged: Rs${totalExpenses.toLocaleString()}
-
-## FULL PRODUCT INVENTORY
-${productLines || "No products loaded."}
-
-## CUSTOMERS & UDHAAR LEDGER
-${customerLines || "No customers loaded."}
-
-## RECENT SALES (last 10)
-${recentSales || "No sales recorded yet."}
-
-${APP_FEATURE_GUIDE}
-
-Always be helpful, warm, and practical. Reply in English unless the user writes in another language, in which case match their language.`;
-  };
 
   // ── Initial greeting message ───────────────────────────────────────────────
   const makeGreeting = () => ({
@@ -208,7 +50,7 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
   // Reset on shop change
   useEffect(() => {
     setMessages([makeGreeting()]);
-    setGeminiHistory([]);
+    setHistory([]);
   }, [shop.id]);
 
   useEffect(() => {
@@ -227,30 +69,32 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
     setIsThinking(true);
     setMessages((prev) => [...prev, { sender: "tallyn", text: "...", isLoading: true }]);
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+    // Every number the AI may quote is computed here, in tested code (lib/askContext).
+    const snapshot = buildStoreSnapshot({ shop, products, customers, sales, expenses });
 
     try {
-      if (!apiKey) throw new Error("No VITE_GEMINI_API_KEY configured");
-
-      const systemPrompt = buildSystemPrompt();
-      const answer = await callGeminiDirect(apiKey, systemPrompt, geminiHistory, q);
+      const accessToken = isDemoMode ? null : (await supabase.auth.getSession()).data.session?.access_token ?? null;
+      const answer = await askTallyn({ question: q, history, snapshot, accessToken });
 
       setMessages((prev) => {
         const without = prev.filter((m) => !m.isLoading);
         return [...without, { sender: "tallyn", text: answer }];
       });
-
-      setGeminiHistory((prev) => [
-        ...prev.slice(-8), // keep last 8 turns in history
-        { role: "user", content: q },
-        { role: "assistant", content: answer },
+      setHistory((prev) => [
+        ...prev.slice(-6), // keep the last few turns
+        { role: "user", text: q },
+        { role: "assistant", text: answer },
       ]);
     } catch (err) {
-      // Graceful local fallback without user blame or raw error dumps
-      const fallback = buildLocalFallback(q, { products, customers, sales, shop, formatCurrency });
+      // Fail open: answer from the same computed snapshot, and say why AI isn't answering.
+      const note =
+        err instanceof AskTallynError && err.kind === "rate_limited"
+          ? err.message
+          : "Live AI is unavailable right now, so this answer comes straight from your store data.";
+      const fallback = buildLocalFallback(q, snapshot);
       setMessages((prev) => {
         const without = prev.filter((m) => !m.isLoading);
-        return [...without, { sender: "tallyn", text: fallback + "\n\n*(Serving store snapshot while live AI reconnects.)*" }];
+        return [...without, { sender: "tallyn", text: `${fallback}\n\n(${note})` }];
       });
     } finally {
       setIsThinking(false);
@@ -258,7 +102,7 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
   };
 
   const quickChips = [
-    "What's in my inventory?",
+    "Which items didn't sell this month?",
     "Who has the most udhaar?",
     "Which items are low on stock?",
     "How do I use Voice POS?",
@@ -269,15 +113,16 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
   const renderMarkdown = (text: string) => {
     const lines = text.split("\n");
     return lines.map((line, i) => {
-      const boldLine = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      const isHeading = line.startsWith("### ") || line.startsWith("## ");
-      const isBullet = line.startsWith("• ") || line.startsWith("- ") || line.startsWith("* ");
-      const cleanLine = boldLine.replace(/^(###|##|#)\s/, "").replace(/^[•\-\*]\s/, "");
+      const isHeading = /^#{1,3}\s/.test(line);
+      const isBullet = /^(•|-|\*)\s/.test(line);
+      const body = line.replace(/^#{1,3}\s/, "").replace(/^(•|-|\*)\s/, "");
+      // Escape first, then bold: replies and names are untrusted.
+      const html = inlineMarkdownToSafeHtml(body);
 
-      if (isHeading) return <p key={i} className="font-semibold text-emerald-800 text-xs mt-2 mb-1" dangerouslySetInnerHTML={{ __html: cleanLine }} />;
-      if (isBullet) return <div key={i} className="flex gap-1.5 mb-0.5"><span className="text-emerald-600 shrink-0">•</span><span dangerouslySetInnerHTML={{ __html: cleanLine }} /></div>;
+      if (isHeading) return <p key={i} className="font-semibold text-emerald-800 text-sm mt-2 mb-1" dangerouslySetInnerHTML={{ __html: html }} />;
+      if (isBullet) return <div key={i} className="flex gap-1.5 mb-0.5"><span className="text-emerald-600 shrink-0">•</span><span dangerouslySetInnerHTML={{ __html: html }} /></div>;
       if (line.trim() === "") return <div key={i} className="h-1.5" />;
-      return <p key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+      return <p key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: html }} />;
     });
   };
 
@@ -415,33 +260,41 @@ Always be helpful, warm, and practical. Reply in English unless the user writes 
   );
 };
 
-// ─── Local fallback when Gemini is offline ────────────────────────────────
-function buildLocalFallback(
-  query: string,
-  { products, customers, sales, shop, formatCurrency }: {
-    products: ReturnType<typeof useApp>["products"];
-    customers: ReturnType<typeof useApp>["customers"];
-    sales: ReturnType<typeof useApp>["sales"];
-    shop: ReturnType<typeof useApp>["shop"];
-    formatCurrency: (n: number) => string;
-  }
-): string {
+// ─── Local fallback when the AI is unavailable ────────────────────────────
+// Uses the same computed snapshot as the AI, so the numbers always agree.
+function buildLocalFallback(query: string, snap: StoreSnapshot): string {
   const q = query.toLowerCase();
-  const completed = sales.filter((s) => s.status === "completed");
-  const totalUdhaar = customers.reduce((s, c) => s + c.creditBalance, 0);
-  const totalRevenue = completed.reduce((s, x) => s + x.totalAmount, 0);
+  const money = (n: number) => formatCurrency(n, snap.currency);
 
-  if (q.includes("udhaar") || q.includes("debt") || q.includes("owe") || q.includes("credit")) {
-    const top = [...customers].sort((a, b) => b.creditBalance - a.creditBalance).slice(0, 3);
-    return `Total outstanding udhaar: **${formatCurrency(totalUdhaar)}**.\n\nTop accounts:\n${top.map(c => `• **${c.name}**: ${formatCurrency(c.creditBalance)} (${customerOverdueDays(c)} days overdue)`).join("\n")}`;
+  if (/udhaar|udhar|debt|owe|credit|qarz/.test(q)) {
+    if (snap.customers.length === 0) return "No customer owes you money right now.";
+    return `Total udhaar: **${money(snap.udhaar.total)}** from ${snap.udhaar.customersOwing} customers (${snap.udhaar.overdueCustomers} overdue).
+
+Largest balances:
+${snap.customers
+      .slice(0, 3)
+      .map((c) => `- **${c.name}**: ${money(c.balance)}${c.overdueDays > 0 ? ` (${c.overdueDays} days overdue)` : c.nextDueDate ? ` (due ${c.nextDueDate})` : ""}`)
+      .join("\n")}`;
   }
-  if (q.includes("stock") || q.includes("inventory") || q.includes("low") || q.includes("item")) {
-    const low = products.filter((p) => p.quantity <= p.minQuantity);
-    if (low.length === 0) return `All ${products.length} products in **${shop.name}** are stocked above minimum levels.`;
-    return `**${low.length} low-stock items** need restocking:\n${low.slice(0, 5).map(p => `• **${p.name || p.nameEn}**: ${p.quantity} ${p.unit} left`).join("\n")}`;
+  if (/not sold|didn.?t sell|dead|slow|nahi bik/.test(q)) {
+    if (snap.notSold30d.length === 0) return "Every item in stock has sold at least once in the last 30 days.";
+    return `Not sold in the last 30 days:
+${snap.notSold30d.slice(0, 5).map((n) => `- **${n.name}**: ${n.stock} in stock (${money(n.stockValueAtCost)} at cost)`).join("\n")}`;
   }
-  if (q.includes("revenue") || q.includes("sale") || q.includes("profit") || q.includes("today")) {
-    return `**${shop.name}** has recorded **${formatCurrency(totalRevenue)}** across **${completed.length} sales**.`;
+  if (/stock|inventory|low|item|maal/.test(q)) {
+    const low = snap.products.filter((p) => p.low);
+    if (low.length === 0) return `All ${snap.stock.productCount} products are above their minimum level.`;
+    return `**${snap.stock.lowStockCount} items** are at or below minimum:
+${low.slice(0, 5).map((p) => `- **${p.name}**: ${p.stock} ${p.unit} left (min ${p.minStock})`).join("\n")}`;
   }
-  return `**${shop.name}**: ${products.length} products, ${formatCurrency(totalUdhaar)} udhaar outstanding, ${formatCurrency(totalRevenue)} in sales. What would you like to know?`;
+  if (/best|top|selling|bikta/.test(q)) {
+    if (snap.topSellers7d.length === 0) return "No sales in the last 7 days yet.";
+    return `Top sellers, last 7 days:
+${snap.topSellers7d.slice(0, 5).map((t) => `- **${t.name}**: ${t.units} sold (${money(t.revenue)})`).join("\n")}`;
+  }
+  if (/revenue|sale|profit|today|aaj|week/.test(q)) {
+    return `Today: **${money(snap.today.revenue)}** from ${snap.today.salesCount} sales (cash ${money(snap.today.cash)}, udhaar ${money(snap.today.credit)}), gross profit ${money(snap.today.grossProfit)}.
+Last 7 days: ${money(snap.last7Days.revenue)} from ${snap.last7Days.salesCount} sales.`;
+  }
+  return `**${snap.shopName}**: ${snap.stock.productCount} products (${snap.stock.lowStockCount} low), ${money(snap.udhaar.total)} udhaar outstanding, today's sales ${money(snap.today.revenue)}. What would you like to know?`;
 }

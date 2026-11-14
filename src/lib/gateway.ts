@@ -1,116 +1,83 @@
 /**
- * Tallyn Edge Function Gateway Client
- * Sends authenticated requests to /functions/v1/ai-gateway with the
- * caller's Supabase session JWT. The server verifies the JWT, derives
- * the shop_id itself, calls Gemini server-side, and Zod-validates its
- * own output. On any failure the caller falls back to deterministic
- * local advice (CLAUDE.md Rule 5: fail-open graceful degradation).
+ * Ask Tallyn client → `ai-gateway` Edge Function.
+ * The AI key lives only on the server. The browser sends the question, recent turns,
+ * and a store snapshot computed in tested code (lib/askContext). Signed-in users send
+ * their session token; demo visitors send none and get the demo limits.
+ * Callers must catch AskTallynError and show local fallback advice (Rule 5: fail open).
  */
+import type { StoreSnapshot } from "@/lib/askContext";
 
-export type GatewayFeature = "advisor" | "restock" | "udhaar" | "mahngai";
-export type GatewayLanguage = "en" | "ur" | "roman-ur";
-
-export interface GatewayContext {
-  shopName: string;
-  shopCity: string;
-  shopAddress?: string;
-  totalProducts: number;
-  lowStockItems: Array<{ name: string; stock: number; unit: string }>;
-  topDebtors: Array<{ name: string; balance: number; phone?: string }>;
-  totalUdhaar: number;
-  todaySalesCount: number;
-  todayRevenue: number;
+export interface ChatTurn {
+  role: "user" | "assistant";
+  text: string;
 }
 
-export interface GatewayCallProps {
-  accessToken: string;
-  feature: GatewayFeature;
-  query: string;
-  language: GatewayLanguage;
-  context: GatewayContext;
-  history?: Array<{ role: "user" | "model"; text: string }>;
+export type AskErrorKind = "not_configured" | "rate_limited" | "unavailable" | "network" | "bad_response";
+
+export class AskTallynError extends Error {
+  constructor(public kind: AskErrorKind, message: string) {
+    super(message);
+    this.name = "AskTallynError";
+  }
 }
 
-export interface GatewayAnswer {
-  answer: string;
-  language: GatewayLanguage;
-  referenced_metrics: string[];
-  numbersProvidedByApp: boolean;
-}
+const TIMEOUT_MS = 120_000; // free-tier AI providers can queue
 
-/**
- * Calls the ai-gateway Edge Function. Throws on network/validation
- * failure — callers must catch and render local fallback advice.
- */
-export async function callGateway({
-  accessToken,
-  feature,
-  query,
-  language,
-  context,
-  history = [],
-}: GatewayCallProps): Promise<GatewayAnswer> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  if (!supabaseUrl) {
-    throw new Error("Missing VITE_SUPABASE_URL for gateway call");
-  }
-  if (!accessToken) {
-    throw new Error("No Supabase session token available");
-  }
+export async function askTallyn(opts: {
+  question: string;
+  history: ChatTurn[];
+  snapshot: StoreSnapshot;
+  accessToken?: string | null;
+}): Promise<string> {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new AskTallynError("not_configured", "Ask Tallyn isn't set up on this server.");
 
-  // Clamp client-side so the strict gateway contract never rejects us.
-  const payload = {
-    feature,
-    query: query.slice(0, 1000),
-    language,
-    context: {
-      shopName: (context.shopName || "Store").slice(0, 120),
-      shopCity: (context.shopCity || "Pakistan").slice(0, 120),
-      ...(context.shopAddress ? { shopAddress: context.shopAddress.slice(0, 200) } : {}),
-      totalProducts: Math.max(0, Math.round(context.totalProducts)),
-      lowStockItems: context.lowStockItems.slice(0, 5).map((i) => ({
-        name: (i.name || "item").slice(0, 100),
-        stock: Math.max(0, Math.round(i.stock)),
-        unit: (i.unit || "unit").slice(0, 20),
-      })),
-      topDebtors: context.topDebtors.slice(0, 4).map((d) => ({
-        name: (d.name || "customer").slice(0, 100),
-        balance: Math.max(0, Math.round(d.balance)),
-        ...(d.phone ? { phone: d.phone.slice(0, 20) } : {}),
-      })),
-      totalUdhaar: Math.max(0, Math.round(context.totalUdhaar)),
-      todaySalesCount: Math.max(0, Math.round(context.todaySalesCount)),
-      todayRevenue: Math.max(0, Math.round(context.todayRevenue)),
-    },
-    history: history
-      .slice(-6)
-      .map((m) => ({ role: m.role, text: m.text.slice(0, 2000) })),
-  };
-
-  const response = await fetch(`${supabaseUrl}/functions/v1/ai-gateway`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text().catch(() => "");
-    throw new Error(`Gateway error ${response.status}: ${errText.slice(0, 200)}`);
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${url}/functions/v1/ai-gateway`, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+        Authorization: `Bearer ${opts.accessToken || anonKey}`,
+      },
+      body: JSON.stringify({
+        question: opts.question.slice(0, 1000),
+        history: opts.history.slice(-8).map((t) => ({ role: t.role, text: t.text.slice(0, 2000) })),
+        snapshot: opts.snapshot,
+      }),
+    });
+  } catch {
+    throw controller.signal.aborted
+      ? new AskTallynError("unavailable", "Tallyn AI took too long to answer.")
+      : new AskTallynError("network", "No internet connection.");
+  } finally {
+    window.clearTimeout(timer);
   }
 
-  const body = await response.json();
-  // Light client-side shape check (the gateway already Zod-validated its own output).
-  if (typeof body?.answer !== "string" || !body.answer) {
-    throw new Error("Gateway returned a malformed AI response");
+  let body: { answer?: unknown; error?: unknown } | null = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* non-JSON error page */
+  }
+  const serverMsg = typeof body?.error === "string" ? body.error : null;
+
+  if (!res.ok) {
+    if (res.status === 429) throw new AskTallynError("rate_limited", serverMsg ?? "Daily question limit reached.");
+    if (res.status === 404 || res.status === 503) {
+      throw new AskTallynError("not_configured", serverMsg ?? "Ask Tallyn isn't switched on yet.");
+    }
+    if (res.status === 400) console.warn("ai-gateway rejected the request:", body);
+    throw new AskTallynError("unavailable", serverMsg ?? "Tallyn AI couldn't answer right now.");
   }
 
-  return {
-    answer: body.answer,
-    language: (body.language as GatewayLanguage) ?? language,
-    referenced_metrics: Array.isArray(body.referenced_metrics) ? body.referenced_metrics : [],
-    numbersProvidedByApp: body.numbersProvidedByApp === true,
-  };
+  if (typeof body?.answer !== "string" || !body.answer.trim()) {
+    throw new AskTallynError("bad_response", "Tallyn AI returned an empty answer.");
+  }
+  return body.answer.trim().slice(0, 4000);
 }
