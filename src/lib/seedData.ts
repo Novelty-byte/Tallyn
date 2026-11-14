@@ -1,4 +1,8 @@
 import { Product, Customer, Sale, Expense, Purchase, WholesalePriceBenchmark, SeasonalForecast } from "@/types";
+import { addDays, toLocalYmd } from "@/lib/credit";
+
+/** Demo due dates stay relative to the day the demo is opened (negative = already overdue). */
+const dueInDays = (n: number): string => addDays(toLocalYmd(), n);
 
 // ==========================================
 // BRANCH 1: Main Branch (G-9/4 Islamabad)
@@ -45,7 +49,7 @@ export const BRANCH_01_CUSTOMERS: Customer[] = [
     creditBalance: 3400,
     creditLimit: 10000,
     lastPurchaseDate: "2026-10-26",
-    overdueDays: 14,
+    nextDueDate: dueInDays(-7),
     history: [
       { id: "h1", date: "2026-10-26", description: "2 Cooking Oil, 5kg Atta on Udhaar", amount: 2430, type: "credit_purchase" },
       { id: "h2", date: "2026-10-15", description: "Partial Cash Payment", amount: -1500, type: "payment" },
@@ -59,7 +63,7 @@ export const BRANCH_01_CUSTOMERS: Customer[] = [
     creditBalance: 1250,
     creditLimit: 8000,
     lastPurchaseDate: "2026-11-06",
-    overdueDays: 3,
+    nextDueDate: dueInDays(4),
     history: [
       { id: "h4", date: "2026-11-06", description: "Tea, Sugar, MilkPak", amount: 1250, type: "credit_purchase" },
     ],
@@ -72,7 +76,7 @@ export const BRANCH_01_CUSTOMERS: Customer[] = [
     creditBalance: 4800,
     creditLimit: 6000,
     lastPurchaseDate: "2026-10-18",
-    overdueDays: 22,
+    nextDueDate: dueInDays(-15),
     history: [
       { id: "h5", date: "2026-10-18", description: "Monthly Ration Package", amount: 4800, type: "credit_purchase" },
     ],
@@ -167,7 +171,7 @@ export const BRANCH_02_CUSTOMERS: Customer[] = [
     creditBalance: 2850,
     creditLimit: 15000,
     lastPurchaseDate: "2026-11-08",
-    overdueDays: 1,
+    nextDueDate: dueInDays(6),
     history: [
       { id: "b2-h1", date: "2026-11-08", description: "Clinic Tea, MilkPak & Tissue Boxes", amount: 2850, type: "credit_purchase" },
     ],
@@ -180,7 +184,7 @@ export const BRANCH_02_CUSTOMERS: Customer[] = [
     creditBalance: 5600,
     creditLimit: 20000,
     lastPurchaseDate: "2026-11-05",
-    overdueDays: 4,
+    nextDueDate: dueInDays(3),
     history: [
       { id: "b2-h2", date: "2026-11-05", description: "Weekly Office Coffee, Red Bull & Lays", amount: 5600, type: "credit_purchase" },
     ],
@@ -252,7 +256,7 @@ export const BRANCH_03_CUSTOMERS: Customer[] = [
     creditBalance: 42000,
     creditLimit: 100000,
     lastPurchaseDate: "2026-11-07",
-    overdueDays: 9,
+    nextDueDate: dueInDays(-2),
     history: [
       { id: "b3-h1", date: "2026-11-07", description: "2 Cartons Tapal Tea, 5 Sacks Sugar", amount: 65050, type: "credit_purchase" },
       { id: "b3-h2", date: "2026-11-02", description: "Cheque Clearance Payment", amount: -50000, type: "payment" },
@@ -266,7 +270,7 @@ export const BRANCH_03_CUSTOMERS: Customer[] = [
     creditBalance: 28500,
     creditLimit: 75000,
     lastPurchaseDate: "2026-11-08",
-    overdueDays: 4,
+    nextDueDate: dueInDays(3),
     history: [
       { id: "b3-h3", date: "2026-11-08", description: "3 Sacks Basmati Rice, 2 Tins Dalda", amount: 41900, type: "credit_purchase" },
     ],

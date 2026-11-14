@@ -94,7 +94,7 @@ export const resources = {
         customerName: "Customer Name",
         phone: "Phone Number",
         balance: "Outstanding Debt",
-        overdueDays: "Days Overdue",
+        overdueDays: "Due Status",
       },
       purchases: {
         title: "Purchases & Supplier Scanner",

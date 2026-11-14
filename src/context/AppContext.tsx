@@ -14,7 +14,9 @@ import {
 } from "@/lib/seedData";
 import {
   db, ensureProfile, mapProduct, mapCustomer, mapSale, mapPurchase, mapExpense,
+  isServerRejection, serverErrorMessage,
 } from "@/services/supabase";
+import { defaultDueDate, toLocalYmd } from "@/lib/credit";
 
 import { tabFromPath, TAB_ROUTE_MAP, type ActiveTab } from "@/lib/routes";
 import { readDemoSession, writeDemoSession, clearDemoSession } from "@/lib/demoSession";
@@ -95,14 +97,17 @@ interface AppContextType {
   createMultipleShops: (branches: Array<{ shopData: Omit<Shop, "id">; template?: "grocery" | "empty" }>) => Promise<void>;
   updateShop: (shopData: Shop) => void;
   deleteShop: (shopId: string) => void;
-  recordSale: (sale: Omit<Sale, "id" | "createdAt" | "status">) => void;
+  /** Resolves true when the sale was recorded (on the server, or on-device after a network failure). */
+  recordSale: (sale: Omit<Sale, "id" | "createdAt" | "status">) => Promise<boolean>;
   undoSale: () => void;
   addProduct: (product: Omit<Product, "id">) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
   updateStock: (productId: string, delta: number) => void;
-  addCustomer: (customer: Omit<Customer, "id" | "creditBalance">) => void;
-  recordCreditPayment: (customerId: string, amount: number) => void;
+  /** Resolves to the new customer's id, or null if it could not be created. */
+  addCustomer: (customer: Omit<Customer, "id" | "creditBalance">) => Promise<string | null>;
+  /** Resolves true when the payment was recorded. */
+  recordCreditPayment: (customerId: string, amount: number) => Promise<boolean>;
   recordSupplierPurchase: (purchase: Omit<Purchase, "id" | "date">) => void;
   addExpense: (expense: Omit<Expense, "id">) => void;
 
@@ -491,13 +496,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   /* -------------------------- Atomic Record Sale -------------------------- */
 
-  const recordSale = async (saleData: Omit<Sale, "id" | "createdAt" | "status">) => {
+  const recordSale = async (saleData: Omit<Sale, "id" | "createdAt" | "status">): Promise<boolean> => {
     // Check stock block (prevent negative)
     for (const item of saleData.items) {
       const p = products.find((x) => x.id === item.productId);
       if (p && p.quantity < item.quantity) {
         toast.error(`Not enough stock: ${p.nameEn}`, { description: `Available ${p.quantity}, requested ${item.quantity}.` });
-        return;
+        return false;
+      }
+    }
+
+    // Udhaar must be booked against a real customer of THIS shop, with a due date.
+    let dueDate: string | undefined;
+    if (saleData.paymentType === "credit") {
+      if (!saleData.customerId || !customers.some((c) => c.id === saleData.customerId)) {
+        toast.error("Choose a customer for this udhaar sale", {
+          description: "Credit sales must be recorded against a customer account.",
+        });
+        return false;
+      }
+      dueDate = saleData.dueDate ?? defaultDueDate();
+      if (dueDate < toLocalYmd()) {
+        toast.error("Due date is in the past", { description: "Pick today or a later date." });
+        return false;
       }
     }
 
@@ -511,13 +532,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           shop.id,
           saleData.paymentType,
           saleData.items.map((i) => ({ product_id: i.productId, quantity: i.quantity, unit_price: i.unitPrice })),
-          saleData.customerId,
+          saleData.paymentType === "credit" ? saleData.customerId : undefined,
+          dueDate,
         );
         createdSaleId = rpcRes.sale_id;
         await refreshLiveShopData(shop.id);
         serverSynced = true;
       } catch (err) {
-        console.warn("RPC record_sale failed, mutating state locally:", err);
+        if (isServerRejection(err)) {
+          // The server saw the sale and refused it: never fake it locally.
+          console.warn("record_sale rejected by server:", err);
+          toast.error("Sale not recorded", { description: serverErrorMessage(err) });
+          return false;
+        }
+        console.warn("RPC record_sale failed (network), mutating state locally:", err);
         markUnsynced("Sale");
       }
     }
@@ -525,6 +553,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Local state optimistic mirror
     const newSale: Sale = {
       ...saleData,
+      dueDate,
       id: createdSaleId,
       createdAt: new Date().toISOString(),
       status: "completed",
@@ -547,12 +576,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               ? {
                   ...c,
                   creditBalance: c.creditBalance + saleData.totalAmount,
-                  lastPurchaseDate: new Date().toISOString().split("T")[0],
+                  lastPurchaseDate: toLocalYmd(),
+                  // Oldest unpaid sale keeps setting the next due date (FIFO).
+                  nextDueDate:
+                    c.creditBalance > 0 && c.nextDueDate && c.nextDueDate < dueDate!
+                      ? c.nextDueDate
+                      : dueDate,
                   history: [
                     {
                       id: "h-" + Date.now(),
-                      date: new Date().toISOString().split("T")[0],
-                      description: `Credit Sale (${saleData.items.length} items)`,
+                      date: toLocalYmd(),
+                      description: `Credit Sale (${saleData.items.length} items) · due ${dueDate}`,
                       amount: saleData.totalAmount,
                       type: "credit_purchase",
                     },
@@ -584,6 +618,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }, 1000);
     undoIntervalRef.current = interval;
+    return true;
   };
 
   const undoSale = async () => {
@@ -614,7 +649,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCustomers((prev) =>
           prev.map((c) =>
             c.id === lastSaleUndo.customerId
-              ? { ...c, creditBalance: Math.max(c.creditBalance - lastSaleUndo.totalAmount, 0) }
+              ? (() => {
+                  const creditBalance = Math.max(c.creditBalance - lastSaleUndo.totalAmount, 0);
+                  return { ...c, creditBalance, nextDueDate: creditBalance > 0 ? c.nextDueDate : undefined };
+                })()
               : c
           )
         );
@@ -690,26 +728,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   /* ------------------------------- Customers ------------------------------ */
 
-  const addCustomer = async (c: Omit<Customer, "id" | "creditBalance">) => {
+  const addCustomer = async (c: Omit<Customer, "id" | "creditBalance">): Promise<string | null> => {
     if (user && !isDemoMode) {
       try {
-        await db.insertCustomer(shop.id, c.name, c.phone);
+        const row = await db.insertCustomer(shop.id, c.name, c.phone);
         await refreshLiveShopData(shop.id);
-        return;
-      } catch { /* ignore */ }
+        return row.id;
+      } catch (err) {
+        if (isServerRejection(err)) {
+          toast.error("Customer not saved", { description: serverErrorMessage(err) });
+          return null;
+        }
+        // Network failure: a device-only customer could never receive a server-side
+        // credit sale (record_sale checks the customer belongs to the shop), so don't fake one.
+        toast.error("Couldn't reach the server", { description: "The customer was not saved. Try again when you're online." });
+        return null;
+      }
     }
     const newCust: Customer = { ...c, id: "c-" + Date.now(), creditBalance: 0, history: [] };
     setCustomers((prev) => [...prev, newCust]);
+    return newCust.id;
   };
 
-  const recordCreditPayment = async (customerId: string, amount: number) => {
+  const recordCreditPayment = async (customerId: string, amount: number): Promise<boolean> => {
+    const cust = customers.find((c) => c.id === customerId);
+    if (!cust) return false;
+    if (!(amount > 0)) {
+      toast.error("Enter an amount greater than zero");
+      return false;
+    }
+    if (amount > cust.creditBalance) {
+      toast.error("Payment is more than the amount owed", {
+        description: `${cust.name} owes ${cust.creditBalance.toLocaleString()} — record at most that.`,
+      });
+      return false;
+    }
+
     if (user && !isDemoMode) {
       try {
         await db.rpcRecordCreditPayment(shop.id, customerId, amount);
         await refreshLiveShopData(shop.id);
         audio.playCashRegisterChime();
-        return;
-      } catch { markUnsynced("Payment"); }
+        return true;
+      } catch (err) {
+        if (isServerRejection(err)) {
+          toast.error("Payment not recorded", { description: serverErrorMessage(err) });
+          return false;
+        }
+        markUnsynced("Payment");
+      }
     }
     setCustomers((prev) =>
       prev.map((c) =>
@@ -717,10 +784,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ? {
               ...c,
               creditBalance: Math.max(c.creditBalance - amount, 0),
+              // On-device we only know the oldest due date, so a payment that clears the
+              // whole balance clears it; a partial payment keeps it.
+              nextDueDate: c.creditBalance - amount > 0 ? c.nextDueDate : undefined,
               history: [
                 {
                   id: "h-" + Date.now(),
-                  date: new Date().toISOString().split("T")[0],
+                  date: toLocalYmd(),
                   description: "Cash Debt Settlement Received",
                   amount: -amount,
                   type: "payment",
@@ -732,6 +802,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       )
     );
     audio.playCashRegisterChime();
+    return true;
   };
 
   /* ------------------------------- Purchases ------------------------------ */

@@ -51,7 +51,12 @@ export interface Customer {
   creditBalance: number;
   creditLimit: number;
   lastPurchaseDate?: string;
-  overdueDays?: number;
+  /**
+   * Earliest due date (YYYY-MM-DD) among this customer's credit sales that are still unpaid,
+   * after payments are applied oldest-first. Overdue days are derived from it at render time
+   * via `customerOverdueDays()` in lib/credit — never stored, so they cannot go stale.
+   */
+  nextDueDate?: string;
   history?: {
     id: string;
     date: string;
@@ -77,6 +82,8 @@ export interface Sale {
   paymentType: PaymentType;
   customerId?: string;
   customerName?: string;
+  /** Credit sales only: when the customer promised to pay (YYYY-MM-DD). */
+  dueDate?: string;
   totalAmount: number;
   items: {
     productId: string;

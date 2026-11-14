@@ -2,6 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { computeDailyPulse } from "@/lib/deterministicMath";
+import { customerOverdueDays } from "@/lib/credit";
 import { formatCurrency } from "@/lib/utils";
 import { MetricCounter } from "@/components/animations/MetricCounter";
 import { 
@@ -22,8 +23,10 @@ export const DashboardView: React.FC = () => {
 
   const metrics = computeDailyPulse(sales);
 
-  // Overdue customers (>7 days)
-  const overdueCustomers = customers.filter((c) => (c.overdueDays || 0) > 7 && c.creditBalance > 0);
+  // Customers past their promised pay-back date, most overdue first
+  const overdueCustomers = customers
+    .filter((c) => customerOverdueDays(c) > 0)
+    .sort((a, b) => customerOverdueDays(b) - customerOverdueDays(a));
 
   // Low stock products
   const lowStockProducts = products.filter((p) => p.quantity <= p.minQuantity);
@@ -231,7 +234,7 @@ export const DashboardView: React.FC = () => {
                   {overdueCustomers[0].name} owes {formatCurrency(overdueCustomers[0].creditBalance)}
                 </p>
                 <p className="text-sm text-slate-600 mt-1">
-                  Payment is {overdueCustomers[0].overdueDays} days overdue. 1-click respectful WhatsApp reminder ready.
+                  Payment is {customerOverdueDays(overdueCustomers[0])} days overdue. 1-click respectful WhatsApp reminder ready.
                 </p>
               </div>
               <button

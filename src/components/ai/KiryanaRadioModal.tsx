@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
+import { customerOverdueDays } from "@/lib/credit";
 import { X, Play, Square, Radio, Volume2, AlertTriangle, TrendingUp, Users } from "lucide-react";
 
 // ============================================================
@@ -62,7 +63,7 @@ export const KiryanaRadioModal: React.FC = () => {
   const totalRev = sales.filter(s => s.status === "completed").reduce((sum, x) => sum + x.totalAmount, 0);
   const totalTransactions = sales.filter(s => s.status === "completed").length;
   const totalUdhaar = customers.reduce((s, c) => s + c.creditBalance, 0);
-  const overdueCustomers = customers.filter(c => (c.overdueDays || 0) > 7);
+  const overdueCustomers = customers.filter(c => customerOverdueDays(c) > 0);
   const topDebtor = [...customers].sort((a, b) => b.creditBalance - a.creditBalance)[0];
   const lowStockItems = products.filter(p => p.quantity <= p.minQuantity);
   const totalProducts = products.length;

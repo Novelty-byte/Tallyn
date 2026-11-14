@@ -5,6 +5,7 @@
  */
 import { supabase } from "@/lib/supabase";
 import { asExplicitAuth } from "@/lib/demoSession";
+import { summarizeCredit } from "@/lib/credit";
 import type {
   Product, Customer, Sale, Purchase, Expense, PaymentType, ProductCategory,
 } from "@/types";
@@ -71,25 +72,25 @@ export function mapCustomer(
   creditSales: SaleRow[],
   payments: PaymentRow[],
 ): Customer {
+  // Same definition as the record_credit_payment guard (migration 005):
+  // completed credit sales minus all payments.
   const mySales = creditSales.filter(
-    (s) => s.customer_id === r.id && s.status === "completed",
+    (s) => s.customer_id === r.id && s.status === "completed" && s.payment_type === "credit",
   );
   const myPayments = payments.filter((p) => p.customer_id === r.id);
-  const owed = mySales.reduce((s, x) => s + Number(x.total_amount), 0);
   const paid = myPayments.reduce((s, x) => s + Number(x.amount), 0);
 
-  // Overdue: earliest due_date (or created_at fallback) still unpaid, pro-rata naive:
-  // treat balance > 0 and oldest due date in the past as overdue days.
-  let overdueDays = 0;
-  if (owed - paid > 0) {
-    const oldestDue = mySales
-      .map((s) => s.due_date ?? s.created_at.slice(0, 10))
-      .sort()[0];
-    if (oldestDue) {
-      const diff = Math.floor((Date.now() - new Date(oldestDue).getTime()) / 86_400_000);
-      overdueDays = Math.max(diff, 0);
-    }
-  }
+  // Payments clear the oldest credit sales first; the next due date is the
+  // earliest one among sales that are still unpaid.
+  const credit = summarizeCredit(
+    mySales.map((s) => ({
+      id: s.id,
+      amount: Number(s.total_amount),
+      createdAt: s.created_at,
+      dueDate: s.due_date,
+    })),
+    paid,
+  );
 
   const lastPurchase = mySales
     .map((s) => s.created_at.slice(0, 10))
@@ -100,7 +101,7 @@ export function mapCustomer(
     ...mySales.map((s) => ({
       id: `s-${s.id}`,
       date: s.created_at.slice(0, 10),
-      description: "Credit sale (udhaar)",
+      description: s.due_date ? `Credit sale (udhaar) · due ${s.due_date.slice(0, 10)}` : "Credit sale (udhaar)",
       amount: Number(s.total_amount),
       type: "credit_purchase" as const,
     })),
@@ -119,10 +120,10 @@ export function mapCustomer(
     id: r.id,
     name: r.name,
     phone: r.phone ?? "",
-    creditBalance: owed - paid,
+    creditBalance: credit.balance,
     creditLimit: Number(r.credit_limit ?? 10000),
     lastPurchaseDate: lastPurchase,
-    overdueDays: overdueDays > 0 ? overdueDays : undefined,
+    nextDueDate: credit.nextDueDate,
     history,
   };
 }
@@ -134,6 +135,7 @@ export function mapSale(r: SaleRow, items?: SaleItemRow[]): Sale {
     createdAt: r.created_at,
     paymentType: r.payment_type as PaymentType,
     customerId: r.customer_id ?? undefined,
+    dueDate: r.due_date ? r.due_date.slice(0, 10) : undefined,
     totalAmount: Number(r.total_amount),
     items: (items ?? []).map((i) => ({
       productId: i.product_id,
@@ -170,6 +172,25 @@ export function mapExpense(r: ExpenseRow): Expense {
     category: r.category as Expense["category"],
     date: r.expense_date,
   };
+}
+
+/**
+ * True when the server received the request and refused it (a business rule such as
+ * insufficient stock, overpayment, unknown customer, or a permission check).
+ * PostgREST errors carry a non-empty `code` (e.g. "P0001", "22023", "42501", "22P02");
+ * a network failure surfaces as an error with an empty code.
+ *
+ * A rejection must never be "applied locally" — only genuine network failures fail open.
+ */
+export function isServerRejection(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  return typeof code === "string" && code.length > 0;
+}
+
+/** Human-readable message from a Supabase/PostgREST error. */
+export function serverErrorMessage(err: unknown): string {
+  const msg = (err as { message?: unknown } | null)?.message;
+  return typeof msg === "string" && msg ? msg : "The server rejected this change.";
 }
 
 /* ------------------------------ auth helpers ------------------------------ */

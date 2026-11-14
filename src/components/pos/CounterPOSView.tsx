@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
+import { addDays, defaultDueDate, toLocalYmd } from "@/lib/credit";
 import { audio } from "@/lib/audio";
 import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
 import { VoiceConfirmSheet, type ConfirmedVoiceOrder } from "@/components/pos/VoiceConfirmSheet";
@@ -43,7 +44,10 @@ export const CounterPOSView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [paymentType, setPaymentType] = useState<"cash" | "credit">("cash");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("c1");
+  // No default customer: udhaar must always be booked against an explicit choice.
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [dueDate, setDueDate] = useState<string>(() => defaultDueDate());
+  const [isRecording, setIsRecording] = useState(false);
   const [is390pxMobileFrame, setIs390pxMobileFrame] = useState<boolean>(true);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const [isSpeakingVoice, setIsSpeakingVoice] = useState(false);
@@ -61,6 +65,18 @@ export const CounterPOSView: React.FC = () => {
   const chooseVoiceLang = (l: "ur" | "en") => {
     setVoiceLang(l);
     try { window.localStorage.setItem("tallyn.voiceLang", l); } catch { /* ignore */ }
+  };
+
+  // Switching shop (or deleting a customer) must not leave a stale selection behind.
+  useEffect(() => {
+    if (selectedCustomerId && !customers.some((c) => c.id === selectedCustomerId)) {
+      setSelectedCustomerId("");
+    }
+  }, [customers, selectedCustomerId]);
+
+  const showCheckoutNotice = (msg: string) => {
+    setCheckoutNotice(msg);
+    setTimeout(() => setCheckoutNotice(null), 4000);
   };
 
   const addToCart = (productId: string) => {
@@ -96,11 +112,21 @@ export const CounterPOSView: React.FC = () => {
 
   const totalItemsCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (isRecording) return;
     if (totalItemsCount === 0) {
-      setCheckoutNotice("Add at least one item before recording a sale.");
-      setTimeout(() => setCheckoutNotice(null), 4000);
+      showCheckoutNotice("Add at least one item before recording a sale.");
       return;
+    }
+    if (paymentType === "credit") {
+      if (!customers.some((c) => c.id === selectedCustomerId)) {
+        showCheckoutNotice("Choose who is taking this on udhaar.");
+        return;
+      }
+      if (!dueDate || dueDate < toLocalYmd()) {
+        showCheckoutNotice("Pick a due date of today or later.");
+        return;
+      }
     }
 
     const items = Object.entries(cart).map(([productId, quantity]) => {
@@ -116,20 +142,34 @@ export const CounterPOSView: React.FC = () => {
 
     const selectedCust = customers.find((c) => c.id === selectedCustomerId);
 
-    recordSale({
-      shopId: shop.id,
-      paymentType,
-      customerId: paymentType === "credit" ? selectedCustomerId : undefined,
-      customerName: paymentType === "credit" && selectedCust ? selectedCust.name : undefined,
-      totalAmount,
-      items,
-    });
+    setIsRecording(true);
+    let ok = false;
+    try {
+      ok = await recordSale({
+        shopId: shop.id,
+        paymentType,
+        customerId: paymentType === "credit" ? selectedCustomerId : undefined,
+        customerName: paymentType === "credit" && selectedCust ? selectedCust.name : undefined,
+        dueDate: paymentType === "credit" ? dueDate : undefined,
+        totalAmount,
+        items,
+      });
+    } finally {
+      setIsRecording(false);
+    }
+    // Keep the cart if the sale was refused, so the cashier can fix it and retry.
+    if (!ok) return;
 
     // Trigger confetti burst for successful sale
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 2500);
 
     clearCart();
+    if (paymentType === "credit") {
+      // Next udhaar sale starts fresh: no silent carry-over to the same customer.
+      setSelectedCustomerId("");
+      setDueDate(defaultDueDate());
+    }
   };
 
   // The microphone only PROPOSES a cart. This runs when the cashier taps "Add to cart"
@@ -207,18 +247,26 @@ export const CounterPOSView: React.FC = () => {
     recognition.start();
   };
 
-  const handleAddNewCustomer = (e: React.FormEvent) => {
+  const handleAddNewCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustName.trim()) return;
-    addCustomer({
-      name: newCustName,
-      phone: newCustPhone || "0300-0000000",
+    if (!newCustName.trim() || !newCustPhone.trim()) return;
+    const newId = await addCustomer({
+      name: newCustName.trim(),
+      phone: newCustPhone.trim(),
       creditLimit: 10000,
     });
+    if (!newId) return; // error already shown; keep the form open
+    setSelectedCustomerId(newId);
     setNewCustName("");
     setNewCustPhone("");
     setIsNewCustomerModalOpen(false);
   };
+
+  const dueChips = [
+    { label: "1 week", days: 7 },
+    { label: "2 weeks", days: 14 },
+    { label: "1 month", days: 30 },
+  ];
 
   const filteredProducts = products.filter((p) => {
     const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
@@ -621,18 +669,63 @@ export const CounterPOSView: React.FC = () => {
                       Add new customer
                     </button>
                   </div>
-                  <select
-                    id="credit-customer"
-                    value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="w-full rounded-md border border-amber-300 bg-white px-3 text-base text-slate-800 min-h-[44px]"
-                  >
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} · {formatCurrency(c.creditBalance)} owed
+                  {customers.length === 0 ? (
+                    <p className="text-sm text-amber-900">
+                      No customer accounts yet. Tap <strong>Add new customer</strong> to open one.
+                    </p>
+                  ) : (
+                    <select
+                      id="credit-customer"
+                      value={selectedCustomerId}
+                      onChange={(e) => setSelectedCustomerId(e.target.value)}
+                      className="w-full rounded-md border border-amber-300 bg-white px-3 text-base text-slate-800 min-h-[44px]"
+                    >
+                      <option value="" disabled>
+                        Choose customer…
                       </option>
-                    ))}
-                  </select>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} · {formatCurrency(Math.max(c.creditBalance, 0))} owed
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* Due date: each udhaar sale carries its own promise-to-pay date */}
+                  <div className="mt-3">
+                    <label htmlFor="credit-due-date" className="block text-sm font-medium text-amber-900 mb-1">
+                      Pay back by
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2" role="group" aria-label="Quick due date">
+                      {dueChips.map((chip) => {
+                        const value = addDays(toLocalYmd(), chip.days);
+                        const active = dueDate === value;
+                        return (
+                          <button
+                            key={chip.days}
+                            type="button"
+                            onClick={() => setDueDate(value)}
+                            aria-pressed={active}
+                            className={`rounded-md px-3 text-sm font-medium min-h-[44px] transition-colors ${
+                              active
+                                ? "bg-amber-600 text-white"
+                                : "bg-white border border-amber-300 text-amber-900 hover:bg-amber-100"
+                            }`}
+                          >
+                            {chip.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input
+                      id="credit-due-date"
+                      type="date"
+                      min={toLocalYmd()}
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full rounded-md border border-amber-300 bg-white px-3 text-base text-slate-800 tabular-nums min-h-[44px]"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -655,15 +748,18 @@ export const CounterPOSView: React.FC = () => {
 
               <button
                 onClick={handleCheckout}
-                aria-disabled={totalItemsCount === 0}
+                aria-disabled={totalItemsCount === 0 || isRecording}
+                aria-busy={isRecording}
                 className={`w-full rounded-lg text-base font-semibold text-white transition-colors min-h-[52px] ${
                   totalItemsCount > 0
                     ? "bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950"
                     : "bg-slate-300 text-slate-600 cursor-not-allowed"
                 }`}
               >
-                {totalItemsCount > 0
-                  ? `Record Sale · ${formatCurrency(totalAmount)}`
+                {isRecording
+                  ? "Recording…"
+                  : totalItemsCount > 0
+                  ? `Record ${paymentType === "credit" ? "Udhaar " : ""}Sale · ${formatCurrency(totalAmount)}`
                   : "Add items to record a sale"}
               </button>
             </div>

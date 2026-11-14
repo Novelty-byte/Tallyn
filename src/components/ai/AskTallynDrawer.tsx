@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
+import { customerOverdueDays } from "@/lib/credit";
 import {
   X,
   Send,
@@ -153,7 +154,7 @@ export const AskTallynDrawer: React.FC = () => {
 
     // Build full customer list
     const customerLines = customers.map(
-      (c) => `  - ${c.name} | Phone: ${c.phone} | Udhaar: Rs${c.creditBalance.toLocaleString()} | Overdue: ${c.overdueDays || 0} days`
+      (c) => `  - ${c.name} | Phone: ${c.phone} | Udhaar: Rs${c.creditBalance.toLocaleString()} | Overdue: ${customerOverdueDays(c)} days${c.nextDueDate ? ` (next due ${c.nextDueDate})` : ""}`
     ).join("\n");
 
     // Build recent sales summary (last 10)
@@ -432,7 +433,7 @@ function buildLocalFallback(
 
   if (q.includes("udhaar") || q.includes("debt") || q.includes("owe") || q.includes("credit")) {
     const top = [...customers].sort((a, b) => b.creditBalance - a.creditBalance).slice(0, 3);
-    return `Total outstanding udhaar: **${formatCurrency(totalUdhaar)}**.\n\nTop accounts:\n${top.map(c => `• **${c.name}**: ${formatCurrency(c.creditBalance)} (${c.overdueDays || 0} days overdue)`).join("\n")}`;
+    return `Total outstanding udhaar: **${formatCurrency(totalUdhaar)}**.\n\nTop accounts:\n${top.map(c => `• **${c.name}**: ${formatCurrency(c.creditBalance)} (${customerOverdueDays(c)} days overdue)`).join("\n")}`;
   }
   if (q.includes("stock") || q.includes("inventory") || q.includes("low") || q.includes("item")) {
     const low = products.filter((p) => p.quantity <= p.minQuantity);

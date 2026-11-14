@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { Customer } from "@/types";
 import { formatCurrency } from "@/lib/utils";
-import { 
+import { customerOverdueDays, daysUntilDue } from "@/lib/credit";
+import {
   MessageSquare, 
   CheckCircle2, 
   Search, 
@@ -13,7 +14,7 @@ import {
 
 export const UdhaarView: React.FC = () => {
   const { t } = useTranslation();
-  const { customers, recordCreditPayment, addCustomer } = useApp();
+  const { shop, customers, recordCreditPayment, addCustomer } = useApp();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustPayment, setSelectedCustPayment] = useState<Customer | null>(null);
@@ -22,33 +23,66 @@ export const UdhaarView: React.FC = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
-  const totalOutstanding = customers.reduce((sum, c) => sum + c.creditBalance, 0);
-  const overdueCount = customers.filter((c) => (c.overdueDays || 0) > 7 && c.creditBalance > 0).length;
+  const totalOutstanding = customers.reduce((sum, c) => sum + Math.max(c.creditBalance, 0), 0);
+  const overdueCount = customers.filter((c) => customerOverdueDays(c) > 0).length;
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const openPayment = (c: Customer) => {
+    setSelectedCustPayment(c);
+    setPaymentAmount(Math.min(500, c.creditBalance));
+    setPaymentError(null);
+  };
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustPayment || paymentAmount <= 0) return;
-    recordCreditPayment(selectedCustPayment.id, paymentAmount);
+    if (!selectedCustPayment) return;
+    if (!(paymentAmount > 0)) {
+      setPaymentError("Enter an amount greater than zero.");
+      return;
+    }
+    if (paymentAmount > selectedCustPayment.creditBalance) {
+      setPaymentError(`That is more than the ${formatCurrency(selectedCustPayment.creditBalance)} owed.`);
+      return;
+    }
+    const ok = await recordCreditPayment(selectedCustPayment.id, paymentAmount);
+    if (!ok) return; // reason already shown as a toast; keep the dialog open
     setSelectedCustPayment(null);
     setPaymentAmount(500);
   };
 
-  const handleAddCustomerSubmit = (e: React.FormEvent) => {
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    addCustomer({
-      name,
-      phone: phone || "0300-1234567",
+    if (!name.trim() || !phone.trim()) return;
+    const id = await addCustomer({
+      name: name.trim(),
+      phone: phone.trim(),
       creditLimit: 10000,
     });
+    if (!id) return;
     setName("");
     setPhone("");
     setIsAddCustomerOpen(false);
   };
 
+  /** Plain-language due status for a customer row. */
+  const dueStatus = (c: Customer): { text: string; tone: "overdue" | "soon" | "ok" } => {
+    const overdue = customerOverdueDays(c);
+    if (overdue > 0) return { text: `${overdue} day${overdue === 1 ? "" : "s"} overdue`, tone: "overdue" };
+    if (!c.nextDueDate) return { text: "No due date", tone: "ok" };
+    const until = daysUntilDue(c.nextDueDate);
+    if (until === 0) return { text: "Due today", tone: "soon" };
+    return { text: `Due in ${until} day${until === 1 ? "" : "s"}`, tone: until <= 2 ? "soon" : "ok" };
+  };
+
   // 1-Click WhatsApp Reminder with culturally polite English text
   const sendWhatsAppReminder = (c: Customer) => {
-    const englishMessage = `Dear ${c.name}, greetings. Al-Madina Kiryana Store would like to remind you that a total of ${formatCurrency(c.creditBalance)} is due on your account. Please clear your balance at your convenience. Thank you.`;
+    const overdue = customerOverdueDays(c);
+    const dueLine = c.nextDueDate
+      ? overdue > 0
+        ? ` The payment was due on ${c.nextDueDate}.`
+        : ` The payment is due on ${c.nextDueDate}.`
+      : "";
+    const englishMessage = `Dear ${c.name}, greetings. ${shop.name} would like to remind you that a total of ${formatCurrency(c.creditBalance)} is due on your account.${dueLine} Please clear your balance at your convenience. Thank you.`;
     const encoded = encodeURIComponent(englishMessage);
     const cleanPhone = c.phone.replace(/[^0-9]/g, "");
     const waUrl = `https://wa.me/92${cleanPhone.slice(-10)}?text=${encoded}`;
@@ -102,7 +136,7 @@ export const UdhaarView: React.FC = () => {
           <p className="text-2xl figure text-slate-900 mt-1">
             {customers.length} Customers
           </p>
-          <p className="text-xs text-slate-500 mt-1">Verified phone numbers linked</p>
+          <p className="text-xs text-slate-500 mt-1">Customer credit accounts in this shop</p>
         </div>
 
         <div className="surface-l1 border-rose-200 p-4">
@@ -112,7 +146,7 @@ export const UdhaarView: React.FC = () => {
           <p className="text-2xl figure text-rose-950 mt-1">
             {overdueCount} Accounts
           </p>
-          <p className="text-xs text-rose-800 mt-1">Pending payment for more than 7 days</p>
+          <p className="text-xs text-rose-800 mt-1">Past the promised pay-back date</p>
         </div>
       </div>
 
@@ -143,7 +177,8 @@ export const UdhaarView: React.FC = () => {
             </thead>
             <tbody>
               {filteredCustomers.map((c) => {
-                const isOverdue = (c.overdueDays || 0) > 7;
+                const status = dueStatus(c);
+                const isOverdue = status.tone === "overdue";
                 return (
                   <tr key={c.id} className="group hover:bg-emerald-50/50 transition-all duration-200 border-l-2 border-l-transparent hover:border-l-emerald-700">
                     <td className="py-3 px-4 font-medium text-slate-900 group-hover:translate-x-1 transition-transform duration-200">
@@ -167,8 +202,18 @@ export const UdhaarView: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       {c.creditBalance > 0 ? (
-                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-transform group-hover:scale-105 ${isOverdue ? "bg-rose-100 text-rose-800 group-hover:animate-pump" : "bg-slate-100 text-slate-700"}`}>
-                          {c.overdueDays || 0} days
+                        <span
+                          className={`inline-flex flex-col items-center rounded-md px-2 py-0.5 text-xs font-medium tabular-nums transition-transform group-hover:scale-105 ${
+                            isOverdue
+                              ? "bg-rose-100 text-rose-800 group-hover:animate-pump"
+                              : status.tone === "soon"
+                              ? "bg-amber-100 text-amber-900"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
+                          title={c.nextDueDate ? `Oldest unpaid sale due ${c.nextDueDate}` : undefined}
+                        >
+                          <span>{status.text}</span>
+                          {c.nextDueDate && <span className="font-normal opacity-75">{c.nextDueDate}</span>}
                         </span>
                       ) : (
                         <span className="text-xs text-emerald-700 font-medium flex items-center justify-center gap-1">
@@ -181,7 +226,7 @@ export const UdhaarView: React.FC = () => {
                         {c.creditBalance > 0 && (
                           <>
                             <button
-                              onClick={() => setSelectedCustPayment(c)}
+                              onClick={() => openPayment(c)}
                               className="rounded-md bg-emerald-800 text-white px-3 text-sm font-medium hover:bg-emerald-900 hover:-translate-y-0.5 transition-all duration-200 min-h-[44px]"
                             >
                               {t("udhaar.recordPayment")}
@@ -220,13 +265,27 @@ export const UdhaarView: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid (PKR)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   required
                   min={1}
                   max={selectedCustPayment.creditBalance}
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                  className="w-full rounded-lg border border-slate-300 px-3 text-base min-h-[44px]"
+                  onChange={(e) => { setPaymentAmount(Number(e.target.value)); setPaymentError(null); }}
+                  aria-invalid={paymentError ? true : undefined}
+                  aria-describedby={paymentError ? "payment-error" : undefined}
+                  className="w-full rounded-lg border border-slate-300 px-3 text-base tabular-nums min-h-[44px]"
                 />
+                <button
+                  type="button"
+                  onClick={() => { setPaymentAmount(selectedCustPayment.creditBalance); setPaymentError(null); }}
+                  className="mt-2 text-sm font-medium text-emerald-800 hover:underline min-h-[44px]"
+                >
+                  Paid in full ({formatCurrency(selectedCustPayment.creditBalance)})
+                </button>
+                {paymentError && (
+                  <p id="payment-error" role="alert" className="mt-1 text-sm text-rose-700">{paymentError}</p>
+                )}
+                <p className="mt-1 text-xs text-slate-500">Payments clear the oldest udhaar first.</p>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
