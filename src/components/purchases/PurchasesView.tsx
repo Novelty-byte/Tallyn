@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { formatCurrency } from "@/lib/utils";
-import { audio } from "@/lib/audio";
+import { BillScannerSheet } from "@/components/purchases/BillScannerSheet";
 import {
   FileText,
   Camera,
-  Sparkles,
+  PencilLine,
   TrendingUp,
   AlertTriangle,
-  Cpu,
   ShieldAlert,
   ArrowUpRight,
   ArrowDownRight,
@@ -20,65 +19,14 @@ import {
 
 export const PurchasesView: React.FC = () => {
   const { t } = useTranslation();
-  const {
-    purchases,
-    wholesaleBenchmarks,
-    recordSupplierPurchase,
-  } = useApp();
+  const { purchases, wholesaleBenchmarks } = useApp();
 
-  // Paper Bill Scanner State
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scannedResult, setScannedResult] = useState<{
-    supplier: string;
-    invoice: string;
-    items: { productId: string; name: string; qty: number; cost: number }[];
-  } | null>(null);
-
-  // Multimodal Paper Bill Scanner Simulation
-  const simulateScanBill = () => {
-    setIsScanning(true);
-    setScannedResult(null);
-
-    setTimeout(() => {
-      setIsScanning(false);
-      setScannedResult({
-        supplier: "Metro Wholesale Cash & Carry Islamabad",
-        invoice: "MW-2026-9812",
-        items: [
-          { productId: "p1", name: "Tapal Danedar Tea 450g", qty: 12, cost: 580 },
-          { productId: "p2", name: "Dalda Cooking Oil 1L", qty: 16, cost: 490 },
-          { productId: "p3", name: "White Sugar (Cheeni) 1kg", qty: 50, cost: 142 },
-          { productId: "p4", name: "Fine Wheat Flour / Atta 10kg", qty: 25, cost: 1425 },
-        ],
-      });
-      audio.playBarcodeBeep();
-    }, 1800);
-  };
-
-  const handleApproveRestock = () => {
-    if (!scannedResult) return;
-
-    const totalAmount = scannedResult.items.reduce((sum, item) => sum + item.qty * item.cost, 0);
-
-    recordSupplierPurchase({
-      supplierName: scannedResult.supplier,
-      invoiceNumber: scannedResult.invoice,
-      totalAmount,
-      items: scannedResult.items.map((i) => ({
-        productId: i.productId,
-        productName: i.name,
-        quantity: i.qty,
-        unitCost: i.cost,
-      })),
-    });
-
-    setIsScannerOpen(false);
-    setScannedResult(null);
-  };
+  // Real bill scanner / manual purchase entry (same review sheet)
+  const [sheetMode, setSheetMode] = useState<"scan" | "manual" | null>(null);
 
   // Compute inflation statistics
-  const flaggedCount = wholesaleBenchmarks.filter((b) => b.isInflationFlagged).length;
+  const flagged = wholesaleBenchmarks.filter((b) => b.isInflationFlagged);
+  const flaggedCount = flagged.length;
   const avgDelta = wholesaleBenchmarks.length > 0
     ? Number((wholesaleBenchmarks.reduce((acc, b) => acc + b.markupPercent, 0) / wholesaleBenchmarks.length).toFixed(1))
     : 0;
@@ -92,10 +40,6 @@ export const PurchasesView: React.FC = () => {
             <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               {t("purchases.title")}
             </h2>
-            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
-              <Cpu className="h-3 w-3 text-emerald-600" />
-              Autonomous Watchdog Active
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {t("purchases.subtitle")}
@@ -104,14 +48,18 @@ export const PurchasesView: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => {
-              setIsScannerOpen(true);
-              simulateScanBill();
-            }}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-900 shadow-soft transition-all min-h-[44px]"
+            onClick={() => setSheetMode("scan")}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900 shadow-soft transition-all min-h-[44px]"
           >
             <Camera className="h-4 w-4 text-amber-300" />
-            <span>Scan Supplier Paper Bill</span>
+            <span>Scan supplier bill</span>
+          </button>
+          <button
+            onClick={() => setSheetMode("manual")}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-all min-h-[44px]"
+          >
+            <PencilLine className="h-4 w-4 text-emerald-800" />
+            <span>Enter purchase by hand</span>
           </button>
         </div>
       </div>
@@ -160,12 +108,14 @@ export const PurchasesView: React.FC = () => {
             <div>
               <p className="text-xs font-semibold opacity-75 uppercase tracking-wider">Inflation Warning Tags</p>
               <div className="flex items-center gap-1.5">
-                <p className="text-lg font-semibold">{flaggedCount} High Inflation Item</p>
-                {flaggedCount > 0 && (
-                  <span className="rounded bg-rose-200 px-1.5 py-0.5 text-xs font-bold text-rose-900">
-                    Atta (+16.8%)
+                <p className="text-lg font-semibold">
+                  {flaggedCount} High Inflation Item{flaggedCount === 1 ? "" : "s"}
+                </p>
+                {flagged.slice(0, 2).map((b) => (
+                  <span key={b.id ?? b.itemName} className="rounded bg-rose-200 px-1.5 py-0.5 text-xs font-bold text-rose-900">
+                    {b.itemName.split(/[\s/(]/)[0]} (+{b.markupPercent}%)
                   </span>
-                )}
+                ))}
               </div>
             </div>
             <div className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold ${
@@ -309,7 +259,7 @@ export const PurchasesView: React.FC = () => {
           <div className="p-12 text-center text-slate-400">
             <FileText className="h-8 w-8 mx-auto mb-2 opacity-50 text-slate-300" />
             <p className="text-xs font-semibold text-slate-700">No supplier purchases logged yet.</p>
-            <p className="text-xs text-slate-500 mt-1">Click "Scan Supplier Paper Bill" above to test multimodal vision OCR!</p>
+            <p className="text-xs text-slate-500 mt-1">Scan a supplier bill or enter a purchase by hand to raise stock.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -343,106 +293,12 @@ export const PurchasesView: React.FC = () => {
         )}
       </div>
 
-      {/* Multimodal Bill Scanner Modal */}
-      {isScannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-700/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-lift border border-slate-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-emerald-800 text-amber-300 flex items-center justify-center">
-                  <Camera className="h-4 w-4" />
-                </div>
-                <h4 className="text-base font-semibold text-slate-900">
-                  Multimodal Supplier Bill Scanner
-                </h4>
-              </div>
-              <button
-                onClick={() => setIsScannerOpen(false)}
-                className="text-slate-500 hover:text-slate-800 text-xs font-semibold p-1"
-                aria-label="Close Scanner"
-              >
-                Close
-              </button>
-            </div>
-
-            {isScanning ? (
-              <div className="py-8 text-center space-y-3">
-                {/* Scanning viewport with animated laser line */}
-                <div className="relative mx-auto h-40 w-full max-w-xs rounded-xl border-2 border-emerald-400/70 bg-slate-900 overflow-hidden shadow-inner">
-                  {/* Corner brackets */}
-                  <span className="absolute top-2 left-2 h-5 w-5 border-t-2 border-l-2 border-emerald-400 rounded-tl" aria-hidden="true" />
-                  <span className="absolute top-2 right-2 h-5 w-5 border-t-2 border-r-2 border-emerald-400 rounded-tr" aria-hidden="true" />
-                  <span className="absolute bottom-2 left-2 h-5 w-5 border-b-2 border-l-2 border-emerald-400 rounded-bl" aria-hidden="true" />
-                  <span className="absolute bottom-2 right-2 h-5 w-5 border-b-2 border-r-2 border-emerald-400 rounded-br" aria-hidden="true" />
-                  {/* Faux invoice lines */}
-                  <div className="absolute inset-6 space-y-2 opacity-40">
-                    <div className="h-2 w-3/4 rounded bg-slate-600" />
-                    <div className="h-2 w-1/2 rounded bg-slate-700" />
-                    <div className="h-2 w-5/6 rounded bg-slate-600" />
-                    <div className="h-2 w-2/3 rounded bg-slate-700" />
-                    <div className="h-2 w-3/4 rounded bg-slate-600" />
-                  </div>
-                  {/* Scanning laser line */}
-                  <span
-                    className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_12px_2px_rgba(16,185,129,0.8)]"
-                    style={{ animation: 'scan-line 1.6s ease-in-out infinite' }}
-                    aria-hidden="true"
-                  />
-                </div>
-                <div className="flex items-center justify-center gap-2 text-emerald-800">
-                  <Sparkles className="h-4 w-4 animate-pulse" />
-                  <p className="text-xs font-semibold">
-                    Gemini Vision OCR analyzing paper invoice...
-                  </p>
-                </div>
-                <p className="text-xs text-slate-500">
-                  Extracting item names, wholesale buying prices, and batch units
-                </p>
-              </div>
-            ) : scannedResult ? (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-3.5 text-xs">
-                  <p className="font-semibold text-emerald-950">{scannedResult.supplier}</p>
-                  <p className="text-emerald-800 font-mono text-xs">Invoice: {scannedResult.invoice}</p>
-                </div>
-
-                <div className="space-y-2 max-h-[180px] overflow-y-auto">
-                  {scannedResult.items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 text-xs hover:bg-emerald-50 transition-colors"
-                      style={{ animation: `tn-fade-in 300ms var(--ease-out) ${idx * 80}ms both` }}
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-900">{item.name}</p>
-                        <p className="text-xs text-slate-500">Unit Buy Cost: {formatCurrency(item.cost)}</p>
-                      </div>
-                      <span className="font-bold text-emerald-800 text-xs">
-                        +{item.qty} units
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase font-medium text-slate-400">Total Purchase Cost</p>
-                    <p className="text-lg font-bold font-mono tabular-nums text-slate-900">
-                      {formatCurrency(scannedResult.items.reduce((s, i) => s + i.qty * i.cost, 0))}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleApproveRestock}
-                    className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-900 shadow-soft transition-all active:scale-95 min-h-[44px]"
-                  >
-                    Approve &amp; Raise Stock
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      )}
+      {/* Real bill scanner (camera / gallery → AI read → editable review) and manual purchase entry */}
+      <BillScannerSheet
+        open={sheetMode !== null}
+        mode={sheetMode ?? "scan"}
+        onClose={() => setSheetMode(null)}
+      />
     </div>
   );
 };

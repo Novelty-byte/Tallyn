@@ -4,6 +4,8 @@ import { useApp } from "@/context/AppContext";
 import { Customer } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { customerOverdueDays, daysUntilDue } from "@/lib/credit";
+import { buildUdhaarReminder, buildWhatsAppUrl } from "@/lib/whatsapp";
+import { useToast } from "@/components/fx/Toast";
 import {
   MessageSquare, 
   CheckCircle2, 
@@ -15,6 +17,7 @@ import {
 export const UdhaarView: React.FC = () => {
   const { t } = useTranslation();
   const { shop, customers, recordCreditPayment, addCustomer } = useApp();
+  const toast = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustPayment, setSelectedCustPayment] = useState<Customer | null>(null);
@@ -76,17 +79,21 @@ export const UdhaarView: React.FC = () => {
 
   // 1-Click WhatsApp Reminder with culturally polite English text
   const sendWhatsAppReminder = (c: Customer) => {
-    const overdue = customerOverdueDays(c);
-    const dueLine = c.nextDueDate
-      ? overdue > 0
-        ? ` The payment was due on ${c.nextDueDate}.`
-        : ` The payment is due on ${c.nextDueDate}.`
-      : "";
-    const englishMessage = `Dear ${c.name}, greetings. ${shop.name} would like to remind you that a total of ${formatCurrency(c.creditBalance)} is due on your account.${dueLine} Please clear your balance at your convenience. Thank you.`;
-    const encoded = encodeURIComponent(englishMessage);
-    const cleanPhone = c.phone.replace(/[^0-9]/g, "");
-    const waUrl = `https://wa.me/92${cleanPhone.slice(-10)}?text=${encoded}`;
-    window.open(waUrl, "_blank");
+    const message = buildUdhaarReminder({
+      customerName: c.name,
+      shopName: shop.name,
+      balance: c.creditBalance,
+      nextDueDate: c.nextDueDate,
+      currency: shop.currency,
+    });
+    const waUrl = buildWhatsAppUrl(c.phone, message);
+    if (!waUrl) {
+      toast.error("This phone number doesn't look like a mobile number", {
+        description: `Check ${c.name}'s number (e.g. 0300-1234567) and try again.`,
+      });
+      return;
+    }
+    window.open(waUrl, "_blank", "noopener");
   };
 
   const filteredCustomers = customers.filter(

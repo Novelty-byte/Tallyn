@@ -945,3 +945,22 @@ button, a, [role="button"] { touch-action: manipulation; }
 /* App-wide ambient layer sits behind all content inside the root's isolated stacking
    context, so page modals keep their own z-index relative to the header/tab bar. */
 .fx-ambient--fixed { z-index: -1; }
+
+/* Bill scanner: laser line sweeping over the real photo while it is being read */
+@keyframes scan-line {
+  0%, 100% { top: 4%; }
+  50% { top: 94%; }
+}
+.scan-laser {
+  position: absolute;
+  inset-inline: 0;
+  top: 4%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #6ee7b7, transparent);
+  box-shadow: 0 0 12px 2px rgb(16 185 129 / 0.8);
+  animation: scan-line 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-laser { animation: none; top: 50%; }
+}

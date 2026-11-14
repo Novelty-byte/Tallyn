@@ -108,7 +108,8 @@ interface AppContextType {
   addCustomer: (customer: Omit<Customer, "id" | "creditBalance">) => Promise<string | null>;
   /** Resolves true when the payment was recorded. */
   recordCreditPayment: (customerId: string, amount: number) => Promise<boolean>;
-  recordSupplierPurchase: (purchase: Omit<Purchase, "id" | "date">) => void;
+  /** Resolves true when the purchase was recorded (stock raised). */
+  recordSupplierPurchase: (purchase: Omit<Purchase, "id" | "date">) => Promise<boolean>;
   addExpense: (expense: Omit<Expense, "id">) => void;
 
   // Modals
@@ -807,7 +808,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   /* ------------------------------- Purchases ------------------------------ */
 
-  const recordSupplierPurchase = async (purchase: Omit<Purchase, "id" | "date">) => {
+  const recordSupplierPurchase = async (purchase: Omit<Purchase, "id" | "date">): Promise<boolean> => {
+    // Every line must point at a product of THIS shop with a sane quantity and cost.
+    const unknown = purchase.items.filter((i) => !products.some((p) => p.id === i.productId));
+    if (purchase.items.length === 0 || unknown.length > 0) {
+      toast.error("Purchase not recorded", {
+        description: purchase.items.length === 0 ? "Add at least one item." : "Some lines aren't linked to a product in your stock.",
+      });
+      return false;
+    }
+    if (purchase.items.some((i) => !(i.quantity > 0) || !(i.unitCost >= 0))) {
+      toast.error("Purchase not recorded", { description: "Every line needs a quantity above zero and a cost." });
+      return false;
+    }
+
     if (user && !isDemoMode) {
       try {
         await db.rpcRecordPurchase(
@@ -818,23 +832,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         );
         await refreshLiveShopData(shop.id);
         audio.playCashRegisterChime();
-        return;
-      } catch { /* ignore */ }
+        return true;
+      } catch (err) {
+        if (isServerRejection(err)) {
+          toast.error("Purchase not recorded", { description: serverErrorMessage(err) });
+          return false;
+        }
+        console.warn("RPC record_purchase failed (network), applying locally:", err);
+        markUnsynced("Purchase");
+      }
     }
 
     const newPurchase: Purchase = {
       ...purchase,
+      invoiceNumber: purchase.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
       id: "pur-" + Date.now(),
-      date: new Date().toISOString().split("T")[0],
+      date: toLocalYmd(),
     };
+    // Same semantics as record_purchase: add every line (two lines for one product both count),
+    // and the last line's cost becomes the new buy price.
     setProducts((prev) =>
       prev.map((p) => {
-        const item = purchase.items.find((i) => i.productId === p.id);
-        return item ? { ...p, quantity: p.quantity + item.quantity, buyPrice: item.unitCost } : p;
+        const lines = purchase.items.filter((i) => i.productId === p.id);
+        if (lines.length === 0) return p;
+        const added = lines.reduce((s, i) => s + i.quantity, 0);
+        return { ...p, quantity: p.quantity + added, buyPrice: lines[lines.length - 1].unitCost };
       })
     );
     setPurchases((prev) => [newPurchase, ...prev]);
     audio.playCashRegisterChime();
+    return true;
   };
 
   /* -------------------------------- Expenses ------------------------------- */
