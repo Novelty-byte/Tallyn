@@ -17,6 +17,7 @@ import {
 } from "@/services/supabase";
 
 import { tabFromPath, TAB_ROUTE_MAP, type ActiveTab } from "@/lib/routes";
+import { readDemoSession, writeDemoSession, clearDemoSession } from "@/lib/demoSession";
 export type { ActiveTab };
 
 export const DEMO_SHOPS: Shop[] = [
@@ -127,11 +128,18 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const branch1 = getBranchSeedData("shop-al-madina-01");
+type LiveAuthUser = { id: string; email?: string | null; user_metadata?: Record<string, unknown> };
 
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [shop, setShop] = useState<Shop>(DEMO_SHOPS[0]);
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // A reload while exploring the demo must stay in the demo (see lib/demoSession).
+  const [restoredDemoShop] = useState<Shop | null>(() => {
+    const id = readDemoSession();
+    return id ? DEMO_SHOPS.find((s) => s.id === id) ?? DEMO_SHOPS[0] : null;
+  });
+  const branch1 = getBranchSeedData(restoredDemoShop?.id ?? "shop-al-madina-01");
+
+  const [user, setUser] = useState<UserProfile | null>(restoredDemoShop ? DEMO_USER : null);
+  const [shop, setShop] = useState<Shop>(restoredDemoShop ?? DEMO_SHOPS[0]);
   const [shops, setShops] = useState<Shop[]>(DEMO_SHOPS);
   // The URL is the single source of truth for the active page.
   const location = useLocation();
@@ -145,7 +153,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [navigate, location.pathname],
   );
   // Auth bootstrap: false until Supabase has reported the initial session (or lack of one).
-  const [authReady, setAuthReady] = useState(false);
+  // A restored demo session needs no server answer, so it is ready immediately.
+  const [authReady, setAuthReady] = useState(restoredDemoShop !== null);
   // For a signed-in (non-demo) user: does at least one real shop exist?
   const [hasLiveShop, setHasLiveShop] = useState(false);
   const toast = useToast();
@@ -168,7 +177,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [seasonalForecasts] = useState<SeasonalForecast[]>(SEEDED_SEASONAL_FORECASTS);
   const [lastSaleUndo, setLastSaleUndo] = useState<Sale | null>(null);
   const [undoSeconds, setUndoSeconds] = useState<number>(0);
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(restoredDemoShop !== null);
 
   // Modal flags
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -180,6 +189,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Unique undo timer reference (prevents old intervals from undoing new sales)
   const undoIntervalRef = useRef<number | null>(null);
+  // Id of the real account currently loaded; lets us ignore repeat auth events for the
+  // same user (token refresh, tab refocus) instead of re-fetching and resetting the shop.
+  const liveUserIdRef = useRef<string | null>(null);
+  const loadLiveUserRef = useRef<((u: LiveAuthUser) => Promise<void>) | null>(null);
 
   const clearUndoTimer = () => {
     if (undoIntervalRef.current !== null) {
@@ -222,7 +235,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // NOTE: the callback must stay synchronous — awaiting Supabase calls inside it can
   // deadlock the auth client — so the async loading is deferred with setTimeout(0).
   useEffect(() => {
-    const loadLiveUser = async (u: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }) => {
+    const loadLiveUser = async (u: LiveAuthUser) => {
       const profileName = (u.user_metadata?.full_name as string) || u.email?.split("@")[0] || "Owner";
       try {
         await ensureProfile(u.id, profileName, u.email || "");
@@ -268,12 +281,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
+    loadLiveUserRef.current = loadLiveUser;
+
     const { data: listener } = db.onAuthChange(async (event, session) => {
       if (session?.user) {
         const u = session.user;
+        // Visitor is exploring the demo: a stored session must not pull them out of it.
+        // (Explicit sign-in/sign-up clears the demo flag first, see lib/demoSession.)
+        if (readDemoSession()) {
+          setAuthReady(true);
+          return;
+        }
+        // Same account already loaded (token refresh, tab refocus): nothing to do.
+        if (liveUserIdRef.current === u.id) {
+          setAuthReady(true);
+          return;
+        }
+        liveUserIdRef.current = u.id;
+        // Hold route guards on the loading spinner until the account's shops are known;
+        // otherwise a fresh sign-in is bounced to /onboarding before shops arrive.
+        setAuthReady(false);
         setTimeout(() => { void loadLiveUser(u); }, 0);
       } else {
-        if (event === "SIGNED_OUT") setHasLiveShop(false);
+        if (event === "SIGNED_OUT") {
+          liveUserIdRef.current = null;
+          setHasLiveShop(false);
+        }
         setAuthReady(true);
       }
     });
@@ -288,6 +321,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const openSeededDemoShop = () => {
     clearUndoTimer();
     const b1 = getBranchSeedData("shop-al-madina-01");
+    writeDemoSession(DEMO_SHOPS[0].id);
+    liveUserIdRef.current = null; // a real session (if any) is reloaded when the demo ends
     setUser(DEMO_USER);
     setShops(DEMO_SHOPS);
     setShop(DEMO_SHOPS[0]);
@@ -301,11 +336,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     audio.playCashRegisterChime();
   };
 
+  const resetToSeedData = () => {
+    const seed = getBranchSeedData("shop-al-madina-01");
+    setShops(DEMO_SHOPS);
+    setShop(DEMO_SHOPS[0]);
+    setProducts(seed.products);
+    setCustomers(seed.customers);
+    setSales(seed.sales);
+    setPurchases(seed.purchases ?? []);
+    setExpenses(seed.expenses);
+  };
+
   const exitDemoMode = () => {
     clearUndoTimer();
+    clearDemoSession();
     setUser(null);
     setIsDemoMode(false);
+    setLastSaleUndo(null);
+    setUndoSeconds(0);
+    resetToSeedData();
     setActiveTab("landing");
+    // The visitor may also hold a real session (they opened the demo while signed in).
+    void db.getSession().then(({ data }) => {
+      const u = data.session?.user;
+      if (u && readDemoSession() === null) {
+        liveUserIdRef.current = u.id;
+        setAuthReady(false);
+        void loadLiveUserRef.current?.(u);
+      }
+    }).catch(() => { /* no session to restore */ });
   };
 
   const switchShop = async (shopId: string) => {
@@ -317,6 +376,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setShop(s);
 
     if (isDemoMode) {
+      if (DEMO_SHOPS.some((d) => d.id === shopId)) writeDemoSession(shopId);
       const branchData = getBranchSeedData(shopId);
       setProducts(branchData.products);
       setCustomers(branchData.customers);
@@ -350,21 +410,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           lowStockThreshold: created.low_stock_threshold,
           leadTimeDays: created.lead_time_days,
         };
-        setShops((prev) => [...prev.filter((s) => s.id !== created.id), newS]);
+        setShops((prev) => [...prev.filter((s) => s.id !== created.id && !s.isDemo), newS]);
         setShop(newS);
+        // The owner now has a real store: route guards must stop sending them to onboarding.
+        setHasLiveShop(true);
 
         if (template === "grocery") {
-          const starterRows = SEEDED_PRODUCTS.map((p) => ({
-            name: p.nameEn,
-            name_ur: p.name,
-            category: p.category,
-            quantity: p.quantity,
-            buy_price: p.buyPrice,
-            sell_price: p.sellPrice,
-            min_quantity: p.minQuantity,
-            barcode: p.barcode,
-          }));
-          await db.insertProducts(created.id, starterRows);
+          try {
+            const starterRows = SEEDED_PRODUCTS.map((p) => ({
+              name: p.nameEn,
+              name_ur: p.name,
+              category: p.category,
+              quantity: p.quantity,
+              buy_price: p.buyPrice,
+              sell_price: p.sellPrice,
+              min_quantity: p.minQuantity,
+              barcode: p.barcode,
+            }));
+            await db.insertProducts(created.id, starterRows);
+          } catch (catalogErr) {
+            // The store exists; don't fail the whole setup (and invite a duplicate) over the starter catalog.
+            console.warn("Starter catalog insert failed:", catalogErr);
+            toast.warning("Store created, but the starter catalog could not be loaded", {
+              description: "You can add products from Inventory.",
+              duration: 8000,
+            });
+          }
         }
         await refreshLiveShopData(created.id);
       } catch (err) {
@@ -732,18 +803,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const logout = async () => {
     clearUndoTimer();
+    clearDemoSession();
+    liveUserIdRef.current = null;
     try { await db.signOut(); } catch { /* ignore */ }
     setUser(null);
     setIsDemoMode(false);
     setHasLiveShop(false);
-    setShops(DEMO_SHOPS);
-    setShop(DEMO_SHOPS[0]);
-    const seed = getBranchSeedData("shop-al-madina-01");
-    setProducts(seed.products);
-    setCustomers(seed.customers);
-    setSales(seed.sales);
-    setPurchases(seed.purchases ?? []);
-    setExpenses(seed.expenses);
+    setLastSaleUndo(null);
+    setUndoSeconds(0);
+    resetToSeedData();
     setActiveTab("landing");
   };
 

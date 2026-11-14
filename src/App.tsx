@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
-import { TAB_TITLES, tabFromPath } from "@/lib/routes";
+import { TAB_TITLES, tabFromPath, type ActiveTab } from "@/lib/routes";
 import { FxProvider } from "@/components/fx/FxProvider";
 import { ToastProvider } from "@/components/fx/Toast";
 import { AmbientBackground } from "@/components/fx/AmbientBackground";
@@ -10,6 +10,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { AuthHeader } from "@/components/auth/AuthHeader";
 import { AskTallynDrawer } from "@/components/ai/AskTallynDrawer";
 import { KiryanaRadioModal } from "@/components/ai/KiryanaRadioModal";
 import { AddStoreModal } from "@/components/stores/AddStoreModal";
@@ -67,7 +68,15 @@ function RequireSession({ children }: { children: React.ReactElement }) {
 
 const guard = (el: React.ReactElement) => <RequireSession>{el}</RequireSession>;
 
+/** Sign-in / sign-up / store setup: focused pages without the app navbar, ticker or footer. */
+const AUTH_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>(["login", "register", "onboarding"]);
+/** Pages whose background should run edge to edge instead of being capped at the app width. */
+const BLEED_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>(["landing", "login", "register", "onboarding", "notfound"]);
+
 function AppContent() {
+  const { pathname } = useLocation();
+  const tab = tabFromPath(pathname);
+  const isAuthPage = AUTH_TABS.has(tab);
   return (
     <div className="relative isolate min-h-screen flex flex-col bg-canvas selection:bg-emerald-700 selection:text-white">
       <AmbientBackground variant="app" fixed />
@@ -79,14 +88,20 @@ function AppContent() {
         Skip to content
       </a>
 
-      {/* Top Navbar */}
-      <Navbar />
+      {isAuthPage ? (
+        <AuthHeader />
+      ) : (
+        <>
+          {/* Top Navbar */}
+          <Navbar />
 
-      {/* In-Store Live Wholesale Mandi Marquee */}
-      <WholesaleMandiTicker />
+          {/* In-Store Live Wholesale Mandi Marquee */}
+          <WholesaleMandiTicker />
+        </>
+      )}
 
       {/* Main Dynamic View Area with Declarative Routes */}
-      <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+      <main id="main-content" tabIndex={-1} data-bleed={BLEED_TABS.has(tab) ? "" : undefined} className="flex-1 outline-none">
         <Suspense fallback={<PageLoading />}>
           <Routes>
             <Route path="/" element={<LandingView />} />
@@ -117,7 +132,7 @@ function AppContent() {
       <KiryanaRadioModal />
 
       {/* Global Footer */}
-      <Footer />
+      {!isAuthPage && <Footer />}
       <MobileTabBar />
     </div>
   );

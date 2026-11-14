@@ -134,7 +134,9 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-main, .page {
+/* In-app pages are capped at --vp-wide. <main data-bleed> (landing, auth pages) is not:
+   their backgrounds run edge to edge and sections cap their own content width. */
+main:not([data-bleed]), .page {
   width: 100%;
   max-width: var(--vp-wide);
   margin-inline: auto;

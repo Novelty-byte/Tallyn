@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import {
   Store,
@@ -39,24 +39,21 @@ interface BranchFormState {
 }
 
 export const StoreOnboardingPage: React.FC = () => {
-    const navigate = useNavigate();
-  const { user, createShop, createMultipleShops } = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, authReady, hasLiveShop, createShop, createMultipleShops } = useApp();
+  // Store name typed on the landing-page quick form (carried through /register).
+  const presetShopName = (location.state as { shopName?: string } | null)?.shopName ?? "";
 
   // Multi-Store option toggle
   const [hasMultipleStores, setHasMultipleStores] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [, setIsLoadingAccount] = useState(!user);
-
-  // Wait for Supabase auth session to populate the user profile before creating shops.
-  useEffect(() => {
-    if (user) setIsLoadingAccount(false);
-  }, [user]);
 
   // Single Store State
   const [singleStore, setSingleStore] = useState<BranchFormState>({
     id: "store-1",
-    name: "",
+    name: presetShopName,
     city: "Islamabad",
     address: "",
     phone: "",
@@ -185,8 +182,8 @@ export const StoreOnboardingPage: React.FC = () => {
         await createMultipleShops(multiPayload);
       }
 
-      // Navigate to dashboard upon completion
-      navigate("/dashboard");
+      // Store(s) created and the account is marked as having one: land on the dashboard.
+      navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to register store. Please try again.";
       setErrorMsg(msg);
@@ -195,8 +192,22 @@ export const StoreOnboardingPage: React.FC = () => {
     }
   };
 
+  // Wait for the session to resolve, then gate the page: store setup is only for a signed-in
+  // owner. (The demo profile must not create stores, and an owner who already has a store has
+  // nothing to set up. Submitting navigates away, so don't bounce mid-submit.)
+  if (!authReady) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-live="polite">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-800 border-t-transparent" />
+        <span className="sr-only">Loading…</span>
+      </div>
+    );
+  }
+  if (!user || user.isDemo) return <Navigate to="/register" replace />;
+  if (hasLiveShop && !isSubmitting) return <Navigate to="/dashboard" replace />;
+
   return (
-    <div className="min-h-[calc(100vh-80px)] py-10 px-3 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-100 text-start">
+    <div className="min-h-[calc(100vh-4rem)] py-10 px-3 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-100 text-start">
       <div className="mx-auto max-w-3xl space-y-6">
 
         {/* Top Stepper Pill */}

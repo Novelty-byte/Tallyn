@@ -20,24 +20,27 @@ export const LoginPage: React.FC = () => {
   const toast = useToast();
   const location = useLocation();
   const returnTo = (location.state as { from?: string } | null)?.from || "/dashboard";
-  const { user, loginWithGoogle } = useApp();
+  const { user, authReady, loginWithGoogle } = useApp();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sentMagicLink, setSentMagicLink] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   
   // 5-second account not found fallback state
   const [accountNotFound, setAccountNotFound] = useState(false);
   const [countdown, setCountdown] = useState(5);
 
-  // If already logged in, redirect to dashboard
+  // Once a real account is signed in AND its shops have finished loading, leave this page.
+  // (Waiting for authReady stops a fresh sign-in being bounced to onboarding before the
+  // account's existing stores are known.) A demo visitor can still open this page freely.
   useEffect(() => {
-    if (user && !user.isDemo) {
+    if (user && !user.isDemo && authReady) {
       navigate(returnTo, { replace: true });
     }
-  }, [user, navigate, returnTo]);
+  }, [user, authReady, navigate, returnTo]);
 
   // Read email param from URL if redirected
   useEffect(() => {
@@ -66,24 +69,40 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading(true);
     setAccountNotFound(false);
+    setErrorMsg("");
 
     try {
-      const { data, error } = await db.signInWithPassword(email.trim(), password);
+      const { error } = await db.signInWithPassword(email.trim(), password);
       if (error) {
-        // Fallback: If credentials fail or account doesn't exist
-        setAccountNotFound(true);
-        setCountdown(5);
+        showAuthFailure(error.message);
+        setIsLoading(false);
         return;
       }
-      if (data?.session) {
-        navigate(returnTo, { replace: true });
-      }
-    } catch (err) {
-      // Trigger 5-second account not found prompt
+      // Success: the effect above navigates once the account has finished loading,
+      // so keep the button in its "Signing in..." state until then.
+    } catch {
+      setErrorMsg("Could not reach the server. Check your connection and try again.");
+      setIsLoading(false);
+    }
+  };
+
+  // Supabase answers wrong password and unknown email with the same "Invalid login
+  // credentials", so that case offers account creation; anything else shows the real reason.
+  const showAuthFailure = (message: string) => {
+    if (/invalid login credentials/i.test(message)) {
       setAccountNotFound(true);
       setCountdown(5);
-    } finally {
-      setIsLoading(false);
+    } else {
+      setErrorMsg(message);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setErrorMsg("");
+    try {
+      await loginWithGoogle();
+    } catch {
+      setErrorMsg("Google sign-in is not available right now. Please use email and password instead.");
     }
   };
 
@@ -94,24 +113,23 @@ export const LoginPage: React.FC = () => {
     }
 
     setIsLoading(true);
+    setErrorMsg("");
     try {
       const { error } = await db.signInWithOtp(email.trim());
       if (error) {
-        setAccountNotFound(true);
-        setCountdown(5);
+        setErrorMsg(error.message);
         return;
       }
       setSentMagicLink(true);
     } catch {
-      setAccountNotFound(true);
-      setCountdown(5);
+      setErrorMsg("Could not reach the server. Check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-100">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-100">
       <div className="w-full max-w-md space-y-6">
         
         {/* Account Not Available 5-Second Red Banner Alert */}
@@ -124,20 +142,30 @@ export const LoginPage: React.FC = () => {
                   Your Account is not available, Kindly create your account first
                 </h4>
                 <p className="text-xs text-rose-700 mt-1">
-                  We could not find an existing store owner profile for <strong className="font-bold">{email}</strong>.
+                  We could not match <strong className="font-bold">{email}</strong> to a store owner account, or the password was wrong.
                 </p>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-lg">
                     <Clock className="h-3.5 w-3.5 animate-spin" />
                     <span>Redirecting to Sign Up in {countdown}s...</span>
                   </span>
-                  <button
-                    onClick={() => navigate(`/register?email=${encodeURIComponent(email.trim())}`)}
-                    className="inline-flex items-center gap-1 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1.5 text-xs shadow-xs transition-colors"
-                  >
-                    <span>Create Account Now</span>
-                    <ArrowRight className="h-3.5 w-3.5 rtl-flip" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAccountNotFound(false)}
+                      className="inline-flex min-h-[44px] items-center rounded-xl border border-rose-300 bg-white px-3 py-1.5 text-xs font-bold text-rose-800 transition-colors hover:bg-rose-100"
+                    >
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/register?email=${encodeURIComponent(email.trim())}`)}
+                      className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1.5 text-xs shadow-xs transition-colors"
+                    >
+                      <span>Create Account Now</span>
+                      <ArrowRight className="h-3.5 w-3.5 rtl-flip" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -148,6 +176,12 @@ export const LoginPage: React.FC = () => {
                 style={{ width: `${(countdown / 5) * 100}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {errorMsg && (
+          <div role="alert" className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs font-bold text-rose-900 text-start">
+            {errorMsg}
           </div>
         )}
 
@@ -169,7 +203,7 @@ export const LoginPage: React.FC = () => {
           {/* Social Sign In (Google) */}
           <button
             type="button"
-            onClick={loginWithGoogle}
+            onClick={handleGoogle}
             className="w-full flex items-center justify-center gap-3 rounded-2xl border border-slate-300 bg-white py-3 text-xs font-bold text-slate-800 hover:bg-slate-50 shadow-2xs transition-all min-h-[46px] mb-5 cursor-pointer"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">

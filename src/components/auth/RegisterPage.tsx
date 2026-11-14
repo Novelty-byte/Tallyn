@@ -15,7 +15,7 @@ import {
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useApp();
+  const { user, authReady, hasLiveShop } = useApp();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,20 +23,29 @@ export const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  // Set when the project requires email confirmation: signUp succeeds without a session.
+  const [confirmEmailSent, setConfirmEmailSent] = useState(false);
+  // Store name typed into the landing-page quick form; handed on to the setup step.
+  const [shopName, setShopName] = useState("");
 
-  // Read email param from URL if redirected from login fallback
+  // Read email / store name params if redirected from the login fallback or landing form
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const paramEmail = params.get("email");
     if (paramEmail) setEmail(paramEmail);
+    const paramShop = params.get("shopName");
+    if (paramShop) setShopName(paramShop);
   }, [location]);
 
-  // If already logged in with active shops, redirect to dashboard
+  // Once a real account is signed in and its shops have loaded: new owners continue to
+  // store setup, returning owners go straight to their dashboard. (A demo visitor can
+  // still register, so the demo profile does not trigger this.)
   useEffect(() => {
-    if (user && !user.isDemo) {
-      navigate("/onboarding");
+    if (user && !user.isDemo && authReady) {
+      if (hasLiveShop) navigate("/dashboard", { replace: true });
+      else navigate("/onboarding", { replace: true, state: shopName ? { shopName } : undefined });
     }
-  }, [user, navigate]);
+  }, [user, authReady, hasLiveShop, navigate, shopName]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,32 +55,36 @@ export const RegisterPage: React.FC = () => {
     setErrorMsg("");
 
     try {
-      const { error } = await db.signUp(email.trim(), password, fullName.trim() || "Retail Owner");
+      const { data, error } = await db.signUp(email.trim(), password, fullName.trim() || "Retail Owner");
       if (error) throw error;
 
-      // Upon successful account creation, redirect directly to the Full Store Setup Form (form.PNG)
-      navigate("/onboarding");
+      if (data.session) {
+        // Signed in straight away: the effect above continues to store setup once the
+        // account has loaded, so stay in the "Creating Account..." state until then.
+        return;
+      }
+      // No session: email confirmation is required before the owner can set up a store.
+      setConfirmEmailSent(true);
+      setIsLoading(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create account. Please try again.";
       setErrorMsg(msg);
-    } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
     try {
+      // The guard on /dashboard sends a brand-new Google account on to /onboarding.
       const { error } = await db.signInWithGoogle(`${window.location.origin}/dashboard`);
       if (error) throw error;
-      // On success, Supabase's onAuthChange listener sets the real user and
-      // onboarding (store registration) happens next via /onboarding route.
-    } catch (err) {
+    } catch {
       setErrorMsg("Google sign-up is not configured. Please sign up with email & password instead.");
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-100">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-100">
       <div className="w-full max-w-md space-y-6">
         
         {/* Progress Pills */}
@@ -101,6 +114,13 @@ export const RegisterPage: React.FC = () => {
               Create your merchant owner account to configure and launch your store locations.
             </p>
           </div>
+
+          {confirmEmailSent && (
+            <div role="status" className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs font-semibold text-emerald-900">
+              Account created. We sent a confirmation link to <strong>{email}</strong>. Open it to
+              continue to store setup.
+            </div>
+          )}
 
           {/* Error Message */}
           {errorMsg && (

@@ -226,7 +226,7 @@ export const LandingView: React.FC = () => {
 
           {/* 3. Interactive 390px Counter POS Phone Simulator */}
           <div className="mt-12 lg:mt-0 max-w-lg mx-auto relative w-full">
-            <CounterScene className="pointer-events-none absolute -bottom-10 -end-44 -z-10 hidden h-[300px] w-[400px] opacity-80 xl:block" />
+            <CounterScene className="pointer-events-none absolute -bottom-10 -end-6 -z-10 hidden h-[240px] w-[320px] opacity-80 xl:block" />
             <div className="text-center mb-3">
               <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-full border border-emerald-300">
                 <Smartphone className="h-3.5 w-3.5" /> Interactive 390px Counter Phone Simulator

@@ -4,6 +4,7 @@
  * All mutations go through atomic RPCs from migration 002.
  */
 import { supabase } from "@/lib/supabase";
+import { asExplicitAuth } from "@/lib/demoSession";
 import type {
   Product, Customer, Sale, Purchase, Expense, PaymentType, ProductCategory,
 } from "@/types";
@@ -188,37 +189,41 @@ export const db = {
     const { data } = await supabase.auth.getUser();
     return data.user;
   },
+  async getSession() {
+    return supabase.auth.getSession();
+  },
   async signInWithPassword(email: string, password: string) {
-    return supabase.auth.signInWithPassword({ email, password });
+    return asExplicitAuth(() => supabase.auth.signInWithPassword({ email, password }));
   },
   async signUp(email: string, password: string, name?: string) {
-    return supabase.auth.signUp({ 
-      email, 
+    return asExplicitAuth(() => supabase.auth.signUp({
+      email,
       password,
       options: {
         data: {
           full_name: name || email.split("@")[0],
-        }
-      }
-    });
+        },
+        emailRedirectTo: `${window.location.origin}/onboarding`,
+      },
+    }));
   },
   async signInWithOtp(email: string) {
-    return supabase.auth.signInWithOtp({
+    return asExplicitAuth(() => supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${window.location.origin}/dashboard` },
-    });
+    }));
   },
   async signInWithGoogle(redirectTo?: string) {
-    return supabase.auth.signInWithOAuth({
+    return asExplicitAuth(() => supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: redirectTo || `${window.location.origin}/dashboard` },
-    });
+    }));
   },
   async signInWithOAuthProvider(provider: string, redirectTo?: string) {
-    return supabase.auth.signInWithOAuth({
+    return asExplicitAuth(() => supabase.auth.signInWithOAuth({
       provider: provider as any,
       options: { redirectTo: redirectTo || `${window.location.origin}/dashboard` },
-    });
+    }));
   },
   async signOut() {
     return supabase.auth.signOut();
