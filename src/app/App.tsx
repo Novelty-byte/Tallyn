@@ -18,23 +18,69 @@ import { StoreManagementModal } from "@/features/stores/StoreManagementModal";
 import { WholesaleMandiTicker } from "@/features/dashboard/WholesaleMandiTicker";
 
 
-const LandingView = lazy(() => import("@/features/landing/LandingView").then((m) => ({ default: m.LandingView })));
-const CheckoutView = lazy(() => import("@/features/checkout/CheckoutView").then((m) => ({ default: m.CheckoutView })));
-const DashboardView = lazy(() => import("@/features/dashboard/DashboardView").then((m) => ({ default: m.DashboardView })));
-const InventoryView = lazy(() => import("@/features/inventory/InventoryView").then((m) => ({ default: m.InventoryView })));
-const UdhaarView = lazy(() => import("@/features/udhaar/UdhaarView").then((m) => ({ default: m.UdhaarView })));
-const PurchasesView = lazy(() => import("@/features/purchases/PurchasesView").then((m) => ({ default: m.PurchasesView })));
-const InsightsView = lazy(() => import("@/features/insights/InsightsView").then((m) => ({ default: m.InsightsView })));
-const SalesHistoryView = lazy(() => import("@/features/history/SalesHistoryView").then((m) => ({ default: m.SalesHistoryView })));
-const SettingsView = lazy(() => import("@/features/settings/SettingsView").then((m) => ({ default: m.SettingsView })));
-const LoginPage = lazy(() => import("@/features/auth/LoginPage").then((m) => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import("@/features/auth/RegisterPage").then((m) => ({ default: m.RegisterPage })));
-const DocsView = lazy(() => import("@/features/docs/DocsView").then((m) => ({ default: m.DocsView })));
-const StoreOnboardingPage = lazy(() => import("@/features/stores/StoreOnboardingPage").then((m) => ({ default: m.StoreOnboardingPage })));
+// The homepage ships in the main bundle: no second download (and no spinner) on first visit.
+import { LandingView } from "@/features/landing/LandingView";
 
+// Every other screen is its own chunk. The loaders are kept so they can be prefetched while idle.
+const loaders = {
+  checkout: () => import("@/features/checkout/CheckoutView").then((m) => ({ default: m.CheckoutView })),
+  dashboard: () => import("@/features/dashboard/DashboardView").then((m) => ({ default: m.DashboardView })),
+  inventory: () => import("@/features/inventory/InventoryView").then((m) => ({ default: m.InventoryView })),
+  udhaar: () => import("@/features/udhaar/UdhaarView").then((m) => ({ default: m.UdhaarView })),
+  purchases: () => import("@/features/purchases/PurchasesView").then((m) => ({ default: m.PurchasesView })),
+  insights: () => import("@/features/insights/InsightsView").then((m) => ({ default: m.InsightsView })),
+  history: () => import("@/features/history/SalesHistoryView").then((m) => ({ default: m.SalesHistoryView })),
+  settings: () => import("@/features/settings/SettingsView").then((m) => ({ default: m.SettingsView })),
+  login: () => import("@/features/auth/LoginPage").then((m) => ({ default: m.LoginPage })),
+  register: () => import("@/features/auth/RegisterPage").then((m) => ({ default: m.RegisterPage })),
+  docs: () => import("@/features/docs/DocsView").then((m) => ({ default: m.DocsView })),
+  onboarding: () => import("@/features/stores/StoreOnboardingPage").then((m) => ({ default: m.StoreOnboardingPage })),
+};
+const CheckoutView = lazy(loaders.checkout);
+const DashboardView = lazy(loaders.dashboard);
+const InventoryView = lazy(loaders.inventory);
+const UdhaarView = lazy(loaders.udhaar);
+const PurchasesView = lazy(loaders.purchases);
+const InsightsView = lazy(loaders.insights);
+const SalesHistoryView = lazy(loaders.history);
+const SettingsView = lazy(loaders.settings);
+const LoginPage = lazy(loaders.login);
+const RegisterPage = lazy(loaders.register);
+const DocsView = lazy(loaders.docs);
+const StoreOnboardingPage = lazy(loaders.onboarding);
+
+/**
+ * Warm every screen's chunk once the browser is idle, most-visited first, so moving
+ * between pages is instant. Skipped on data-saver connections. Fire-and-forget: a
+ * failed prefetch just means that page loads on demand as before.
+ */
+function usePrefetchScreens() {
+  useEffect(() => {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return;
+    const queue = [
+      loaders.dashboard, loaders.checkout, loaders.docs, loaders.insights, loaders.udhaar,
+      loaders.purchases, loaders.inventory, loaders.history, loaders.settings,
+      loaders.login, loaders.register, loaders.onboarding,
+    ];
+    const idle: (cb: () => void) => number =
+      (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ??
+      ((cb) => window.setTimeout(cb, 300));
+    let cancelled = false;
+    const next = () => {
+      const load = queue.shift();
+      if (!load || cancelled) return;
+      load().catch(() => undefined).finally(() => { if (!cancelled) idle(next); });
+    };
+    const start = window.setTimeout(() => idle(next), 1200); // after the first screen has settled
+    return () => { cancelled = true; window.clearTimeout(start); };
+  }, []);
+}
+
+/** Shown only if a screen takes longer than 250ms to arrive, so fast loads never flash a spinner. */
 function PageLoading() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-live="polite">
+    <div className="tn-delayed-show flex min-h-[50vh] items-center justify-center" role="status" aria-live="polite">
       <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-800 border-t-transparent" />
       <span className="sr-only">Loading…</span>
     </div>
@@ -75,6 +121,7 @@ const AUTH_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>(["login", "register
 const BLEED_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>(["landing", "login", "register", "onboarding", "notfound"]);
 
 function AppContent() {
+  usePrefetchScreens();
   const { pathname } = useLocation();
   const tab = tabFromPath(pathname);
   const isAuthPage = AUTH_TABS.has(tab);

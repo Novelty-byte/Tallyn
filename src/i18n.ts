@@ -42,7 +42,7 @@ export const resources = {
       },
       pos: {
         title: "Checkout",
-        subtitle: "Built for single-handed 390px phone counter operation with 44px+ tap targets.",
+        subtitle: "Tap, scan or speak a sale. Big tap targets, one layout that fits phones and desktops.",
         searchPlaceholder: "Search products or type a barcode…",
         voicePOS: "Say-It Voice Checkout",
         voicePOSPrompt: "Tap to speak: 'two tea one oil udhaar Asif'",
@@ -54,7 +54,7 @@ export const resources = {
         undoSale: "Undo Sale",
         cartTotal: "Total Due",
         inCart: "items in cart",
-        emptyCart: "Cart is empty. Tap items to add.",
+        emptyCart: "Tap a product, scan a barcode or speak an order.",
         stock: "Stock",
         price: "Price",
       },
@@ -126,7 +126,7 @@ export const resources = {
       },
       ai: {
         title: "Tallyn AI",
-        subtitle: "Read-only store intelligence assistant in English.",
+        subtitle: "Ask about your shop in English, Roman Urdu or Urdu.",
         placeholder: "Ask anything (e.g. 'Who owes the most debt?', 'Which item is running low?')...",
         send: "Ask",
       },

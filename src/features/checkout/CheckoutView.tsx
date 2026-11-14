@@ -18,8 +18,6 @@ import {
   Minus, 
   Sparkles, 
   Search, 
-  Smartphone, 
-  Monitor, 
   Check,
   Volume2,
   Camera,
@@ -50,7 +48,6 @@ export const CheckoutView: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>(() => defaultDueDate());
   const [isRecording, setIsRecording] = useState(false);
-  const [is390pxMobileFrame, setIs390pxMobileFrame] = useState<boolean>(true);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const [isSpeakingVoice, setIsSpeakingVoice] = useState(false);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -350,41 +347,6 @@ export const CheckoutView: React.FC = () => {
           </p>
         </div>
 
-        {/* Viewport Frame Mode Toggle (390px Mobile vs Full Desktop) */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="text-sm font-medium text-slate-600">Layout</span>
-          <div
-            role="group"
-            aria-label="Layout mode"
-            className="inline-flex rounded-lg border border-slate-200 bg-white p-1"
-          >
-            <button
-              onClick={() => setIs390pxMobileFrame(true)}
-              aria-pressed={is390pxMobileFrame}
-              className={`flex items-center gap-2 rounded-md px-3 text-sm font-medium min-h-[40px] transition-colors ${
-                is390pxMobileFrame
-                  ? "bg-emerald-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Smartphone className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">390px Counter Phone</span>
-              <span className="sm:hidden">Phone</span>
-            </button>
-            <button
-              onClick={() => setIs390pxMobileFrame(false)}
-              aria-pressed={!is390pxMobileFrame}
-              className={`flex items-center gap-2 rounded-md px-3 text-sm font-medium min-h-[40px] transition-colors ${
-                !is390pxMobileFrame
-                  ? "bg-emerald-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Monitor className="h-4 w-4" aria-hidden="true" />
-              <span>Desktop</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 10-Second Undo Toast Banner */}
@@ -418,11 +380,11 @@ export const CheckoutView: React.FC = () => {
       )}
 
       {/* Main Checkout Container */}
-      <div className={is390pxMobileFrame ? "mx-auto max-w-[420px]" : "w-full"}>
-        <div className={`surface-l1 overflow-hidden flex flex-col ${!is390pxMobileFrame ? "lg:flex-row" : ""}`}>
+      <div className="w-full">
+        <div className="surface-l1 overflow-hidden flex flex-col lg:flex-row">
 
           {/* Products Panel */}
-          <div className={`flex-1 flex flex-col ${!is390pxMobileFrame ? "border-b lg:border-b-0 lg:border-e border-slate-200" : ""}`}>
+          <div className="flex-1 flex flex-col border-b lg:border-b-0 lg:border-e border-slate-200">
             {/* Say-It Voice Checkout Banner with Speech Synthesis */}
             <div className="soft-panel bg-emerald-900 px-4 py-3 text-white flex items-center justify-between gap-3 border-b border-emerald-800">
               <div className="flex items-center gap-3 min-w-0">
@@ -613,7 +575,7 @@ export const CheckoutView: React.FC = () => {
           </div>
 
           {/* Cart & Checkout Panel */}
-          <div className={`${!is390pxMobileFrame ? "lg:w-[380px]" : "w-full"} ${!is390pxMobileFrame ? "border-t lg:border-t-0 border-slate-200" : ""} bg-white p-4 flex flex-col justify-between`}>
+          <div className="lg:w-[380px] border-t lg:border-t-0 border-slate-200 bg-white p-4 flex flex-col justify-between">
             <div>
               {/* Cart Header */}
               <div className="flex items-center justify-between text-sm font-medium text-slate-700 mb-3 pb-3 border-b border-slate-200">
