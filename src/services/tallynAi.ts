@@ -23,21 +23,54 @@ export class AskTallynError extends Error {
 
 const TIMEOUT_MS = 120_000; // free-tier AI providers can queue
 
+/** Products and customers the assistant may propose actions on (sent as names + ids). */
+export interface AskRefs {
+  products: Array<{ id: string; name: string; nameUr?: string }>;
+  customers: Array<{ id: string; name: string }>;
+}
+
+export interface AskResult {
+  answer: string;
+  /** Unvalidated proposal from the server; check it with domain/agentActions before showing it. */
+  action: unknown;
+  /** Item words the AI couldn't find in the catalogue. */
+  notFound: string[];
+}
+
 export async function askTallyn(opts: {
   question: string;
   history: ChatTurn[];
   snapshot: StoreSnapshot;
+  refs?: AskRefs;
   accessToken?: string | null;
-}): Promise<string> {
-  const body = await callGateway(
+}): Promise<AskResult> {
+  const body = await postGateway(
     {
       question: opts.question.slice(0, 1000),
       history: opts.history.slice(-8).map((t) => ({ role: t.role, text: t.text.slice(0, 2000) })),
       snapshot: opts.snapshot,
+      ...(opts.refs
+        ? {
+            refs: {
+              products: opts.refs.products.slice(0, 600).map((p) => ({
+                id: p.id,
+                name: p.name.slice(0, 120),
+                ...(p.nameUr ? { nameUr: p.nameUr.slice(0, 120) } : {}),
+              })),
+              customers: opts.refs.customers.slice(0, 400).map((c) => ({ id: c.id, name: c.name.slice(0, 80) })),
+            },
+          }
+        : {}),
     },
     opts.accessToken,
   );
-  return body.answer;
+  if (typeof body.answer !== "string" || !body.answer.trim()) {
+    throw new AskTallynError("bad_response", "Tallyn AI returned an empty answer.");
+  }
+  const notFound = Array.isArray(body.notFound)
+    ? body.notFound.filter((s): s is string => typeof s === "string").map((s) => s.slice(0, 60)).slice(0, 10)
+    : [];
+  return { answer: body.answer.trim().slice(0, 4000), action: body.action ?? null, notFound };
 }
 
 /** Script of the speech voice that will read the tip (see domain/radioBriefing). */
@@ -77,6 +110,8 @@ interface GatewayBody {
   answer?: unknown;
   spoken?: unknown;
   order?: unknown;
+  action?: unknown;
+  notFound?: unknown;
   error?: unknown;
 }
 

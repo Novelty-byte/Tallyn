@@ -5,6 +5,8 @@ import { supabase } from "@/services/supabaseClient";
 import { buildStoreSnapshot, type StoreSnapshot } from "@/domain/storeSnapshot";
 import { askTallyn, AskTallynError, type ChatTurn } from "@/services/tallynAi";
 import { inlineMarkdownToSafeHtml } from "@/lib/chatMarkdown";
+import { validateAgentAction, type AgentAction } from "@/domain/agentActions";
+import { AgentActionCard, type ActionStatus } from "@/features/assistant/AgentActionCard";
 import {
   X,
   Send,
@@ -19,6 +21,10 @@ interface Message {
   sender: "user" | "tallyn";
   text: string;
   isLoading?: boolean;
+  /** An action Tallyn AI proposed; saved only when the shopkeeper approves the card. */
+  action?: AgentAction;
+  /** Kept on the message so a closed-and-reopened drawer never re-offers a done action. */
+  actionStatus?: ActionStatus;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -42,7 +48,9 @@ export const TallynAiDrawer: React.FC = () => {
   // ── Initial greeting message ───────────────────────────────────────────────
   const makeGreeting = () => ({
     sender: "tallyn" as const,
-    text: `Assalam-o-Alaikum! I'm **Tallyn AI** — your store advisor for **${shop.name}**.\n\nI can see your full inventory (${products.length} products), customer ledger, and sales data. Ask me about your store, how to use Tallyn, or anything about running your business: what to stock for Ramadan or Eid, pricing, suppliers, collecting udhaar and more.`,
+    text: `Assalam-o-Alaikum! I'm **Tallyn AI** — your store advisor for **${shop.name}**.\n\nI can see your full inventory (${products.length} products), customer ledger, and sales data. Ask me about your store, how to use Tallyn, or anything about running your business: what to stock for Ramadan or Eid, pricing, suppliers, collecting udhaar and more.
+
+I can also **do things for you**: record a sale or udhaar, a purchase, a payment received, or send a WhatsApp reminder. I'll prepare it and you approve it.`,
   });
 
   const [messages, setMessages] = useState<Message[]>([makeGreeting()]);
@@ -74,11 +82,18 @@ export const TallynAiDrawer: React.FC = () => {
 
     try {
       const accessToken = isDemoMode ? null : (await supabase.auth.getSession()).data.session?.access_token ?? null;
-      const answer = await askTallyn({ question: q, history, snapshot, accessToken });
+      // Names + ids the AI may propose actions on; it sees them only as codes (P1…, C1…).
+      const refs = {
+        products: products.map((p) => ({ id: p.id, name: p.nameEn, ...(p.nameUr ? { nameUr: p.nameUr } : {}) })),
+        customers: customers.map((c) => ({ id: c.id, name: c.name })),
+      };
+      const result = await askTallyn({ question: q, history, snapshot, refs, accessToken });
+      const answer = result.answer;
+      const action = validateAgentAction(result.action, products, customers) ?? undefined;
 
       setMessages((prev) => {
         const without = prev.filter((m) => !m.isLoading);
-        return [...without, { sender: "tallyn", text: answer }];
+        return [...without, { sender: "tallyn", text: answer, action, actionStatus: action ? { state: "pending" } : undefined }];
       });
       setHistory((prev) => [
         ...prev.slice(-6), // keep the last few turns
@@ -101,7 +116,21 @@ export const TallynAiDrawer: React.FC = () => {
     }
   };
 
+  // Action examples built from this shop's own data, so they work when tapped.
+  const actionChips = (() => {
+    const chips: string[] = [];
+    const firstName = (n: string) => n.split(/[\s(]/)[0];
+    const debtor = [...customers].sort((a, b) => b.creditBalance - a.creditBalance)[0];
+    const tea = products.find((p) => /\b(tea|chai)\b/i.test(p.nameEn));
+    if (debtor && tea) chips.push(`Udhaar mein ${firstName(debtor.name)} ko 2 chai likh do`);
+    const low = products.find((p) => p.quantity <= p.minQuantity);
+    if (low) chips.push(`Add 12 ${low.nameEn.split(" ").slice(0, 2).join(" ")} to purchases`);
+    if (debtor && debtor.creditBalance > 0) chips.push(`${firstName(debtor.name)} ko udhaar ka reminder bhej do`);
+    return chips;
+  })();
+
   const quickChips = [
+    ...actionChips,
     "What should I stock before Ramadan?",
     "Which items didn't sell this month?",
     "Who has the most udhaar?",
@@ -215,7 +244,16 @@ export const TallynAiDrawer: React.FC = () => {
                     <span className="ms-1 text-xs font-semibold">Tallyn AI is thinking...</span>
                   </div>
                 ) : (
-                  <div className="space-y-0.5">{renderMarkdown(m.text)}</div>
+                  <>
+                    <div className="space-y-0.5">{renderMarkdown(m.text)}</div>
+                    {m.action && m.actionStatus && (
+                      <AgentActionCard
+                        action={m.action}
+                        status={m.actionStatus}
+                        onResolved={(st) => setMessages((prev) => prev.map((x, j) => (j === i ? { ...x, actionStatus: st } : x)))}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -253,7 +291,7 @@ export const TallynAiDrawer: React.FC = () => {
             </button>
           </form>
           <p className="text-center text-xs text-slate-400 mt-1.5">
-            Powered by Gemini • Full store context loaded
+            Gemini with backup AI • Full store context loaded
           </p>
         </div>
       </div>

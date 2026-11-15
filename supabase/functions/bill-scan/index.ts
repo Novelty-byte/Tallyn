@@ -17,19 +17,18 @@
  *     demo visitor (no session): DEMO_IP_DAILY_LIMIT per IP / 24h and
  *     DEMO_GLOBAL_DAILY_LIMIT across all demo visitors / 24h.
  *
- * Secrets: GEMINI_API_KEY (required). A key starting "AIza" calls Gemini's native API; any
- * other key is sent to the OpenAI-compatible endpoint AI_BASE_URL (default Google's
- * https://generativelanguage.googleapis.com/v1beta/openai/). GEMINI_MODEL (optional, default
- * gemini-3.5-flash; "models/gemini-3.5-flash" also works), AI_BASE_URL, SUPABASE_URL,
+ * Secrets: GEMINI_API_KEY + GEMINI_MODEL + AI_BASE_URL (primary; a key starting "AIza" calls
+ * Gemini's native API) and OPENROUTER_API_KEY (backups, optional OPENROUTER_MODELS). The
+ * primary is tried first, then each backup model that can read images (providers.ts).
+ * SUPABASE_URL,
  * SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (auto-injected by Supabase).
  * Deploy with "Verify JWT" OFF — this function authenticates callers itself so demo
  * visitors (who only hold the publishable key) can be served under the demo limits.
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import {
-  RequestSchema, extractBillText, parseModelText, DEFAULT_MODEL,
-} from "./extract.ts";
+import { RequestSchema, extractBillText, parseModelText } from "./extract.ts";
+import { providersFromEnv } from "./providers.ts";
 
 const USER_DAILY_LIMIT = 40;
 const DEMO_IP_DAILY_LIMIT = 6;
@@ -79,11 +78,9 @@ serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const geminiKey = Deno.env.get("GEMINI_API_KEY") ?? "";
-  const model = Deno.env.get("GEMINI_MODEL") || DEFAULT_MODEL;
-  const aiBaseUrl = Deno.env.get("AI_BASE_URL") || undefined;
+  const providers = providersFromEnv();
 
-  if (!supabaseUrl || !anonKey || !serviceKey || !geminiKey) {
+  if (!supabaseUrl || !anonKey || !serviceKey || providers.length === 0) {
     return json(503, { error: "Bill scanning isn't configured on the server yet." });
   }
 
@@ -144,11 +141,14 @@ serve(async (req: Request) => {
   // ---- model ----
   let modelText: string;
   try {
-    modelText = await extractBillText({
-      apiKey: geminiKey, model, baseUrl: aiBaseUrl, mimeType, data: data.replace(/\s+/g, ""),
-    });
+    const r = await extractBillText(providers, mimeType, data.replace(/\s+/g, ""));
+    modelText = r.text;
+    if (r.attempts.length > 1) {
+      const failed = r.attempts.slice(0, -1).map((a) => `${a.provider}: ${a.error}`).join("; ");
+      console.warn(`bill-scan: read by ${r.attempts[r.attempts.length - 1].provider} after`, failed);
+    }
   } catch (err) {
-    console.error("bill-scan model error:", err instanceof Error ? err.message : err);
+    console.error("bill-scan: no provider could read the bill:", err instanceof Error ? err.message : err);
     await finish("model_error");
     return json(502, { error: "The scanner couldn't read the bill right now. Please try again or enter it by hand." });
   }

@@ -2,6 +2,8 @@
  * Tallyn AI Gateway (Supabase Edge Function, Deno)
  *
  * POST { question, history[], snapshot }                 →  200 { answer }
+ * POST { question, history[], snapshot, refs }           →  200 { answer, action, notFound }
+ *   (refs = products/customers; the model may propose ONE action for the shopkeeper to approve)
  * POST { ..., mode: "radio", radio: { language, script } } →  200 { answer, spoken }
  *   (one Kiryana Radio tip; `spoken` is the same tip in the listener voice's script, or null)
  * POST { mode: "order", transcript, alternatives[], catalog[], customers[] } → 200 { order }
@@ -18,15 +20,18 @@
  *     questions: USER_DAILY_LIMIT per user; demo DEMO_IP_DAILY_LIMIT per IP, DEMO_GLOBAL_DAILY_LIMIT total
  *     orders:    ORDER_USER_DAILY_LIMIT per user; demo ORDER_DEMO_IP_DAILY_LIMIT per IP, ORDER_DEMO_GLOBAL_DAILY_LIMIT total
  *
- * Secrets (shared with bill-scan): GEMINI_API_KEY, GEMINI_MODEL, AI_BASE_URL (for keys that
- * don't start with "AIza"; default Google's OpenAI-compatible endpoint), optional AI_TIMEOUT_MS. SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are injected.
+ * Secrets (shared with bill-scan): GEMINI_API_KEY, GEMINI_MODEL, AI_BASE_URL (primary), and
+ * OPENROUTER_API_KEY (backups; optional OPENROUTER_MODELS), optional AI_TIMEOUT_MS. Every call
+ * tries the primary first, then each backup model (providers.ts). SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are injected.
  * Deploy with "Verify JWT" OFF — callers are authenticated here so demo visitors can ask.
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { AskRequestSchema, AnswerSchema } from "./schema.ts";
-import { askModel, callModel, DEFAULT_MODEL, parseRadioTip } from "./chat.ts";
+import { askModel, generate, parseRadioTip } from "./chat.ts";
+import { providersFromEnv, type AttemptLog } from "./providers.ts";
 import { buildOrderPrompt, buildOrderUserTurn, OrderRequestSchema, resolveOrder } from "./order.ts";
+import { parseAgentReply } from "./agent.ts";
 
 // deno-lint-ignore no-explicit-any
 type UsageQuery = any; // supabase-js filter builder; its generics don't survive a helper signature
@@ -39,6 +44,15 @@ const ORDER_DEMO_IP_DAILY_LIMIT = 60;
 const ORDER_DEMO_GLOBAL_DAILY_LIMIT = 2000;
 /** A voice order must come back fast; the app falls back to its offline matcher after this. */
 const ORDER_TIMEOUT_MS = 40_000;
+/** Per provider, so a slow primary still leaves time for a backup. */
+const ORDER_ATTEMPT_MS = 20_000;
+
+/** Log which providers failed before one answered (only when a backup was needed). */
+function logFallback(what: string, attempts: AttemptLog[]) {
+  if (attempts.length > 1) {
+    console.warn(`${what}: answered by ${attempts[attempts.length - 1].provider} after`, attempts.slice(0, -1).map((a) => `${a.provider}: ${a.error}`).join("; "));
+  }
+}
 const MAX_BODY_BYTES = 200_000;
 
 const CORS = {
@@ -77,11 +91,9 @@ serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const apiKey = Deno.env.get("GEMINI_API_KEY") ?? "";
-  const model = Deno.env.get("GEMINI_MODEL") || DEFAULT_MODEL;
-  const baseUrl = Deno.env.get("AI_BASE_URL") || undefined;
+  const providers = providersFromEnv();
 
-  if (!supabaseUrl || !anonKey || !serviceKey || !apiKey) {
+  if (!supabaseUrl || !anonKey || !serviceKey || providers.length === 0) {
     return json(503, { error: "Tallyn AI isn't configured on the server yet." });
   }
 
@@ -152,25 +164,26 @@ serve(async (req: Request) => {
     const orderReq = parsed.data;
     let text: string;
     try {
-      text = await callModel({
-        apiKey, model, baseUrl,
+      const r = await generate(providers, {
         system: buildOrderPrompt(orderReq),
         turns: [{ role: "user", text: buildOrderUserTurn(orderReq) }],
-        json: true, temperature: 0, maxTokens: 4096, timeoutMs: ORDER_TIMEOUT_MS,
-        // Matching a short order needs no long reasoning; "none" is several times faster and
-        // was just as accurate in tests (misheard brands, Urdu script, udhaar + customer).
-        reasoningEffort: "none",
+        // Matching a short order needs no long reasoning; thinking off is several times faster
+        // and was just as accurate in tests (misheard brands, Urdu script, udhaar + customer).
+        json: true, temperature: 0, maxTokens: 4096, thinking: "off",
+      }, {
+        perAttemptMs: ORDER_ATTEMPT_MS,
+        budgetMs: ORDER_TIMEOUT_MS,
+        // A reply we can't turn into an order counts as a failure: try the next model.
+        accept: (t) => resolveOrder(t, orderReq) !== null,
       });
+      text = r.text;
+      logFallback("voice-order", r.attempts);
     } catch (err) {
-      console.error("voice-order model error:", err instanceof Error ? err.message : err);
+      console.error("voice-order: no provider answered:", err instanceof Error ? err.message : err);
       await finish("model_error");
       return json(502, { error: "Tallyn AI couldn't read this order right now." });
     }
-    const order = resolveOrder(text, orderReq);
-    if (!order) {
-      await finish("bad_json");
-      return json(502, { error: "Tallyn AI couldn't read this order right now." });
-    }
+    const order = resolveOrder(text, orderReq)!;
     await finish("ok", text.length);
     return json(200, { order });
   }
@@ -178,14 +191,20 @@ serve(async (req: Request) => {
   // ---- question / radio tip ----
   let text: string;
   try {
-    text = await askModel({ apiKey, model, baseUrl, req: parsed.data });
+    const r = await askModel({ providers, req: parsed.data });
+    text = r.text;
+    logFallback(parsed.data.mode === "radio" ? "radio-tip" : "ask-tallyn", r.attempts);
   } catch (err) {
-    console.error("ask-tallyn model error:", err instanceof Error ? err.message : err);
+    console.error("ask-tallyn: no provider answered:", err instanceof Error ? err.message : err);
     await finish("model_error");
     return json(502, { error: "Tallyn AI couldn't answer right now." });
   }
 
-  const answer = AnswerSchema.safeParse(text.replace(/```/g, "").replace(/<\/?[a-z][^>]*>/gi, ""));
+  const agent = parsed.data.mode === "chat" && parsed.data.refs ? parseAgentReply(text, parsed.data.refs) : null;
+  const replyText = agent
+    ? agent.answer || (agent.action ? "I've prepared this for you. Please check it and tap Approve." : "")
+    : text;
+  const answer = AnswerSchema.safeParse(replyText.replace(/```/g, "").replace(/<\/?[a-z][^>]*>/gi, ""));
   if (!answer.success) {
     await finish("empty_answer");
     return json(502, { error: "Tallyn AI returned an empty answer." });
@@ -196,5 +215,6 @@ serve(async (req: Request) => {
     const tip = parseRadioTip(answer.data);
     return json(200, { answer: tip.text, spoken: tip.spoken });
   }
+  if (agent) return json(200, { answer: answer.data, action: agent.action, notFound: agent.notFound });
   return json(200, { answer: answer.data });
 });

@@ -9,6 +9,8 @@ Deno.test("detectReplyLanguage", () => {
   assertEquals(detectReplyLanguage("Kis customer ka udhaar sab se zyada hai?"), "Roman Urdu");
   assertEquals(detectReplyLanguage("سب سے زیادہ ادھار کس کا ہے؟"), "Urdu");
   assertEquals(detectReplyLanguage("What is the main product?"), "English"); // one stray hit isn't enough
+  assertEquals(detectReplyLanguage("Asif ne 500 rupay wapis diye"), "Roman Urdu");
+  assertEquals(detectReplyLanguage("add 10 Rooh Afza to purchases"), "English");
 });
 
 Deno.test("snapshot names are sanitised and the reply language is pinned", () => {

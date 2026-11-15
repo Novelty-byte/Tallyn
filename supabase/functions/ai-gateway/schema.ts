@@ -8,6 +8,7 @@
  * angle brackets and backticks are stripped.
  */
 import { z } from "https://esm.sh/zod@3.23.8";
+import { RefsSchema } from "./agent.ts";
 
 const Text = (max: number) =>
   z.string().transform((s) => s.replace(/[\u0000-\u001f<>`]/g, " ").replace(/\s+/g, " ").trim().slice(0, max));
@@ -46,6 +47,8 @@ export const AskRequestSchema = z.object({
     text: Text(2000),
   }).strict()).max(8).default([]),
   snapshot: SnapshotSchema,
+  /** Chat only: products and customers the model may propose actions on (see agent.ts). */
+  refs: RefsSchema.optional(),
   /** "chat" (default) answers the question; "radio" writes one spoken tip for Kiryana Radio. */
   mode: z.enum(["chat", "radio"]).default("chat"),
   radio: z.object({

@@ -51,7 +51,7 @@ Tallyn is built for a shopkeeper standing behind a counter with one hand free �
 | ⚛️ **Atomic changes** | Sales, purchases and payments are single database transactions with row locks. |
 | 🔒 **Your shop only** | Postgres row-level security plus ownership checks in every stored procedure. |
 | 👆 **Counter first** | 44 px+ tap targets, high contrast, aligned money columns, minimal taps. |
-| 🛟 **Keeps working** | If the AI is slow or down, checkout, udhaar and stock carry on normally. |
+| 🛟 **Keeps working** | If the main AI is out of credit, rate-limited or down, backup models answer instead; if every model fails, checkout, udhaar and stock carry on without AI. |
 
 ---
 
@@ -99,6 +99,8 @@ Photograph a bill or parchi → **Gemini Vision** copies the lines → code matc
 
 ### 🤖 Tallyn AI
 Ask in **English, Roman Urdu or Urdu** about your shop, how to use Tallyn, or running the business: what to stock before Ramadan or Eid, pricing, suppliers, collecting udhaar. Figures about your shop are only quoted as the app computed them, and festival dates come from a calendar in code. Requests unrelated to business are politely declined.
+
+**It can act, with your OK.** Say *"Udhaar mein Asif ko 2 chai likh do"*, *"add 10 Rooh Afza to purchases"*, *"Asif ne 500 rupay diye"* or *"Bashir ko reminder bhej do"* and Tallyn AI prepares the sale, purchase, payment or WhatsApp reminder as an editable card. Nothing is saved until you tap **Approve**, which runs the same atomic database procedures as the rest of the app; prices and totals come from your catalogue.
 
 ### 📻 Kiryana Radio
 A spoken daily briefing in **English or easy Urdu**, with a highlighted transcript and one AI tip of the day. The numbers are read from your store data, not the AI.
@@ -151,7 +153,7 @@ flowchart TB
     subgraph Browser["Browser — React 19 + Vite"]
         F["features/<br/>checkout · udhaar · insights · purchases · docs"]
         D["domain/<br/>pure, unit-tested business logic"]
-        SV["services/<br/>db · tallynAi · voiceOrderAi · billScan · barcodeCamera"]
+        SV["services/<br/>db · tallynAi (answers + actions) · voiceOrderAi · billScan · barcodeCamera"]
         F --> D
         F --> SV
     end
@@ -163,8 +165,10 @@ flowchart TB
     SV -->|"record_sale · record_purchase<br/>record_credit_payment"| PG
     SV -->|"question + snapshot<br/>spoken order + catalogue"| AG
     SV -->|compressed photo| BS
-    AG --> LLM{{"Gemini 3.8 Flash<br/>(OpenAI-compatible endpoint)"}}
+    AG --> LLM{{"Gemini 3.8 Flash<br/>(primary)"}}
     BS --> LLM
+    AG -.->|"if the primary fails"| OR{{"OpenRouter backups<br/>dots-3-note → Gemma 4"}}
+    BS -.-> OR
 ```
 
 <details>
@@ -249,7 +253,9 @@ Open the homepage and click **Launch Live Demo** — a three-branch shop with **
    | `GEMINI_API_KEY` | ✅ | Key for an OpenAI-compatible Gemini endpoint (we use apinex.bond). Keys starting `AIza` call Google's native Gemini API instead |
    | `GEMINI_MODEL` | | e.g. `free/gemini-3.8-flash` on apinex.bond, or `models/gemini-3.5-flash` on Google |
    | `AI_BASE_URL` | | e.g. `https://api.apinex.bond/v1`; default `https://generativelanguage.googleapis.com/v1beta/openai/` (Google) |
-   | `AI_TIMEOUT_MS` | | default `100000` |
+   | `OPENROUTER_API_KEY` | | Backup AI. When the primary fails (out of credit, rate-limited, down, or a bad reply), each `OPENROUTER_MODELS` model is tried in turn |
+   | `OPENROUTER_MODELS` | | Comma-separated, in order. Default `dots-studio/dots-3-note-preview:free,google/gemma-4-31b-it:free` |
+   | `AI_TIMEOUT_MS` | | Longest one provider may take (default 45000 for chat, 60000 for a bill scan) |
 
 4. **Frontend** — `npm run build` and deploy `dist/` (Vercel config included).
 
@@ -296,7 +302,7 @@ tallyn/
 ## 🧪 Testing
 
 ```bash
-npm test                                                       # 125 Vitest tests
+npm test                                                       # 130 Vitest tests
 npm run build                                                  # strict type-check + production build
 deno test --allow-env supabase/functions/ai-gateway/          # prompts, seasons, voice-order checks
 ```

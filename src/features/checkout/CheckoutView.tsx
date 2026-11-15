@@ -65,7 +65,7 @@ export const CheckoutView: React.FC = () => {
   // When set, the confirm sheet is open. Empty transcript = "type it" mode.
   const [voiceSheet, setVoiceSheet] = useState<{ transcript: string; alternatives?: string[] } | null>(null);
 
-  // Gemini reads the spoken order against this shop's catalogue (services/voiceOrderAi).
+  // Tallyn AI reads the spoken order against this shop's catalogue (services/voiceOrderAi).
   // The confirm sheet shows the offline match first and falls back to it if this fails.
   const readOrderWithAi = async (transcript: string, alternatives: string[], signal: AbortSignal) => {
     const accessToken = isDemoMode ? null : (await supabase.auth.getSession()).data.session?.access_token ?? null;
@@ -275,7 +275,7 @@ export const CheckoutView: React.FC = () => {
     recognition.lang = voiceLang === "ur" ? "ur-PK" : "en-PK";
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.maxAlternatives = 3; // extra hypotheses help Gemini fix misheard words
+    recognition.maxAlternatives = 3; // extra hypotheses help the AI fix misheard words
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const result = event.results[0];

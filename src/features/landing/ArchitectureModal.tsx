@@ -156,7 +156,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                     Structured Extraction
                   </span>
                 </div>
-                <h4 className="text-sm font-semibold text-white">Gemini 3.7 Vision, Voice &amp; Language</h4>
+                <h4 className="text-sm font-semibold text-white">Gemini Flash Vision, Voice &amp; Language (with backup models)</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Powers multimodal paper bill OCR, conversational voice parsing, and culturally respectful WhatsApp reminders. Responses enforce strict JSON schemas before ingestion.
                 </p>

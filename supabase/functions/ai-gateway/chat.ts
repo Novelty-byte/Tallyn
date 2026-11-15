@@ -1,18 +1,22 @@
 /**
  * Tallyn AI — prompts and the model call. Kept apart from the HTTP handler so it can be
- * exercised on its own. Provider routing matches bill-scan: a key starting "AIza" calls
- * Gemini's native API; any other key goes to the OpenAI-compatible endpoint AI_BASE_URL
- * (default: Google's OpenAI-compatible Gemini endpoint).
+ * exercised on its own. Every call goes down the provider chain in providers.ts: the
+ * primary (GEMINI_API_KEY / AI_BASE_URL), then the OpenRouter backups.
  */
 import type { AskRequest, Snapshot } from "./schema.ts";
 import { renderSeasons } from "./seasons.ts";
+import { ACTION_RULES, JSON_OUTPUT, renderRefs, type Refs } from "./agent.ts";
+import {
+  completionText, maxTokensFor, runChain, thinkingFields,
+  type AiProvider, type AttemptLog, type Thinking,
+} from "./providers.ts";
 
-export const DEFAULT_MODEL = "gemini-3.5-flash";
-export const DEFAULT_OPENAI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 /** Room for a full advice answer (thinking models count reasoning tokens here too). */
 const MAX_OUTPUT_TOKENS = 1500;
-/** Override with AI_TIMEOUT_MS (Supabase allows ~150 s per request). */
-export const AI_TIMEOUT_MS = Number(Deno.env.get("AI_TIMEOUT_MS")) || 100_000;
+/** Longest a single provider may take on a chat answer (override with AI_TIMEOUT_MS). */
+export const AI_TIMEOUT_MS = Number(Deno.env.get("AI_TIMEOUT_MS")) || 45_000;
+/** Whole chain, all providers together: stays under Supabase's ~150 s request limit. */
+const CHAT_BUDGET_MS = 110_000;
 
 const APP_GUIDE = `How Tallyn works (for how-to questions):
 - Checkout: tap products to add to the cart, tap "Scan" to scan barcodes with the phone camera (each scan adds one item; a flashlight button appears on phones that have one), plug in a USB/Bluetooth barcode scanner and just scan, or tap "Speak order" and say e.g. "do chai ek oil udhaar Asif" (Gemini matches the words to the shop's products, even misheard ones, and the cashier confirms). Choose Cash or Udhaar; udhaar needs a customer and a pay-back date. "Record Sale" lowers stock; an Undo button shows for 10 seconds.
@@ -62,6 +66,9 @@ const ROMAN_URDU_WORDS = new Set([
   "kitna", "kitne", "kitni", "nahi", "nahin", "bata", "batao", "batain", "dukaan", "dukan", "maal",
   "kab", "kyun", "kaise", "kaisay", "zyada", "ziada", "sab", "se", "wala", "wali", "abhi", "aaj",
   "hua", "hui", "raha", "rahi", "chahiye", "karna", "karo", "kar", "din", "late", "bikta", "bika",
+  // action requests: "Asif ne 500 rupay wapis diye", "udhaar likh do", "reminder bhej do"
+  "ne", "diye", "diya", "di", "wapis", "likh", "likho", "bhej", "bhejo", "bech", "becho", "naqad",
+  "rupay", "rupaye", "aaye", "aya", "dedo", "dena", "lena", "udhaar", "udhar", "wala", "wale",
 ]);
 
 /** Deterministic language pick for the reply: Urdu script → Urdu; 2+ Roman-Urdu words → Roman Urdu. */
@@ -101,7 +108,7 @@ ${renderSeasons(s.date)}
 === END UPCOMING SEASONS ===`;
 }
 
-export function buildSystemPrompt(s: Snapshot, replyLanguage: ReplyLanguage = "English"): string {
+export function buildSystemPrompt(s: Snapshot, replyLanguage: ReplyLanguage = "English", refs?: Refs): string {
   return `You are "Tallyn AI", a warm, practical business advisor inside the Tallyn app for Pakistani kiryana (neighbourhood grocery) shopkeepers.
 
 ${SCOPE_AND_RULES}
@@ -112,7 +119,13 @@ ${APP_GUIDE}
 
 ${dataBlock(s)}
 
-REPLY LANGUAGE: ${languageLine(replyLanguage)}. Use this language for your whole reply.`;
+REPLY LANGUAGE: ${languageLine(replyLanguage)}. Use this language for your whole reply.${refs ? `
+
+${ACTION_RULES}
+
+${renderRefs(refs)}
+
+${JSON_OUTPUT}` : ""}`;
 }
 
 /** Script the radio tip should be spoken in, besides the on-screen text. */
@@ -161,95 +174,91 @@ export function nativeModelName(model: string): string {
 }
 
 export interface ModelCall {
-  apiKey: string;
-  model: string;
-  baseUrl?: string;
   system: string;
   turns: Array<{ role: "user" | "assistant"; text: string }>;
   /** Ask for a JSON object reply. */
   json?: boolean;
   temperature?: number;
   maxTokens?: number;
-  timeoutMs?: number;
   /**
-   * How much the model "thinks" first (OpenAI-compatible endpoint only; the native API keeps
-   * its default). Less thinking is much faster: on Gemini 3.5 Flash "none" answered in ~4 s
-   * where the default took ~20 s.
+   * "off" = answer without thinking first. Much faster: Gemini 3.5 Flash answered in ~4 s
+   * instead of ~20 s, and the free OpenRouter backups always run this way (providers.ts).
    */
-  reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high";
+  thinking?: Thinking;
+}
+
+/** One call to one provider. Throws on any HTTP or network failure. */
+export async function callProvider(p: AiProvider, c: ModelCall, signal: AbortSignal): Promise<string> {
+  const temperature = c.temperature ?? 0.4;
+  const maxTokens = maxTokensFor(p, c.maxTokens ?? MAX_OUTPUT_TOKENS);
+
+  if (p.kind === "gemini-native") {
+    const res = await fetch(`${p.baseUrl}/models/${encodeURIComponent(nativeModelName(p.model))}:generateContent`, {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": p.apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: c.system }] },
+        contents: c.turns.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] })),
+        generationConfig: {
+          temperature,
+          maxOutputTokens: maxTokens,
+          ...(c.json ? { responseMimeType: "application/json" } : {}),
+        },
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    const body = await res.json();
+    return body?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? "").join("") ?? "";
+  }
+
+  const res = await fetch(`${p.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.apiKey}` },
+    body: JSON.stringify({
+      model: p.model,
+      temperature,
+      max_tokens: maxTokens,
+      ...(c.json ? { response_format: { type: "json_object" } } : {}),
+      ...thinkingFields(p, c.thinking ?? "default"),
+      messages: [
+        { role: "system", content: c.system },
+        ...c.turns.map((m) => ({ role: m.role, content: m.text })),
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  return completionText(await res.json());
 }
 
 /**
- * One model call. A Google AI Studio key starting "AIza" calls Gemini's native API;
- * any other key goes to the OpenAI-compatible endpoint AI_BASE_URL (default: Google's
- * own OpenAI-compatible Gemini endpoint).
+ * Run a call down the provider chain (primary, then OpenRouter backups). Empty replies, and
+ * replies `accept` rejects, count as failures and move on to the next provider.
  */
-export async function callModel(c: ModelCall): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), c.timeoutMs ?? AI_TIMEOUT_MS);
-  const temperature = c.temperature ?? 0.4;
-  const maxTokens = c.maxTokens ?? MAX_OUTPUT_TOKENS;
-  try {
-    if (c.apiKey.startsWith("AIza")) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(nativeModelName(c.model))}:generateContent`,
-        {
-          method: "POST",
-          signal: controller.signal,
-          headers: { "Content-Type": "application/json", "x-goog-api-key": c.apiKey },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: c.system }] },
-            contents: c.turns.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] })),
-            generationConfig: {
-              temperature,
-              maxOutputTokens: maxTokens,
-              ...(c.json ? { responseMimeType: "application/json" } : {}),
-            },
-          }),
-        },
-      );
-      if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      const body = await res.json();
-      return body?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
-    }
-
-    const res = await fetch(`${(c.baseUrl || DEFAULT_OPENAI_BASE_URL).replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      signal: controller.signal,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.apiKey}` },
-      body: JSON.stringify({
-        model: c.model,
-        temperature,
-        max_tokens: maxTokens,
-        ...(c.json ? { response_format: { type: "json_object" } } : {}),
-        ...(c.reasoningEffort ? { reasoning_effort: c.reasoningEffort } : {}),
-        messages: [
-          { role: "system", content: c.system },
-          ...c.turns.map((m) => ({ role: m.role, content: m.text })),
-        ],
-      }),
-    });
-    if (!res.ok) throw new Error(`AI provider ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    const body = await res.json();
-    const content = body?.choices?.[0]?.message?.content;
-    return Array.isArray(content)
-      ? content.map((p: { text?: string }) => p.text ?? "").join("")
-      : typeof content === "string" ? content : "";
-  } finally {
-    clearTimeout(timer);
-  }
+export async function generate(
+  providers: AiProvider[],
+  c: ModelCall,
+  opts: { perAttemptMs: number; budgetMs: number; accept?: (text: string) => boolean },
+): Promise<{ text: string; provider: AiProvider; attempts: AttemptLog[] }> {
+  const r = await runChain(providers, async (p, signal) => {
+    const text = (await callProvider(p, c, signal)).trim();
+    if (!text) return null;
+    return opts.accept && !opts.accept(text) ? null : text;
+  }, opts);
+  return { text: r.value, provider: r.provider, attempts: r.attempts };
 }
 
-export function askModel(opts: {
-  apiKey: string; model: string; baseUrl?: string; req: AskRequest;
-}): Promise<string> {
+export function askModel(opts: { providers: AiProvider[]; req: AskRequest }) {
   const radio = opts.req.mode === "radio" ? opts.req.radio : undefined;
   const system = radio
     ? buildRadioPrompt(opts.req.snapshot, radio.language, radio.script)
-    : buildSystemPrompt(opts.req.snapshot, detectReplyLanguage(opts.req.question));
+    : buildSystemPrompt(opts.req.snapshot, detectReplyLanguage(opts.req.question), opts.req.refs);
   // Radio tips are one-shot: no chat history, a fixed instruction as the user turn.
   const turns = radio
     ? [{ role: "user" as const, text: "Give today's tip." }]
     : [...opts.req.history, { role: "user" as const, text: opts.req.question }];
-  return callModel({ apiKey: opts.apiKey, model: opts.model, baseUrl: opts.baseUrl, system, turns });
+  // With refs the reply is a JSON object { reply, action, notFound } (agent.ts).
+  const json = !radio && !!opts.req.refs;
+  return generate(opts.providers, { system, turns, json }, { perAttemptMs: AI_TIMEOUT_MS, budgetMs: CHAT_BUDGET_MS });
 }

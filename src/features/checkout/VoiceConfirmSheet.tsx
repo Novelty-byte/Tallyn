@@ -22,7 +22,7 @@ interface Props {
   transcript: string;
   /** Other hypotheses from the speech recogniser (sent to the AI as hints). */
   alternatives?: string[];
-  /** Reads the order with Gemini. When absent or failing, the offline matcher's result stands. */
+  /** Reads the order with Tallyn AI. When absent or failing, the offline matcher's result stands. */
   aiRead?: (transcript: string, alternatives: string[], signal: AbortSignal) => Promise<AiVoiceOrder>;
   products: VoiceProduct[];
   customers: VoiceCustomer[];
@@ -36,7 +36,7 @@ interface Props {
  * product, resized, or removed — and all prices/totals come from the catalogue.
  *
  * Two readers: the offline matcher answers instantly (zero lag, works without internet),
- * then Gemini's reading replaces it when it arrives — unless the cashier has already
+ * then Tallyn AI's reading replaces it when it arrives — unless the cashier has already
  * started editing, in which case it is offered with one tap instead of overwriting.
  */
 type AiState =
@@ -171,12 +171,12 @@ export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, alternati
             <p className="mt-0.5 flex min-h-[18px] items-center gap-1.5 text-xs" aria-live="polite">
               {ai.status === "loading" && (
                 <span className="flex items-center gap-1.5 font-medium text-emerald-800">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Gemini is reading the order…
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Tallyn AI is reading the order…
                 </span>
               )}
               {ai.status === "applied" && (
                 <span className="flex items-center gap-1.5 font-medium text-emerald-800">
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Matched by Gemini
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Matched by Tallyn AI
                 </span>
               )}
               {ai.status === "ready" && (
@@ -184,7 +184,7 @@ export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, alternati
                   onClick={() => applyAi(ai.result)}
                   className="-my-2 flex min-h-[40px] items-center gap-1.5 rounded-lg px-1 font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
                 >
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Use Gemini's match
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Use Tallyn AI's match
                 </button>
               )}
               {ai.status === "failed" && <span className="text-slate-600">{ai.message}</span>}

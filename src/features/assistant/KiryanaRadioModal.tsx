@@ -11,7 +11,7 @@ import { X, Play, Square, Radio, Volume2, AlertTriangle, TrendingUp, Users, Spar
 
 // ============================================================
 // Kiryana Radio: a spoken daily briefing.
-// Numbers come from domain/radioBriefing (code, Rule 1). Gemini adds one "tip of the day"
+// Numbers come from domain/radioBriefing (code, Rule 1). Tallyn AI adds one "tip of the day"
 // through ai-gateway; if that fails the briefing plays without it (Rule 5).
 // Speech uses the browser's voices: English, or Urdu read by an Urdu voice, a Hindi voice
 // (Devanagari Hindustani) or, failing both, an English voice reading Roman Urdu.
@@ -377,7 +377,7 @@ export const KiryanaRadioModal: React.FC = () => {
           })}
           {tipForKey?.status === "loading" && (
             <li className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-400">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Gemini is writing today's tip…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Tallyn AI is writing today's tip…
             </li>
           )}
           {tipForKey?.status === "failed" && (
@@ -415,7 +415,7 @@ export const KiryanaRadioModal: React.FC = () => {
 
         <p className="text-center text-xs text-slate-400 mt-3 leading-relaxed">
           {speechSupported
-            ? "Numbers are read from your store data. The tip is written by Gemini."
+            ? "Numbers are read from your store data. The tip is written by Tallyn AI."
             : "This browser can't speak. You can still read the briefing above."}
         </p>
       </div>
