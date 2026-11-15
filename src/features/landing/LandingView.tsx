@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { audio } from "@/lib/audio";
@@ -35,6 +35,24 @@ import {
   CheckCircle2,
   Layers,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// Unlisted demo video shown beside every engine tab (youtube.com/watch?v=HEaf0UN1LxA).
+const DEMO_VIDEO_ID = "HEaf0UN1LxA";
+// Muted autoplay is the only autoplay browsers allow; `playlist` = same ID makes `loop` work.
+const DEMO_VIDEO_SRC = `https://www.youtube-nocookie.com/embed/${DEMO_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${DEMO_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1`;
+// How long each engine tab stays up before auto-advancing.
+const ENGINE_STEP_MS = 6000;
+
+interface EngineTab {
+  label: string;
+  icon: LucideIcon;
+  eyebrow: string;
+  title: string;
+  body: React.ReactNode;
+  cta: React.ReactNode;
+  panel: React.ReactNode;
+}
 
 interface PhoneCartItem {
   id: string;
@@ -55,6 +73,34 @@ export const LandingView: React.FC = () => {
   // Tab & Modal States
   const [activeFeatureTab, setActiveFeatureTab] = useState<number>(0);
   const [isArchitectureModalOpen, setIsArchitectureModalOpen] = useState(false);
+
+  // Engine tabs auto-advance every ENGINE_STEP_MS, paused while the mouse is over
+  // the active tab's text or panel (not the tab strip or video), while keyboard
+  // focus is inside, or while the section is off screen.
+  const [enginesHovering, setEnginesHovering] = useState(false);
+  const [enginesFocusInside, setEnginesFocusInside] = useState(false);
+  const [enginesInView, setEnginesInView] = useState(false);
+  const enginesRef = useRef<HTMLDivElement>(null);
+  const engineStripRef = useRef<HTMLDivElement>(null);
+  const enginesPlaying = enginesInView && !enginesHovering && !enginesFocusInside;
+
+  useEffect(() => {
+    const el = enginesRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setEnginesInView(e.isIntersecting), { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // On phones the tab strip scrolls sideways: keep the active tab centred in it
+  // (scrolls the strip only, never the page).
+  useEffect(() => {
+    const strip = engineStripRef.current;
+    const item = strip?.children[activeFeatureTab] as HTMLElement | undefined;
+    if (!strip || !item || strip.scrollWidth <= strip.clientWidth) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    strip.scrollTo({ left: item.offsetLeft - (strip.clientWidth - item.offsetWidth) / 2, behavior: reduce ? "auto" : "smooth" });
+  }, [activeFeatureTab]);
 
   // Hero interactive ticker state (retained for comparison table elsewhere on page)
 
@@ -154,6 +200,190 @@ export const LandingView: React.FC = () => {
   };
 
   const phoneSubtotal = phoneCart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+  const primaryCtaClass = "rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors";
+  const engines: EngineTab[] = [
+    {
+      label: "Say-It Voice Checkout",
+      icon: Mic,
+      eyebrow: "Engine 1: Conversational Checkout",
+      title: "Say-It: Speech-to-Cart Voice Checkout",
+      body: <>During peak evening hours, typing on a small counter phone is impossible. Simply speak naturally: <i>"2 chai, 1 ghee udhaar Asif"</i>. Tallyn's speech pipeline extracts the products, quantities, and debtor name into a structured cart payload ready for 1-tap confirmation.</>,
+      cta: <button onClick={openSeededDemoShop} className={primaryCtaClass}>Try in Demo Checkout</button>,
+      panel: (
+        <div className="bg-emerald-950 text-white p-6 rounded-2xl border border-emerald-800 shadow-inner soft-panel">
+          <div className="flex items-center gap-2 text-amber-300 font-mono text-xs mb-3">
+            <Mic className="h-4 w-4" />
+            <span>Speech Transcription Stream:</span>
+          </div>
+          <p className="text-base font-bold text-white italic">
+            "2 Tapal Danedar tea, 1 Dalda oil, credit to Asif Bhai house 12"
+          </p>
+          <div className="mt-4 pt-3 border-t border-emerald-800/80 space-y-1.5 text-xs text-emerald-200">
+            <p>✓ Extracted: 2x Tapal Danedar Tea (Rs. 1,300)</p>
+            <p>✓ Extracted: 1x Dalda Cooking Oil 1L (Rs. 540)</p>
+            <p>✓ Debtor Mapped: Asif Bhai (Current Debt: Rs. 3,400)</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      label: "Paper Bill Scanner",
+      icon: Camera,
+      eyebrow: "Engine 2: Multimodal Vision OCR",
+      title: "Crumpled Supplier Paper Invoice Scanner",
+      body: "Suppliers hand handwritten delivery slips that get lost. Point your smartphone camera at any wholesale bill; Gemini Vision OCR extracts item names, unit purchase prices, and batch counts, updating your inventory stock atomically.",
+      cta: <button onClick={openSeededDemoShop} className={primaryCtaClass}>Open Supplier Scanner</button>,
+      panel: (
+        <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-inner soft-panel">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
+            <span>Vision OCR Extraction Preview</span>
+            <span className="text-emerald-400 font-bold">100% Parsed</span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="bg-slate-800 p-2.5 rounded-xl flex justify-between">
+              <span>Metro Wholesale: 50kg Sugar Bag</span>
+              <span className="font-bold text-amber-300">Rs. 6,800</span>
+            </div>
+            <div className="bg-slate-800 p-2.5 rounded-xl flex justify-between">
+              <span>Habib Oil Mills: 16L Carton</span>
+              <span className="font-bold text-amber-300">Rs. 7,200</span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      label: "Kiryana Radio Audio",
+      icon: Radio,
+      eyebrow: "Engine 3: Spoken Executive Audio",
+      title: "Kiryana Radio (Morning Memo)",
+      body: "Every morning at 8:00 AM, tap one button to hear a warm 3-sentence executive audio brief in natural voice: yesterday's cash vs credit revenue, who owes overdue debt, and which commodities need ordering before evening rush.",
+      cta: (
+        <button
+          onClick={() => setIsKiryanaRadioOpen(true)}
+          className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-colors"
+        >
+          <Play className="h-4 w-4 fill-slate-950" />
+          <span>Listen to Morning Memo</span>
+        </button>
+      ),
+      panel: (
+        <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 text-center shadow-inner soft-panel">
+          <Radio className="h-10 w-10 text-amber-400 mx-auto mb-2" />
+          <p className="text-xs font-semibold text-amber-300">Spoken Memo Synthesizer</p>
+          <p className="text-xs text-slate-400 mt-1 italic">
+            "Good morning Haji Aslam! Today's recorded store revenue is Rs 18,900..."
+          </p>
+        </div>
+      ),
+    },
+    {
+      label: "WhatsApp Debt Drafter",
+      icon: MessageSquare,
+      eyebrow: "Engine 4: Cultural Communication",
+      title: "Culturally Respectful WhatsApp Udhaar Reminders",
+      body: "Collecting debt in neighbourhood culture requires immense respect and tact. Tallyn generates respectful, warm reminder drafts and opens `wa.me` deep links directly on your phone with zero paid API costs.",
+      cta: <button onClick={openSeededDemoShop} className={primaryCtaClass}>View Udhaar Ledger</button>,
+      panel: (
+        <div className="bg-emerald-50 border border-emerald-300 p-5 rounded-2xl text-xs text-emerald-950 text-start shadow-inner">
+          <p className="font-bold text-emerald-900 mb-2">WhatsApp reminder (exactly what Tallyn sends):</p>
+          <p className="whitespace-pre-line leading-relaxed">
+            {buildUdhaarReminder({ customerName: "Asif Bhai", shopName: "Al-Madina Kiryana", balance: 3400, nextDueDate: addDays(toLocalYmd(), -7) })}
+          </p>
+        </div>
+      ),
+    },
+    {
+      label: "Mahngai Market Watchdog",
+      icon: TrendingUp,
+      eyebrow: "Engine 5: Mahngai Watchdog",
+      title: "Supplier Price-Rise Check",
+      body: "When you scan or enter a supplier bill, Tallyn compares each cost with what you paid last time. A rise above 5% is flagged before you save, with a selling price that keeps your margin.",
+      cta: <button onClick={openSeededDemoShop} className={primaryCtaClass}>Try It in Purchases</button>,
+      panel: (
+        <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2 text-xs shadow-inner soft-panel">
+          <p className="text-slate-400">Example bill line vs your last buy price</p>
+          <div className="flex justify-between gap-3 border-b border-slate-800 pb-2">
+            <span>Dalda Cooking Oil 1L · PKR 480 → 525</span>
+            <span className="text-rose-400 font-bold whitespace-nowrap">Cost up {costChangePercent(525, 480)}%</span>
+          </div>
+          <p className="text-slate-300">Keep your margin: sell at about PKR {marginKeepingPrice(525, 480, 540)} (now PKR 540).</p>
+          <div className="flex justify-between gap-3 border-t border-slate-800 pt-2">
+            <span>Tapal Danedar Tea 450g · PKR 570 → 585</span>
+            <span className="text-emerald-400 font-bold whitespace-nowrap">+{costChangePercent(585, 570)}%, normal</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      label: "Ramadan Demand Forecaster",
+      icon: Zap,
+      eyebrow: "Engine 6: Cultural Calendar",
+      title: "Ramadan Stock Planner",
+      body: "Counts down to Ramadan and shows how many days of stock you have left for staples like sugar, oil, besan, Rooh Afza and dates, so you can buy in bulk before wholesale prices rise.",
+      cta: <button onClick={openSeededDemoShop} className={primaryCtaClass}>View Ramadan Planner</button>,
+      panel: (
+        <div className="bg-amber-950/80 border border-amber-500/40 text-amber-100 p-5 rounded-2xl text-xs shadow-inner">
+          <p className="font-bold text-amber-300">Ramadan countdown</p>
+          <p className="mt-1 leading-relaxed">
+            {ramadan
+              ? `Expected around ${formatFriendlyDate(ramadan.start)}, in ${ramadan.daysUntil} days (±1 day, moon sighting). Plan bulk buying 2–3 weeks before.`
+              : "No upcoming Ramadan date on file."}
+          </p>
+        </div>
+      ),
+    },
+    {
+      label: "Multi-Store Chain Hub",
+      icon: Building2,
+      eyebrow: "Engine 7: Multi-Branch Infrastructure",
+      title: "Multi-Store Chain Management Hub",
+      body: "Expand from one neighbourhood counter to a city-wide chain seamlessly. Manage multiple store branches under a single merchant account with one-tap store switching, synchronized customer debt ledgers, inter-branch stock transfers, and consolidated chain P&L reports.",
+      cta: <button onClick={openSeededDemoShop} className={primaryCtaClass}>Explore Multi-Store Switching</button>,
+      panel: (
+        <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-3 text-xs shadow-inner soft-panel">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-emerald-400" />
+              <span className="font-bold">Branch #1: Al-Madina Main Bazar</span>
+            </div>
+            <span className="text-emerald-400 font-mono">Rs. 42,800 Today</span>
+          </div>
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-sky-400" />
+              <span className="font-bold">Branch #2: Madina Super G-9 Markaz</span>
+            </div>
+            <span className="text-sky-400 font-mono">Rs. 68,150 Today</span>
+          </div>
+          <div className="pt-1 flex items-center justify-between text-slate-400 text-xs">
+            <span>Consolidated Chain Revenue</span>
+            <span className="text-amber-300 font-bold font-mono">Rs. 110,950</span>
+          </div>
+        </div>
+      ),
+    },
+  ];
+  const showEngine = (i: number) => {
+    // The newly shown text/panel re-arms the hover pause on the next mouse move.
+    setEnginesHovering(false);
+    setActiveFeatureTab(i);
+  };
+  const nextEngine = () => showEngine((activeFeatureTab + 1) % engines.length);
+  // Only the visible text block and panel pause the timer; hidden layers are
+  // pointer-events-none, so they never receive these events.
+  const engineHoverHandlers = {
+    onMouseOver: () => setEnginesHovering(true),
+    onMouseLeave: () => setEnginesHovering(false),
+  };
+  // All tabs share one grid cell; only the active one is visible, so the card
+  // keeps a steady height and tabs cross-fade instead of remounting.
+  // `self-start` keeps each layer's hover area to its own content.
+  const engineLayerClass = (i: number) =>
+    `[grid-area:1/1] self-start transition-[opacity,transform,visibility] duration-500 ease-out ${
+      activeFeatureTab === i ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-2 invisible pointer-events-none"
+    }`;
 
 
   return (
@@ -451,274 +681,91 @@ export const LandingView: React.FC = () => {
           </p>
         </div>
 
-        {/* Tab Strip */}
-        <div className="flex justify-start overflow-x-auto gap-2 px-1 pt-1 pb-2 scrollbar-none mb-8 [&>*:first-child]:ms-auto [&>*:last-child]:me-auto">
-          {[
-            { id: 0, label: "Say-It Voice Checkout", icon: Mic },
-            { id: 1, label: "Paper Bill Scanner", icon: Camera },
-            { id: 2, label: "Kiryana Radio Audio", icon: Radio },
-            { id: 3, label: "WhatsApp Debt Drafter", icon: MessageSquare },
-            { id: 4, label: "Mahngai Market Watchdog", icon: TrendingUp },
-            { id: 5, label: "Ramadan Demand Forecaster", icon: Zap },
-            { id: 6, label: "Multi-Store Chain Hub", icon: Building2 },
-          ].map((tab) => {
+        <div
+          ref={enginesRef}
+          onFocus={(e) => { if (e.target.matches(":focus-visible")) setEnginesFocusInside(true); }}
+          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setEnginesFocusInside(false); }}
+        >
+        {/* Tab Strip: the bar along the active tab's bottom edge is the timer; when it fills, the next tab opens */}
+        <div ref={engineStripRef} className="relative flex justify-start overflow-x-auto gap-2 px-1 pt-1 pb-2 scrollbar-none mb-8 [&>*:first-child]:ms-auto [&>*:last-child]:me-auto">
+          {engines.map((tab, i) => {
             const Icon = tab.icon;
+            const isActive = activeFeatureTab === i;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveFeatureTab(tab.id)}
-                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] cursor-pointer hover:-translate-y-0.5 ${
-                  activeFeatureTab === tab.id
+                key={tab.label}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => showEngine(i)}
+                className={`relative overflow-hidden flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] cursor-pointer hover:-translate-y-0.5 ${
+                  isActive
                     ? "bg-emerald-800 text-white shadow-md ring-2 ring-emerald-600 scale-105"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-emerald-300 hover:shadow-sm"
                 }`}
               >
-                <Icon className={`h-4 w-4 transition-transform duration-300 ${activeFeatureTab === tab.id ? "scale-125 rotate-6" : "group-hover:scale-110"}`} />
+                <Icon className={`h-4 w-4 transition-transform duration-300 ${isActive ? "scale-125 rotate-6" : "group-hover:scale-110"}`} />
                 <span>{tab.label}</span>
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="tn-progress absolute inset-x-0 bottom-0 h-[3px] bg-amber-400"
+                    style={{ animationDuration: `${ENGINE_STEP_MS}ms`, animationPlayState: enginesPlaying ? "running" : "paused" }}
+                    onAnimationEnd={nextEngine}
+                  />
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Tab Active Content Card */}
-        <div key={activeFeatureTab} className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-lg animate-fade-in-up">
-          {activeFeatureTab === 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 1: Conversational Checkout</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Say-It: Speech-to-Cart Voice Checkout
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  During peak evening hours, typing on a small counter phone is impossible. Simply speak naturally: <i>"2 chai, 1 ghee udhaar Asif"</i>. Tallyn's speech pipeline extracts the products, quantities, and debtor name into a structured cart payload ready for 1-tap confirmation.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={openSeededDemoShop}
-                    className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
-                  >
-                    Try in Demo Checkout
-                  </button>
+        {/* Tab Active Content Card: the video is mounted once here and never remounts, so it plays straight through tab changes */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-lg">
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-8 items-center">
+            <div className="grid">
+              {engines.map((tab, i) => (
+                <div key={tab.label} className={engineLayerClass(i)} {...engineHoverHandlers}>
+                  <span className="text-xs font-mono font-bold text-amber-600 uppercase">{tab.eyebrow}</span>
+                  <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">{tab.title}</h3>
+                  <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">{tab.body}</p>
+                  <div className="mt-6 flex gap-3">{tab.cta}</div>
                 </div>
-              </div>
-              <div className="bg-emerald-950 text-white p-6 rounded-2xl border border-emerald-800 shadow-inner soft-panel">
-                <div className="flex items-center gap-2 text-amber-300 font-mono text-xs mb-3">
-                  <Mic className="h-4 w-4" />
-                  <span>Speech Transcription Stream:</span>
-                </div>
-                <p className="text-base font-bold text-white italic">
-                  "2 Tapal Danedar tea, 1 Dalda oil, credit to Asif Bhai house 12"
-                </p>
-                <div className="mt-4 pt-3 border-t border-emerald-800/80 space-y-1.5 text-xs text-emerald-200">
-                  <p>✓ Extracted: 2x Tapal Danedar Tea (Rs. 1,300)</p>
-                  <p>✓ Extracted: 1x Dalda Cooking Oil 1L (Rs. 540)</p>
-                  <p>✓ Debtor Mapped: Asif Bhai (Current Debt: Rs. 3,400)</p>
-                </div>
-              </div>
+              ))}
             </div>
-          )}
 
-          {activeFeatureTab === 1 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div className="flex flex-col gap-4 min-w-0">
               <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 2: Multimodal Vision OCR</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Crumpled Supplier Paper Invoice Scanner
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Suppliers hand handwritten delivery slips that get lost. Point your smartphone camera at any wholesale bill; Gemini Vision OCR extracts item names, unit purchase prices, and batch counts, updating your inventory stock atomically.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={openSeededDemoShop}
-                    className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
-                  >
-                    Open Supplier Scanner
-                  </button>
+                <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-900">
+                    <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
+                    Watch Tallyn in action
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-slate-500">
+                    <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Unmute in the player
+                  </span>
                 </div>
-              </div>
-              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-inner soft-panel">
-                <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
-                  <span>Vision OCR Extraction Preview</span>
-                  <span className="text-emerald-400 font-bold">100% Parsed</span>
-                </div>
-                <div className="space-y-2 text-xs">
-                  <div className="bg-slate-800 p-2.5 rounded-xl flex justify-between">
-                    <span>Metro Wholesale: 50kg Sugar Bag</span>
-                    <span className="font-bold text-amber-300">Rs. 6,800</span>
-                  </div>
-                  <div className="bg-slate-800 p-2.5 rounded-xl flex justify-between">
-                    <span>Habib Oil Mills: 16L Carton</span>
-                    <span className="font-bold text-amber-300">Rs. 7,200</span>
+                <div className="rounded-2xl bg-emerald-900 p-1.5 shadow-xl shadow-emerald-900/30 ring-1 ring-emerald-950/20">
+                  <div className="relative w-full aspect-video overflow-hidden rounded-xl bg-black">
+                    <iframe
+                      className="absolute inset-0 h-full w-full"
+                      src={DEMO_VIDEO_SRC}
+                      title="Tallyn product demo video"
+                      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {activeFeatureTab === 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 3: Spoken Executive Audio</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Kiryana Radio (Morning Memo)
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Every morning at 8:00 AM, tap one button to hear a warm 3-sentence executive audio brief in natural voice: yesterday's cash vs credit revenue, who owes overdue debt, and which commodities need ordering before evening rush.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={() => setIsKiryanaRadioOpen(true)}
-                    className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                  >
-                    <Play className="h-4 w-4 fill-slate-950" />
-                    <span>Listen to Morning Memo</span>
-                  </button>
-                </div>
-              </div>
-              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 text-center shadow-inner soft-panel">
-                <Radio className="h-10 w-10 text-amber-400 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-amber-300">Spoken Memo Synthesizer</p>
-                <p className="text-xs text-slate-400 mt-1 italic">
-                  "Good morning Haji Aslam! Today's recorded store revenue is Rs 18,900..."
-                </p>
+              <div className="grid">
+                {engines.map((tab, i) => (
+                  <div key={tab.label} className={engineLayerClass(i)} {...engineHoverHandlers}>{tab.panel}</div>
+                ))}
               </div>
             </div>
-          )}
-
-          {activeFeatureTab === 3 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 4: Cultural Communication</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Culturally Respectful WhatsApp Udhaar Reminders
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Collecting debt in neighbourhood culture requires immense respect and tact. Tallyn generates respectful, warm reminder drafts and opens `wa.me` deep links directly on your phone with zero paid API costs.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={openSeededDemoShop}
-                    className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
-                  >
-                    View Udhaar Ledger
-                  </button>
-                </div>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-300 p-5 rounded-2xl text-xs text-emerald-950 text-start shadow-inner">
-                <p className="font-bold text-emerald-900 mb-2">WhatsApp reminder (exactly what Tallyn sends):</p>
-                <p className="whitespace-pre-line leading-relaxed">
-                  {buildUdhaarReminder({ customerName: "Asif Bhai", shopName: "Al-Madina Kiryana", balance: 3400, nextDueDate: addDays(toLocalYmd(), -7) })}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {activeFeatureTab === 4 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 5: Mahngai Watchdog</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Supplier Price-Rise Check
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  When you scan or enter a supplier bill, Tallyn compares each cost with what you paid last time. A rise above 5% is flagged before you save, with a selling price that keeps your margin.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={openSeededDemoShop}
-                    className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
-                  >
-                    Try It in Purchases
-                  </button>
-                </div>
-              </div>
-              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2 text-xs shadow-inner soft-panel">
-                <p className="text-slate-400">Example bill line vs your last buy price</p>
-                <div className="flex justify-between gap-3 border-b border-slate-800 pb-2">
-                  <span>Dalda Cooking Oil 1L · PKR 480 → 525</span>
-                  <span className="text-rose-400 font-bold whitespace-nowrap">Cost up {costChangePercent(525, 480)}%</span>
-                </div>
-                <p className="text-slate-300">Keep your margin: sell at about PKR {marginKeepingPrice(525, 480, 540)} (now PKR 540).</p>
-                <div className="flex justify-between gap-3 border-t border-slate-800 pt-2">
-                  <span>Tapal Danedar Tea 450g · PKR 570 → 585</span>
-                  <span className="text-emerald-400 font-bold whitespace-nowrap">+{costChangePercent(585, 570)}%, normal</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeFeatureTab === 5 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 6: Cultural Calendar</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Ramadan Stock Planner
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Counts down to Ramadan and shows how many days of stock you have left for staples like sugar, oil, besan, Rooh Afza and dates, so you can buy in bulk before wholesale prices rise.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={openSeededDemoShop}
-                    className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
-                  >
-                    View Ramadan Planner
-                  </button>
-                </div>
-              </div>
-              <div className="bg-amber-950/80 border border-amber-500/40 text-amber-100 p-5 rounded-2xl text-xs shadow-inner">
-                <p className="font-bold text-amber-300">Ramadan countdown</p>
-                <p className="mt-1 leading-relaxed">
-                  {ramadan
-                    ? `Expected around ${formatFriendlyDate(ramadan.start)}, in ${ramadan.daysUntil} days (±1 day, moon sighting). Plan bulk buying 2–3 weeks before.`
-                    : "No upcoming Ramadan date on file."}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {activeFeatureTab === 6 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-600 uppercase">Engine 7: Multi-Branch Infrastructure</span>
-                <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">
-                  Multi-Store Chain Management Hub
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Expand from one neighbourhood counter to a city-wide chain seamlessly. Manage multiple store branches under a single merchant account with one-tap store switching, synchronized customer debt ledgers, inter-branch stock transfers, and consolidated chain P&L reports.
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={openSeededDemoShop}
-                    className="rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors"
-                  >
-                    Explore Multi-Store Switching
-                  </button>
-                </div>
-              </div>
-              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-3 text-xs shadow-inner soft-panel">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-emerald-400" />
-                    <span className="font-bold">Branch #1: Al-Madina Main Bazar</span>
-                  </div>
-                  <span className="text-emerald-400 font-mono">Rs. 42,800 Today</span>
-                </div>
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-sky-400" />
-                    <span className="font-bold">Branch #2: Madina Super G-9 Markaz</span>
-                  </div>
-                  <span className="text-sky-400 font-mono">Rs. 68,150 Today</span>
-                </div>
-                <div className="pt-1 flex items-center justify-between text-slate-400 text-xs">
-                  <span>Consolidated Chain Revenue</span>
-                  <span className="text-amber-300 font-bold font-mono">Rs. 110,950</span>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
+        </div>
         </div>
       </section>
       </AnimatedSection>
