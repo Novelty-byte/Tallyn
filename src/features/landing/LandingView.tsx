@@ -25,6 +25,7 @@ import {
   TrendingUp,
   MessageSquare,
   Play,
+  Pause,
   Volume2,
   Camera,
   Coins,
@@ -43,6 +44,9 @@ const DEMO_VIDEO_ID = "HEaf0UN1LxA";
 const DEMO_VIDEO_SRC = `https://www.youtube-nocookie.com/embed/${DEMO_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${DEMO_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1`;
 // How long each engine tab stays up before auto-advancing.
 const ENGINE_STEP_MS = 6000;
+// "Phone" = narrower than Tailwind's md breakpoint (768px), the same width at
+// which the engines card switches to its stacked one-column layout.
+const PHONE_MEDIA_QUERY = "(max-width: 767px)";
 
 interface EngineTab {
   label: string;
@@ -80,9 +84,22 @@ export const LandingView: React.FC = () => {
   const [enginesHovering, setEnginesHovering] = useState(false);
   const [enginesFocusInside, setEnginesFocusInside] = useState(false);
   const [enginesInView, setEnginesInView] = useState(false);
+  // Phones (below the md breakpoint, 768px) have no hover, so they get a
+  // Pause/Play button instead. The manual pause only counts on phone widths, so
+  // a pause set on a phone-sized window never sticks after resizing to desktop.
+  const [isPhoneWidth, setIsPhoneWidth] = useState(() => window.matchMedia(PHONE_MEDIA_QUERY).matches);
+  const [enginesUserPaused, setEnginesUserPaused] = useState(false);
   const enginesRef = useRef<HTMLDivElement>(null);
   const engineStripRef = useRef<HTMLDivElement>(null);
-  const enginesPlaying = enginesInView && !enginesHovering && !enginesFocusInside;
+  const enginesPlaying =
+    enginesInView && !enginesHovering && !enginesFocusInside && !(isPhoneWidth && enginesUserPaused);
+
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_MEDIA_QUERY);
+    const onChange = () => setIsPhoneWidth(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     const el = enginesRef.current;
@@ -201,7 +218,7 @@ export const LandingView: React.FC = () => {
 
   const phoneSubtotal = phoneCart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  const primaryCtaClass = "rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors";
+  const primaryCtaClass = "min-h-[44px] rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-2.5 text-xs font-bold transition-colors";
   const engines: EngineTab[] = [
     {
       label: "Say-It Voice Checkout",
@@ -262,7 +279,7 @@ export const LandingView: React.FC = () => {
       cta: (
         <button
           onClick={() => setIsKiryanaRadioOpen(true)}
-          className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-colors"
+          className="min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-colors"
         >
           <Play className="h-4 w-4 fill-slate-950" />
           <span>Listen to Morning Memo</span>
@@ -381,7 +398,7 @@ export const LandingView: React.FC = () => {
   // keeps a steady height and tabs cross-fade instead of remounting.
   // `self-start` keeps each layer's hover area to its own content.
   const engineLayerClass = (i: number) =>
-    `[grid-area:1/1] self-start transition-[opacity,transform,visibility] duration-500 ease-out ${
+    `[grid-area:1/1] self-start transition-[opacity,translate,visibility] duration-500 ease-out ${
       activeFeatureTab === i ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-2 invisible pointer-events-none"
     }`;
 
@@ -683,11 +700,16 @@ export const LandingView: React.FC = () => {
 
         <div
           ref={enginesRef}
-          onFocus={(e) => { if (e.target.matches(":focus-visible")) setEnginesFocusInside(true); }}
+          onFocus={(e) => {
+            // Older Safari/Android WebViews throw on :focus-visible; there, any focus pauses.
+            let keyboardFocus = true;
+            try { keyboardFocus = e.target.matches(":focus-visible"); } catch { /* unsupported selector */ }
+            if (keyboardFocus) setEnginesFocusInside(true);
+          }}
           onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setEnginesFocusInside(false); }}
         >
         {/* Tab Strip: the bar along the active tab's bottom edge is the timer; when it fills, the next tab opens */}
-        <div ref={engineStripRef} className="relative flex justify-start overflow-x-auto gap-2 px-1 pt-1 pb-2 scrollbar-none mb-8 [&>*:first-child]:ms-auto [&>*:last-child]:me-auto">
+        <div ref={engineStripRef} className="relative flex justify-start overflow-x-auto gap-2 px-1 pt-1 pb-2 scrollbar-none mb-8 [&>*:first-child]:ms-auto [&>*:last-child]:me-auto md:flex-wrap md:justify-center md:overflow-visible md:[&>*:first-child]:ms-0 md:[&>*:last-child]:me-0">
           {engines.map((tab, i) => {
             const Icon = tab.icon;
             const isActive = activeFeatureTab === i;
@@ -697,13 +719,13 @@ export const LandingView: React.FC = () => {
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => showEngine(i)}
-                className={`relative overflow-hidden flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] cursor-pointer hover:-translate-y-0.5 ${
+                className={`relative overflow-hidden shrink-0 flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] cursor-pointer hover:-translate-y-0.5 ${
                   isActive
                     ? "bg-emerald-800 text-white shadow-md ring-2 ring-emerald-600 scale-105"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-emerald-300 hover:shadow-sm"
                 }`}
               >
-                <Icon className={`h-4 w-4 transition-transform duration-300 ${isActive ? "scale-125 rotate-6" : "group-hover:scale-110"}`} />
+                <Icon className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isActive ? "scale-125 rotate-6" : "group-hover:scale-110"}`} />
                 <span>{tab.label}</span>
                 {isActive && (
                   <span
@@ -717,6 +739,21 @@ export const LandingView: React.FC = () => {
             );
           })}
         </div>
+
+        {/* Phones only: no hover there, so the shopkeeper can stop the auto-advance to read */}
+        {isPhoneWidth && (
+          <div className="-mt-5 mb-4 flex justify-end">
+            <button
+              type="button"
+              aria-pressed={enginesUserPaused}
+              onClick={() => setEnginesUserPaused((p) => !p)}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {enginesUserPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              {enginesUserPaused ? "Play" : "Pause"}
+            </button>
+          </div>
+        )}
 
         {/* Tab Active Content Card: the video is mounted once here and never remounts, so it plays straight through tab changes */}
         <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-lg">

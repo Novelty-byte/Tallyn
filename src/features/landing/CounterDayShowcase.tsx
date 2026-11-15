@@ -16,7 +16,7 @@ import { formatCurrency } from "@/lib/utils";
 /**
  * "A day at the counter" — an animated walkthrough of five real Tallyn moments.
  * Every figure is computed live from the demo shop by the same engine the app uses
- * (no invented numbers). Auto-advances; pauses on hover/focus or with the Pause button;
+ * (no invented numbers). Auto-advances; stops only with the Pause button;
  * stays still under prefers-reduced-motion.
  */
 
@@ -263,8 +263,6 @@ export const CounterDayShowcase: React.FC<{ onTryDemo: () => void }> = ({ onTryD
   const story = useDemoStory();
   const [active, setActive] = useState(0);
   const [userPaused, setUserPaused] = useState(false);
-  const [hovering, setHovering] = useState(false);
-  const [focusInside, setFocusInside] = useState(false);
   const [inView, setInView] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const stripRef = useRef<HTMLOListElement>(null);
@@ -288,7 +286,8 @@ export const CounterDayShowcase: React.FC<{ onTryDemo: () => void }> = ({ onTryD
     return () => io.disconnect();
   }, []);
 
-  const playing = inView && !userPaused && !hovering && !focusInside;
+  // Stops only via the Pause button (and while the section is off screen).
+  const playing = inView && !userPaused;
   const next = () => setActive((a) => (a + 1) % MOMENTS.length);
   const vignettes = [Briefing, ScanSell, Udhaar, Bill, Review];
   const Vignette = vignettes[active];
@@ -298,10 +297,6 @@ export const CounterDayShowcase: React.FC<{ onTryDemo: () => void }> = ({ onTryD
       ref={ref}
       aria-labelledby="counter-day-title"
       className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      onFocus={() => setFocusInside(true)}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusInside(false); }}
     >
       <div className="mx-auto mb-10 max-w-3xl text-center">
         <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
