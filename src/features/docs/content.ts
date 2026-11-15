@@ -150,6 +150,7 @@ export const DOC_PAGES: DocPage[] = [
         title: "Voice orders",
         blocks: [
           { t: "p", text: "Tap **Speak order** and say the order, for example *\"do chai, ek oil, udhaar Asif\"*. Choose Urdu or English first. Tallyn shows what it understood in a confirmation sheet; nothing is added until you tap **Add to cart**." },
+          { t: "p", text: "Gemini matches what you said to your own products, so brand names and misheard words still work (*\"roof afza\"* → Rooh Afza, *\"lifeboy\"* → Lifebuoy). The sheet shows a quick on-device match straight away and updates when Gemini answers, usually within a few seconds. If you've already changed a line, tap **Use Gemini's match** to take its version. Prices always come from your catalogue, and without internet the on-device match is used." },
           { t: "p", text: "Voice needs Chrome or Edge. In other browsers, tap **Type it** and type the same sentence — it is read the same way." },
         ],
       },
@@ -412,7 +413,10 @@ export const DOC_PAGES: DocPage[] = [
       {
         id: "kiryana-radio",
         title: "Kiryana Radio",
-        blocks: [{ t: "p", text: "Tap the radio button in the navbar to hear a spoken briefing of today's figures and urgent items, using your browser's built-in voice." }],
+        blocks: [
+          { t: "p", text: "Tap **Briefing** in the navbar to hear today's sales, low stock and udhaar read aloud, followed by one practical tip written by Tallyn AI. A transcript highlights each line as it's read." },
+          { t: "p", text: "Choose **English** or **Urdu** (easy Urdu with everyday English words). Urdu is read by an Urdu voice if your device has one, otherwise by a Hindi voice, which sounds the same for spoken Urdu. The numbers are always read from your store data; only the tip comes from the AI, and the briefing still plays if the AI is unavailable." },
+        ],
       },
       {
         id: "multiple-shops",
@@ -448,8 +452,11 @@ export const DOC_PAGES: DocPage[] = [
             "\"Kis customer ka udhaar sab se zyada hai aur kitne din late hai?\"",
             "\"Which items are running low?\"",
             "\"How do I record a payment?\"",
+            "\"Ramadan is coming. What else should I stock?\"",
+            "\"How can I get customers to pay udhaar on time without losing them?\"",
           ] },
-          { t: "p", text: "Open it from the **Tallyn AI** button in the navbar when you're inside a shop or the demo." },
+          { t: "p", text: "Besides your own numbers, it gives general business advice: seasonal and festival demand, new products worth adding, pricing, suppliers, marketing and growth. It politely declines requests unrelated to business, such as poems, homework or coding." },
+          { t: "p", text: "Open it from the **Ask** button in the navbar when you're inside a shop or the demo." },
         ],
       },
       {
@@ -467,7 +474,7 @@ export const DOC_PAGES: DocPage[] = [
             { title: "Server check", text: "The snapshot is validated and cleaned on the server." },
             { title: "AI explains", text: "The model may only quote those numbers and must not calculate new ones." },
           ] },
-          { t: "p", text: "If you ask for a number that isn't in the snapshot — for example a profit forecast — Tallyn AI says so and points you to the right screen instead of inventing one." },
+          { t: "p", text: "If you ask for a figure about your shop that isn't in the snapshot — for example a profit forecast — Tallyn AI says so and points you to the right screen instead of inventing one. Festival dates such as Ramadan and Eid, and how many days away they are, are worked out by the server, not guessed by the AI." },
         ],
       },
       {
@@ -684,14 +691,14 @@ export const DOC_PAGES: DocPage[] = [
         title: "Edge Functions and secrets",
         blocks: [
           { t: "steps", items: [
-            "Deploy `supabase/functions/bill-scan` (`index.ts`, `extract.ts`) and `supabase/functions/ai-gateway` (`index.ts`, `schema.ts`, `chat.ts`).",
+            "Deploy `supabase/functions/bill-scan` (`index.ts`, `extract.ts`) and `supabase/functions/ai-gateway` (`index.ts`, `schema.ts`, `chat.ts`, `seasons.ts`, `order.ts`).",
             "Turn **Verify JWT off** for both — they check callers themselves so demo visitors can use them within limits.",
             "Set the secrets below.",
           ] },
           { t: "table", head: ["Secret", "Required", "Notes"], rows: [
-            ["`GEMINI_API_KEY`", "Yes", "Google AI Studio key → Gemini directly; any other key → OpenAI-compatible endpoint"],
-            ["`GEMINI_MODEL`", "No", "Default `gemini-3.7-flash`; e.g. `gemini-3.5-flash-lite` on electronhub's free tier"],
-            ["`AI_BASE_URL`", "No", "OpenAI-compatible base URL (default electronhub)"],
+            ["`GEMINI_API_KEY`", "Yes", "Gemini key from Google AI Studio. Keys starting `AIza` call Gemini's native API; other keys go to `AI_BASE_URL`"],
+            ["`GEMINI_MODEL`", "No", "e.g. `models/gemini-3.5-flash` (default `gemini-3.5-flash`)"],
+            ["`AI_BASE_URL`", "No", "OpenAI-compatible base URL (default Google's: `https://generativelanguage.googleapis.com/v1beta/openai/`)"],
             ["`AI_TIMEOUT_MS`", "No", "Default 100000"],
           ] },
         ],

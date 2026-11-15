@@ -17,9 +17,10 @@
  *     demo visitor (no session): DEMO_IP_DAILY_LIMIT per IP / 24h and
  *     DEMO_GLOBAL_DAILY_LIMIT across all demo visitors / 24h.
  *
- * Secrets: GEMINI_API_KEY (required). A Google AI Studio key ("AIza…") calls Gemini directly;
- * any other key is sent to the OpenAI-compatible endpoint AI_BASE_URL (default electronhub).
- * GEMINI_MODEL (optional, default gemini-3.7-flash), AI_BASE_URL (optional), SUPABASE_URL,
+ * Secrets: GEMINI_API_KEY (required). A key starting "AIza" calls Gemini's native API; any
+ * other key is sent to the OpenAI-compatible endpoint AI_BASE_URL (default Google's
+ * https://generativelanguage.googleapis.com/v1beta/openai/). GEMINI_MODEL (optional, default
+ * gemini-3.5-flash; "models/gemini-3.5-flash" also works), AI_BASE_URL, SUPABASE_URL,
  * SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (auto-injected by Supabase).
  * Deploy with "Verify JWT" OFF — this function authenticates callers itself so demo
  * visitors (who only hold the publishable key) can be served under the demo limits.

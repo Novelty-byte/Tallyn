@@ -334,11 +334,11 @@ export const Navbar: React.FC = () => {
             <button
               onClick={() => setIsKiryanaRadioOpen(true)}
               className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs min-h-[44px] min-w-[44px]"
-              title="Kiryana Radio: spoken briefing"
-              aria-label={t("nav.kiryanaRadio")}
+              title="Kiryana Radio: listen to today's spoken shop briefing"
+              aria-label={`${t("nav.kiryanaRadio")}: ${t("nav.radioWord")}`}
             >
-              <Radio className="h-3.5 w-3.5 shrink-0 text-amber-700" />
-              <span className="hidden 2xl:inline">{t("nav.kiryanaRadio")}</span>
+              <Radio className="h-3.5 w-3.5 shrink-0 text-amber-700" aria-hidden="true" />
+              <span>{t("nav.radioWord")}</span>
             </button>
           )}
 
@@ -347,11 +347,11 @@ export const Navbar: React.FC = () => {
             <button
               onClick={() => setIsAskTallynOpen(true)}
               className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition-colors shadow-2xs min-h-[44px] min-w-[44px]"
-              title="Tallyn AI store assistant"
-              aria-label={t("nav.askTallyn")}
+              title="Tallyn AI: ask questions about your shop and business"
+              aria-label={`${t("nav.askTallyn")}: ${t("nav.aiWord")}`}
             >
-              <MessageSquareCode className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
-              <span className="hidden 2xl:inline">{t("nav.askTallyn")}</span>
+              <MessageSquareCode className="h-3.5 w-3.5 shrink-0 text-emerald-700" aria-hidden="true" />
+              <span>{t("nav.aiWord")}</span>
             </button>
           )}
 

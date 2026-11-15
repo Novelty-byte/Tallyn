@@ -6,7 +6,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 
 /** Model call timeout; override with AI_TIMEOUT_MS (Supabase allows ~150 s per request). */
 export const GEMINI_TIMEOUT_MS = Number(Deno.env.get("AI_TIMEOUT_MS")) || 100_000;
-export const DEFAULT_MODEL = "gemini-3.7-flash";
+export const DEFAULT_MODEL = "gemini-3.5-flash";
 
 /* ------------------------------ contracts ------------------------------ */
 
@@ -98,7 +98,7 @@ export async function callGemini(apiKey: string, model: string, mimeType: string
   const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.replace(/^models\//, ""))}:generateContent`,
       {
         method: "POST",
         signal: controller.signal,
@@ -129,9 +129,9 @@ const JSON_SHAPE_HINT = `JSON shape (use null for anything not written on the bi
 {"readable": true, "supplier": "string|null", "invoiceNumber": "string|null", "billDate": "YYYY-MM-DD|null", "billTotal": number|null,
  "lines": [{"name": "string", "nameEnglish": "string|null", "quantity": number|null, "unit": "string|null", "unitPrice": number|null, "lineTotal": number|null}]}`;
 
-export const DEFAULT_OPENAI_BASE_URL = "https://api.electronhub.ai/v1";
+export const DEFAULT_OPENAI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 
-/** Same extraction through an OpenAI-compatible /chat/completions endpoint (e.g. a Gemini proxy). */
+/** Same extraction through an OpenAI-compatible /chat/completions endpoint (default: Google's, for Gemini). */
 export async function callOpenAICompatible(
   apiKey: string, baseUrl: string, model: string, mimeType: string, data: string,
 ): Promise<string> {
@@ -173,8 +173,8 @@ export async function callOpenAICompatible(
 }
 
 /**
- * Route to Google directly for an AI Studio key ("AIza…"), otherwise to the
- * OpenAI-compatible endpoint (AI_BASE_URL, default electronhub).
+ * A key starting "AIza" calls Gemini's native API; any other key goes to the
+ * OpenAI-compatible endpoint AI_BASE_URL (default: Google's OpenAI-compatible Gemini endpoint).
  */
 export function extractBillText(opts: {
   apiKey: string; model: string; mimeType: string; data: string; baseUrl?: string;

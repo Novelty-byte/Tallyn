@@ -28,9 +28,9 @@ POST /functions/v1/bill-scan
 
 | Secret | Required | Notes |
 |---|---|---|
-| `GEMINI_API_KEY` | yes | Google AI Studio key (`AIza…`) → calls Gemini directly. Any other key → OpenAI-compatible endpoint below. |
-| `AI_BASE_URL` | no | OpenAI-compatible base URL for non-Google keys. Default `https://api.electronhub.ai/v1`. |
-| `GEMINI_MODEL` | no | Default `gemini-3.7-flash`. On electronhub's free tier use `gemini-3.5-flash-lite` (3.5/3.7-flash return 402 "Premium model requires a subscription"). |
+| `GEMINI_API_KEY` | yes | Gemini key from Google AI Studio. A key starting `AIza` calls Gemini's native API; any other key goes to `AI_BASE_URL`. |
+| `AI_BASE_URL` | no | OpenAI-compatible base URL. Default `https://generativelanguage.googleapis.com/v1beta/openai/` (Google's own). |
+| `GEMINI_MODEL` | no | e.g. `models/gemini-3.5-flash`. Default `gemini-3.5-flash`. |
 | `AI_TIMEOUT_MS` | no | Default 100000. Free tiers can queue; Supabase allows ~150 s per request. |
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
@@ -51,7 +51,14 @@ POST /functions/v1/bill-scan
 
 ## Verified
 
-`gemini-3.5-flash-lite` via electronhub read a 5-line printed test bill in ~10 s:
+`free/gemini-3.8-flash` via apinex.bond (2026-11-15) read the same 3-line printed test bill in ~4 s,
+every field exact.
+
+`models/gemini-3.5-flash` via Google's OpenAI-compatible endpoint (2026-11-15) read a 3-line
+printed test bill in ~5 s: supplier, invoice no., date (14-11-2026 → 2026-11-14), every
+quantity, rate, amount and the total exact.
+
+Earlier, `gemini-3.5-flash-lite` via electronhub read a 5-line printed test bill in ~10 s:
 supplier, invoice no., date (12/11/2026 → 2026-11-12), all quantities/rates/amounts
 exact, "Cheeni" → "Sugar 1kg", injection line ignored, a wrong printed amount kept
 as printed (and then flagged by the app).

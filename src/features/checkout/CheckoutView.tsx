@@ -7,6 +7,8 @@ import { audio } from "@/lib/audio";
 import { BarcodeScannerModal, type AddToCartResult } from "@/features/checkout/BarcodeScannerModal";
 import { createKeyboardWedgeDetector, findProductByBarcode } from "@/domain/barcode";
 import { VoiceConfirmSheet, type ConfirmedVoiceOrder } from "@/features/checkout/VoiceConfirmSheet";
+import { readVoiceOrderWithAi } from "@/services/voiceOrderAi";
+import { supabase } from "@/services/supabaseClient";
 import { useToast } from "@/components/fx/Toast";
 import { ConfettiBurst } from "@/components/animations/ConfettiBurst";
 import { 
@@ -37,7 +39,8 @@ export const CheckoutView: React.FC = () => {
     undoSeconds,
     addCustomer,
     isBarcodeScannerOpen,
-    setIsBarcodeScannerOpen
+    setIsBarcodeScannerOpen,
+    isDemoMode,
   } = useApp();
 
   const [cart, setCart] = useState<{ [productId: string]: number }>({});
@@ -60,7 +63,14 @@ export const CheckoutView: React.FC = () => {
     try { return window.localStorage.getItem("tallyn.voiceLang") === "en" ? "en" : "ur"; } catch { return "ur"; }
   });
   // When set, the confirm sheet is open. Empty transcript = "type it" mode.
-  const [voiceSheet, setVoiceSheet] = useState<{ transcript: string } | null>(null);
+  const [voiceSheet, setVoiceSheet] = useState<{ transcript: string; alternatives?: string[] } | null>(null);
+
+  // Gemini reads the spoken order against this shop's catalogue (services/voiceOrderAi).
+  // The confirm sheet shows the offline match first and falls back to it if this fails.
+  const readOrderWithAi = async (transcript: string, alternatives: string[], signal: AbortSignal) => {
+    const accessToken = isDemoMode ? null : (await supabase.auth.getSession()).data.session?.access_token ?? null;
+    return readVoiceOrderWithAi({ transcript, alternatives, products, customers, accessToken, signal });
+  };
   const chooseVoiceLang = (l: "ur" | "en") => {
     setVoiceLang(l);
     try { window.localStorage.setItem("tallyn.voiceLang", l); } catch { /* ignore */ }
@@ -265,12 +275,14 @@ export const CheckoutView: React.FC = () => {
     recognition.lang = voiceLang === "ur" ? "ur-PK" : "en-PK";
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3; // extra hypotheses help Gemini fix misheard words
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[0][0].transcript;
+      const result = event.results[0];
+      const transcript = result[0].transcript;
+      const alternatives = Array.from({ length: result.length }, (_, i) => result[i].transcript).slice(1);
       setVoiceNotice(null);
-      setVoiceSheet({ transcript });
+      setVoiceSheet({ transcript, alternatives });
       setIsSpeakingVoice(false);
     };
 
@@ -330,6 +342,8 @@ export const CheckoutView: React.FC = () => {
       <VoiceConfirmSheet
         open={voiceSheet !== null}
         transcript={voiceSheet?.transcript ?? ""}
+        alternatives={voiceSheet?.alternatives}
+        aiRead={readOrderWithAi}
         products={products}
         customers={customers}
         onConfirm={applyVoiceOrder}

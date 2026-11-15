@@ -47,7 +47,7 @@ Tallyn is built for a shopkeeper standing behind a counter with one hand free �
 
 | Rule | In practice |
 |---|---|
-| 🔢 **Zero hallucinated numbers** | Every amount, balance, profit and "days left" is computed by tested code. The AI only reads bills and explains figures it is given. |
+| 🔢 **Zero hallucinated numbers** | Every amount, balance, profit and "days left" is computed by tested code. The AI reads bills, matches spoken orders to your products and explains figures it is given — it never calculates them. |
 | ⚛️ **Atomic changes** | Sales, purchases and payments are single database transactions with row locks. |
 | 🔒 **Your shop only** | Postgres row-level security plus ownership checks in every stored procedure. |
 | 👆 **Counter first** | 44 px+ tap targets, high contrast, aligned money columns, minimal taps. |
@@ -62,7 +62,7 @@ Tallyn is built for a shopkeeper standing behind a counter with one hand free �
 <td width="50%" valign="top">
 
 ### 🛒 Checkout
-Tap products, **scan barcodes with the phone camera** (native `BarcodeDetector`, ZXing fallback), use a **USB/Bluetooth scanner**, or **speak the order** in Urdu or English. Cash or udhaar with a pay-back date; a 10-second undo.
+Tap products, **scan barcodes with the phone camera** (native `BarcodeDetector`, ZXing fallback), use a **USB/Bluetooth scanner**, or **speak the order** in Urdu or English. **Gemini maps what you said onto your own catalogue**, so misheard words like "roof afza" or "lifeboy" still land on the right product; prices always come from the catalogue and you confirm before anything reaches the cart. If the AI is offline, an on-device matcher answers instead. Cash or udhaar with a pay-back date; a 10-second undo.
 
 </td>
 <td width="50%">
@@ -98,7 +98,10 @@ Alerts (sales drop vs the same weekday, bill spikes, dead stock and the money ti
 Photograph a bill or parchi → **Gemini Vision** copies the lines → code matches them to your stock, derives unit costs and flags **cost rises over 5%** with a margin-keeping price → you review and save. Nothing is written until you tap Save.
 
 ### 🤖 Tallyn AI
-Ask in **English, Roman Urdu or Urdu**. Answers come from a server-side model that may only quote figures the app computed — it declines to invent a number.
+Ask in **English, Roman Urdu or Urdu** about your shop, how to use Tallyn, or running the business: what to stock before Ramadan or Eid, pricing, suppliers, collecting udhaar. Figures about your shop are only quoted as the app computed them, and festival dates come from a calendar in code. Requests unrelated to business are politely declined.
+
+### 📻 Kiryana Radio
+A spoken daily briefing in **English or easy Urdu**, with a highlighted transcript and one AI tip of the day. The numbers are read from your store data, not the AI.
 
 </td>
 <td width="50%">
@@ -124,6 +127,8 @@ flowchart LR
     C -->|snapshot| G["ai-gateway<br/>validates & clamps"]
     G --> M{{"AI model"}}
     M -->|"explains only<br/>(may not compute)"| A["Tallyn AI answer"]
+    O["Spoken order"] -->|"catalogue as codes P1…Pn"| G
+    M -->|"product codes + spoken counts"| K["Voice confirm sheet<br/>prices from catalogue"]
     P["Bill photo"] --> S["bill-scan<br/>copy numbers as written"]
     S -->|"Zod-checked lines"| B["billMatching.ts<br/>match · unit cost · price-rise"]
     B --> V["Review sheet → record_purchase"]
@@ -146,7 +151,7 @@ flowchart TB
     subgraph Browser["Browser — React 19 + Vite"]
         F["features/<br/>checkout · udhaar · insights · purchases · docs"]
         D["domain/<br/>pure, unit-tested business logic"]
-        SV["services/<br/>db · tallynAi · billScan · barcodeCamera"]
+        SV["services/<br/>db · tallynAi · voiceOrderAi · billScan · barcodeCamera"]
         F --> D
         F --> SV
     end
@@ -156,9 +161,9 @@ flowchart TB
         BS["Edge Function<br/>bill-scan"]
     end
     SV -->|"record_sale · record_purchase<br/>record_credit_payment"| PG
-    SV -->|question + snapshot| AG
+    SV -->|"question + snapshot<br/>spoken order + catalogue"| AG
     SV -->|compressed photo| BS
-    AG --> LLM{{"Gemini<br/>(direct or OpenAI-compatible)"}}
+    AG --> LLM{{"Gemini 3.8 Flash<br/>(OpenAI-compatible endpoint)"}}
     BS --> LLM
 ```
 
@@ -241,9 +246,9 @@ Open the homepage and click **Launch Live Demo** — a three-branch shop with **
 
    | Secret | Required | Notes |
    |---|---|---|
-   | `GEMINI_API_KEY` | ✅ | Google AI Studio key → Gemini directly; any other key → OpenAI-compatible endpoint |
-   | `GEMINI_MODEL` | | default `gemini-3.7-flash` (e.g. `gemini-3.5-flash-lite` on a free tier) |
-   | `AI_BASE_URL` | | OpenAI-compatible base URL |
+   | `GEMINI_API_KEY` | ✅ | Key for an OpenAI-compatible Gemini endpoint (we use apinex.bond). Keys starting `AIza` call Google's native Gemini API instead |
+   | `GEMINI_MODEL` | | e.g. `free/gemini-3.8-flash` on apinex.bond, or `models/gemini-3.5-flash` on Google |
+   | `AI_BASE_URL` | | e.g. `https://api.apinex.bond/v1`; default `https://generativelanguage.googleapis.com/v1beta/openai/` (Google) |
    | `AI_TIMEOUT_MS` | | default `100000` |
 
 4. **Frontend** — `npm run build` and deploy `dist/` (Vercel config included).
@@ -291,12 +296,12 @@ tallyn/
 ## 🧪 Testing
 
 ```bash
-npm test                                                       # 117 Vitest tests
+npm test                                                       # 125 Vitest tests
 npm run build                                                  # strict type-check + production build
-deno test --allow-env supabase/functions/ai-gateway/chat_test.ts
+deno test --allow-env supabase/functions/ai-gateway/          # prompts, seasons, voice-order checks
 ```
 
-Covered: profit and period maths, date maths across months and leap years, oldest-first udhaar payments, the reorder planner, every insight rule (including firing on the generated demo history), barcode lookup and scanner detection, ZXing EAN-13 decoding, bill-line matching against a **real model answer**, WhatsApp message text, safe chat rendering, and docs link integrity.
+Covered: profit and period maths, date maths across months and leap years, oldest-first udhaar payments, the reorder planner, every insight rule (including firing on the generated demo history), barcode lookup and scanner detection, ZXing EAN-13 decoding, bill-line matching against a **real model answer**, voice-order validation (unknown products rejected, quantities clamped), the Kiryana Radio script in every language, WhatsApp message text, safe chat rendering, and docs link integrity.
 
 ---
 

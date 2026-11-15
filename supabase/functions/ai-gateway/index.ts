@@ -1,7 +1,11 @@
 /**
  * Tallyn AI Gateway (Supabase Edge Function, Deno)
  *
- * POST { question, history[], snapshot }  →  200 { answer }
+ * POST { question, history[], snapshot }                 →  200 { answer }
+ * POST { ..., mode: "radio", radio: { language, script } } →  200 { answer, spoken }
+ *   (one Kiryana Radio tip; `spoken` is the same tip in the listener voice's script, or null)
+ * POST { mode: "order", transcript, alternatives[], catalog[], customers[] } → 200 { order }
+ *   (voice checkout: maps what the cashier said onto catalogue ids; see order.ts)
  *
  * - The AI key lives only here (GEMINI_API_KEY secret). The browser never sees it.
  * - `snapshot` is computed by the app in tested code (src/domain/storeSnapshot.ts) and is
@@ -9,22 +13,32 @@
  *   numbers and never calculate new ones (Rule 1).
  * - Names inside the snapshot are untrusted text, sanitised and fenced as data.
  * - Read-only: this function never writes to the shop's books.
- * - Abuse control (table ai_chat_usage, migration 007), per rolling 24 h:
- *     signed-in user: USER_DAILY_LIMIT questions
- *     demo visitor:   DEMO_IP_DAILY_LIMIT per IP, DEMO_GLOBAL_DAILY_LIMIT in total
+ * - Abuse control (table ai_chat_usage, migration 007), per rolling 24 h. Voice orders
+ *   are counted separately (status "order_…") so a busy counter can't use up the chat quota:
+ *     questions: USER_DAILY_LIMIT per user; demo DEMO_IP_DAILY_LIMIT per IP, DEMO_GLOBAL_DAILY_LIMIT total
+ *     orders:    ORDER_USER_DAILY_LIMIT per user; demo ORDER_DEMO_IP_DAILY_LIMIT per IP, ORDER_DEMO_GLOBAL_DAILY_LIMIT total
  *
- * Secrets (shared with bill-scan): GEMINI_API_KEY, GEMINI_MODEL, optional AI_BASE_URL /
- * AI_TIMEOUT_MS. SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are injected.
+ * Secrets (shared with bill-scan): GEMINI_API_KEY, GEMINI_MODEL, AI_BASE_URL (for keys that
+ * don't start with "AIza"; default Google's OpenAI-compatible endpoint), optional AI_TIMEOUT_MS. SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are injected.
  * Deploy with "Verify JWT" OFF — callers are authenticated here so demo visitors can ask.
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { AskRequestSchema, AnswerSchema } from "./schema.ts";
-import { askModel, DEFAULT_MODEL } from "./chat.ts";
+import { askModel, callModel, DEFAULT_MODEL, parseRadioTip } from "./chat.ts";
+import { buildOrderPrompt, buildOrderUserTurn, OrderRequestSchema, resolveOrder } from "./order.ts";
+
+// deno-lint-ignore no-explicit-any
+type UsageQuery = any; // supabase-js filter builder; its generics don't survive a helper signature
 
 const USER_DAILY_LIMIT = 150;
 const DEMO_IP_DAILY_LIMIT = 30;
 const DEMO_GLOBAL_DAILY_LIMIT = 1500;
+const ORDER_USER_DAILY_LIMIT = 600;
+const ORDER_DEMO_IP_DAILY_LIMIT = 60;
+const ORDER_DEMO_GLOBAL_DAILY_LIMIT = 2000;
+/** A voice order must come back fast; the app falls back to its offline matcher after this. */
+const ORDER_TIMEOUT_MS = 40_000;
 const MAX_BODY_BYTES = 200_000;
 
 const CORS = {
@@ -79,53 +93,89 @@ serve(async (req: Request) => {
   } catch {
     return json(400, { error: "Invalid JSON body" });
   }
-  const parsed = AskRequestSchema.safeParse(body);
+  const isOrder = (body as { mode?: unknown } | null)?.mode === "order";
+  const parsed = isOrder ? OrderRequestSchema.safeParse(body) : AskRequestSchema.safeParse(body);
   if (!parsed.success) {
     return json(400, {
       error: "Request rejected by the Tallyn AI contract.",
       details: parsed.error.issues.slice(0, 5).map((i) => `${i.path.join(".")}: ${i.message}`),
     });
   }
+  const limits = isOrder
+    ? { user: ORDER_USER_DAILY_LIMIT, ip: ORDER_DEMO_IP_DAILY_LIMIT, global: ORDER_DEMO_GLOBAL_DAILY_LIMIT, noun: "voice orders" }
+    : { user: USER_DAILY_LIMIT, ip: DEMO_IP_DAILY_LIMIT, global: DEMO_GLOBAL_DAILY_LIMIT, noun: "questions" };
+  // Orders and questions are counted in separate buckets of the same table ("order_…" statuses).
+  const st = (status: string) => (isOrder ? `order_${status}` : status);
 
   // ---- rate limits ----
   const admin = createClient(supabaseUrl, serviceKey);
   const userId = await verifiedUserId(req, supabaseUrl, anonKey);
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   let ipHash: string | null = null;
+  const usageCount = (filter: (q: UsageQuery) => UsageQuery) => {
+    const q = admin.from("ai_chat_usage").select("id", { count: "exact", head: true }).gte("created_at", since);
+    const scoped = isOrder ? q.like("status", "order%") : q.not("status", "like", "order%");
+    return filter(scoped);
+  };
 
   if (userId) {
-    const { count, error } = await admin.from("ai_chat_usage").select("id", { count: "exact", head: true })
-      .eq("user_id", userId).gte("created_at", since);
+    const { count, error } = await usageCount((q) => q.eq("user_id", userId));
     if (error) return json(503, { error: "Usage check failed. Please try again." });
-    if ((count ?? 0) >= USER_DAILY_LIMIT) {
-      return json(429, { error: `You've asked ${USER_DAILY_LIMIT} questions today. Tallyn AI will be back tomorrow.` });
+    if ((count ?? 0) >= limits.user) {
+      return json(429, { error: `You've used ${limits.user} ${limits.noun} today. Tallyn AI will be back tomorrow.` });
     }
   } else {
     ipHash = await sha256Hex(`${clientIp(req)}|${serviceKey.slice(-16)}`);
     const [perIp, global] = await Promise.all([
-      admin.from("ai_chat_usage").select("id", { count: "exact", head: true })
-        .is("user_id", null).eq("ip_hash", ipHash).gte("created_at", since),
-      admin.from("ai_chat_usage").select("id", { count: "exact", head: true })
-        .is("user_id", null).gte("created_at", since),
+      usageCount((q) => q.is("user_id", null).eq("ip_hash", ipHash!)),
+      usageCount((q) => q.is("user_id", null)),
     ]);
     if (perIp.error || global.error) return json(503, { error: "Usage check failed. Please try again." });
-    if ((perIp.count ?? 0) >= DEMO_IP_DAILY_LIMIT) {
-      return json(429, { error: `The demo allows ${DEMO_IP_DAILY_LIMIT} questions a day. Sign up to keep asking.` });
+    if ((perIp.count ?? 0) >= limits.ip) {
+      return json(429, { error: `The demo allows ${limits.ip} ${limits.noun} a day. Sign up to keep going.` });
     }
-    if ((global.count ?? 0) >= DEMO_GLOBAL_DAILY_LIMIT) {
-      return json(429, { error: "The demo assistant is busy today. Sign up to keep asking." });
+    if ((global.count ?? 0) >= limits.global) {
+      return json(429, { error: "The demo AI is busy today. Sign up to keep going." });
     }
   }
 
   const { data: usageRow } = await admin.from("ai_chat_usage")
-    .insert({ user_id: userId, ip_hash: ipHash, status: "started" })
+    .insert({ user_id: userId, ip_hash: ipHash, status: st("started") })
     .select("id").single();
   const finish = (status: string, chars = 0) =>
     usageRow?.id
-      ? admin.from("ai_chat_usage").update({ status, answer_chars: chars }).eq("id", usageRow.id).then(() => undefined, () => undefined)
+      ? admin.from("ai_chat_usage").update({ status: st(status), answer_chars: chars }).eq("id", usageRow.id).then(() => undefined, () => undefined)
       : Promise.resolve();
 
-  // ---- model ----
+  // ---- voice order ----
+  if (parsed.data.mode === "order") {
+    const orderReq = parsed.data;
+    let text: string;
+    try {
+      text = await callModel({
+        apiKey, model, baseUrl,
+        system: buildOrderPrompt(orderReq),
+        turns: [{ role: "user", text: buildOrderUserTurn(orderReq) }],
+        json: true, temperature: 0, maxTokens: 4096, timeoutMs: ORDER_TIMEOUT_MS,
+        // Matching a short order needs no long reasoning; "none" is several times faster and
+        // was just as accurate in tests (misheard brands, Urdu script, udhaar + customer).
+        reasoningEffort: "none",
+      });
+    } catch (err) {
+      console.error("voice-order model error:", err instanceof Error ? err.message : err);
+      await finish("model_error");
+      return json(502, { error: "Tallyn AI couldn't read this order right now." });
+    }
+    const order = resolveOrder(text, orderReq);
+    if (!order) {
+      await finish("bad_json");
+      return json(502, { error: "Tallyn AI couldn't read this order right now." });
+    }
+    await finish("ok", text.length);
+    return json(200, { order });
+  }
+
+  // ---- question / radio tip ----
   let text: string;
   try {
     text = await askModel({ apiKey, model, baseUrl, req: parsed.data });
@@ -142,5 +192,9 @@ serve(async (req: Request) => {
   }
 
   await finish("ok", answer.data.length);
+  if (parsed.data.mode === "radio") {
+    const tip = parseRadioTip(answer.data);
+    return json(200, { answer: tip.text, spoken: tip.spoken });
+  }
   return json(200, { answer: answer.data });
 });

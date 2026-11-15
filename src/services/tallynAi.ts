@@ -29,12 +29,84 @@ export async function askTallyn(opts: {
   snapshot: StoreSnapshot;
   accessToken?: string | null;
 }): Promise<string> {
+  const body = await callGateway(
+    {
+      question: opts.question.slice(0, 1000),
+      history: opts.history.slice(-8).map((t) => ({ role: t.role, text: t.text.slice(0, 2000) })),
+      snapshot: opts.snapshot,
+    },
+    opts.accessToken,
+  );
+  return body.answer;
+}
+
+/** Script of the speech voice that will read the tip (see domain/radioBriefing). */
+export type RadioScript = "latin" | "urdu" | "devanagari";
+
+export interface RadioTip {
+  /** On-screen text: English, or Roman Urdu. */
+  text: string;
+  /** Same tip in the voice's script when that differs from `text`. */
+  spoken: string | null;
+}
+
+/** One AI "tip of the day" for Kiryana Radio. The briefing's numbers never come from here. */
+export async function askRadioTip(opts: {
+  language: "English" | "Urdu";
+  script: RadioScript;
+  snapshot: StoreSnapshot;
+  accessToken?: string | null;
+  signal?: AbortSignal;
+}): Promise<RadioTip> {
+  const body = await callGateway(
+    {
+      question: "Kiryana Radio tip",
+      history: [],
+      snapshot: opts.snapshot,
+      mode: "radio",
+      radio: { language: opts.language, script: opts.language === "English" ? "latin" : opts.script },
+    },
+    opts.accessToken,
+    opts.signal,
+  );
+  const spoken = typeof body.spoken === "string" && body.spoken.trim() ? body.spoken.trim().slice(0, 1000) : null;
+  return { text: body.answer.slice(0, 1000), spoken };
+}
+
+interface GatewayBody {
+  answer?: unknown;
+  spoken?: unknown;
+  order?: unknown;
+  error?: unknown;
+}
+
+async function callGateway(
+  payload: Record<string, unknown>,
+  accessToken?: string | null,
+  outerSignal?: AbortSignal,
+): Promise<{ answer: string; spoken?: unknown }> {
+  const body = await postGateway(payload, accessToken, outerSignal);
+  if (typeof body.answer !== "string" || !body.answer.trim()) {
+    throw new AskTallynError("bad_response", "Tallyn AI returned an empty answer.");
+  }
+  return { answer: body.answer.trim().slice(0, 4000), spoken: body.spoken };
+}
+
+/** POST to ai-gateway and map HTTP failures to AskTallynError. Returns the parsed JSON body. */
+export async function postGateway(
+  payload: Record<string, unknown>,
+  accessToken?: string | null,
+  outerSignal?: AbortSignal,
+  timeoutMs: number = TIMEOUT_MS,
+): Promise<GatewayBody> {
   const url = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   if (!url || !anonKey) throw new AskTallynError("not_configured", "Tallyn AI isn't set up on this server.");
 
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  const onOuterAbort = () => controller.abort();
+  outerSignal?.addEventListener("abort", onOuterAbort);
   let res: Response;
   try {
     res = await fetch(`${url}/functions/v1/ai-gateway`, {
@@ -43,13 +115,9 @@ export async function askTallyn(opts: {
       headers: {
         "Content-Type": "application/json",
         apikey: anonKey,
-        Authorization: `Bearer ${opts.accessToken || anonKey}`,
+        Authorization: `Bearer ${accessToken || anonKey}`,
       },
-      body: JSON.stringify({
-        question: opts.question.slice(0, 1000),
-        history: opts.history.slice(-8).map((t) => ({ role: t.role, text: t.text.slice(0, 2000) })),
-        snapshot: opts.snapshot,
-      }),
+      body: JSON.stringify(payload),
     });
   } catch {
     throw controller.signal.aborted
@@ -57,9 +125,10 @@ export async function askTallyn(opts: {
       : new AskTallynError("network", "No internet connection.");
   } finally {
     window.clearTimeout(timer);
+    outerSignal?.removeEventListener("abort", onOuterAbort);
   }
 
-  let body: { answer?: unknown; error?: unknown } | null = null;
+  let body: GatewayBody | null = null;
   try {
     body = await res.json();
   } catch {
@@ -76,8 +145,6 @@ export async function askTallyn(opts: {
     throw new AskTallynError("unavailable", serverMsg ?? "Tallyn AI couldn't answer right now.");
   }
 
-  if (typeof body?.answer !== "string" || !body.answer.trim()) {
-    throw new AskTallynError("bad_response", "Tallyn AI returned an empty answer.");
-  }
-  return body.answer.trim().slice(0, 4000);
+  if (!body) throw new AskTallynError("bad_response", "Tallyn AI returned an empty answer.");
+  return body;
 }

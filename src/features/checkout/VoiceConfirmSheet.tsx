@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Minus, Plus, X, AlertTriangle, Check, Keyboard } from "lucide-react";
+import { Mic, Minus, Plus, X, AlertTriangle, Check, Keyboard, Sparkles, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import {
   parseVoiceOrder, clampToStock,
   type VoiceCustomer, type VoiceLine, type VoiceProduct,
 } from "@/domain/voiceParser";
+import type { AiVoiceOrder } from "@/services/voiceOrderAi";
+import { AskTallynError } from "@/services/tallynAi";
 
 export interface ConfirmedVoiceOrder {
   items: { productId: string; qty: number }[];
@@ -18,6 +20,10 @@ interface Props {
   open: boolean;
   /** What the microphone heard (may be empty when opened with "Type it"). */
   transcript: string;
+  /** Other hypotheses from the speech recogniser (sent to the AI as hints). */
+  alternatives?: string[];
+  /** Reads the order with Gemini. When absent or failing, the offline matcher's result stands. */
+  aiRead?: (transcript: string, alternatives: string[], signal: AbortSignal) => Promise<AiVoiceOrder>;
   products: VoiceProduct[];
   customers: VoiceCustomer[];
   onConfirm: (order: ConfirmedVoiceOrder) => void;
@@ -28,29 +34,86 @@ interface Props {
  * Tap-to-confirm sheet for voice checkout. The microphone only PROPOSES a cart; nothing
  * is added until the cashier confirms. Every line can be re-pointed to another
  * product, resized, or removed — and all prices/totals come from the catalogue.
+ *
+ * Two readers: the offline matcher answers instantly (zero lag, works without internet),
+ * then Gemini's reading replaces it when it arrives — unless the cashier has already
+ * started editing, in which case it is offered with one tap instead of overwriting.
  */
-export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, products, customers, onConfirm, onCancel }) => {
+type AiState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "applied" }
+  | { status: "ready"; result: AiVoiceOrder } // arrived after the cashier edited
+  | { status: "failed"; message: string };
+
+export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, alternatives, aiRead, products, customers, onConfirm, onCancel }) => {
   const [text, setText] = useState(transcript);
   const [lines, setLines] = useState<VoiceLine[]>([]);
   const [paymentType, setPaymentType] = useState<"cash" | "credit">("cash");
   const [customerId, setCustomerId] = useState<string>("");
+  const [ai, setAi] = useState<AiState>({ status: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
+  const editedRef = useRef(false);
+  const aiAbortRef = useRef<AbortController | null>(null);
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
-  const reparse = (t: string) => {
+  const applyAi = (r: AiVoiceOrder) => {
+    setLines(r.lines);
+    if (r.paymentType) setPaymentType(r.paymentType);
+    if (r.customerId) setCustomerId(r.customerId);
+    editedRef.current = false;
+    setAi({ status: "applied" });
+  };
+
+  const reparse = (t: string, alts: string[] = []) => {
     const r = parseVoiceOrder(t, products, customers);
     setLines(r.lines);
     setPaymentType(r.paymentType);
     setCustomerId(r.customerId ?? "");
+    editedRef.current = false;
+
+    aiAbortRef.current?.abort();
+    aiAbortRef.current = null;
+    if (!aiRead || !t.trim() || products.length === 0) {
+      setAi({ status: "idle" });
+      return;
+    }
+    const controller = new AbortController();
+    aiAbortRef.current = controller;
+    setAi({ status: "loading" });
+    aiRead(t, alts, controller.signal).then(
+      (result) => {
+        if (controller.signal.aborted) return;
+        if (editedRef.current) setAi({ status: "ready", result });
+        else applyAi(result);
+      },
+      (err) => {
+        if (controller.signal.aborted) return;
+        setAi({
+          status: "failed",
+          message: err instanceof AskTallynError && err.kind === "rate_limited"
+            ? err.message
+            : "AI unavailable, so this was matched on your device.",
+        });
+      },
+    );
   };
 
+  const markEdited = () => { editedRef.current = true; };
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      aiAbortRef.current?.abort();
+      aiAbortRef.current = null;
+      return;
+    }
     setText(transcript);
-    reparse(transcript);
+    reparse(transcript, alternatives ?? []);
     if (!transcript) setTimeout(() => inputRef.current?.focus(), 50);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, transcript]);
+
+  useEffect(() => () => aiAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (!open) return;
@@ -61,11 +124,18 @@ export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, products,
 
   if (!open) return null;
 
-  const setQty = (key: string, delta: number) =>
+  const setQty = (key: string, delta: number) => {
+    markEdited();
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, qty: Math.max(1, Math.min(99, l.qty + delta)) } : l)));
-  const setProduct = (key: string, productId: string) =>
+  };
+  const setProduct = (key: string, productId: string) => {
+    markEdited();
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, productId: productId || null, confidence: productId ? 1 : 0 } : l)));
-  const removeLine = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));
+  };
+  const removeLine = (key: string) => {
+    markEdited();
+    setLines((prev) => prev.filter((l) => l.key !== key));
+  };
 
   const valid = lines.filter((l) => l.productId && productById.has(l.productId));
   const total = valid.reduce((sum, l) => sum + (productById.get(l.productId!)?.sellPrice ?? 0) * l.qty, 0);
@@ -98,6 +168,27 @@ export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, products,
           <div className="min-w-0">
             <p className="mono-label text-emerald-800 flex items-center gap-1.5"><Mic className="h-3.5 w-3.5" aria-hidden="true" /> Voice order</p>
             <h3 className="mt-0.5 text-lg font-semibold text-slate-900">Check &amp; confirm</h3>
+            <p className="mt-0.5 flex min-h-[18px] items-center gap-1.5 text-xs" aria-live="polite">
+              {ai.status === "loading" && (
+                <span className="flex items-center gap-1.5 font-medium text-emerald-800">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Gemini is reading the order…
+                </span>
+              )}
+              {ai.status === "applied" && (
+                <span className="flex items-center gap-1.5 font-medium text-emerald-800">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Matched by Gemini
+                </span>
+              )}
+              {ai.status === "ready" && (
+                <button
+                  onClick={() => applyAi(ai.result)}
+                  className="-my-2 flex min-h-[40px] items-center gap-1.5 rounded-lg px-1 font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Use Gemini's match
+                </button>
+              )}
+              {ai.status === "failed" && <span className="text-slate-600">{ai.message}</span>}
+            </p>
           </div>
           <button onClick={onCancel} aria-label="Cancel voice order" className="hit flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100">
             <X className="h-5 w-5" />
@@ -200,7 +291,7 @@ export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, products,
             {(["cash", "credit"] as const).map((pt) => (
               <button
                 key={pt}
-                onClick={() => setPaymentType(pt)}
+                onClick={() => { markEdited(); setPaymentType(pt); }}
                 aria-pressed={paymentType === pt}
                 className={`min-h-[44px] flex-1 rounded-xl border text-sm font-semibold transition-colors ${
                   paymentType === pt ? "border-emerald-800 bg-emerald-800 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -213,7 +304,7 @@ export const VoiceConfirmSheet: React.FC<Props> = ({ open, transcript, products,
           {paymentType === "credit" && (
             <select
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+              onChange={(e) => { markEdited(); setCustomerId(e.target.value); }}
               aria-label="Udhaar customer"
               className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 focus:border-emerald-700 focus:outline-hidden"
             >

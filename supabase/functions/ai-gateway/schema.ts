@@ -46,7 +46,15 @@ export const AskRequestSchema = z.object({
     text: Text(2000),
   }).strict()).max(8).default([]),
   snapshot: SnapshotSchema,
-}).strict();
+  /** "chat" (default) answers the question; "radio" writes one spoken tip for Kiryana Radio. */
+  mode: z.enum(["chat", "radio"]).default("chat"),
+  radio: z.object({
+    language: z.enum(["English", "Urdu"]),
+    script: z.enum(["latin", "urdu", "devanagari"]).default("latin"),
+  }).strict().optional(),
+}).strict().refine((r) => r.mode !== "radio" || r.radio !== undefined, {
+  message: "radio settings are required in radio mode", path: ["radio"],
+});
 
 export const AnswerSchema = z.string().trim().min(1).max(4000);
 

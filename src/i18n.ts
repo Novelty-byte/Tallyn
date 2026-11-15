@@ -20,6 +20,9 @@ export const resources = {
         exitDemo: "Exit Demo Mode",
         kiryanaRadio: "Kiryana Radio",
         askTallyn: "Tallyn AI",
+        /** One-word navbar labels that say what the button does. */
+        radioWord: "Briefing",
+        aiWord: "Ask",
         signIn: "Sign In",
         register: "Register Your Store",
         signOut: "Sign Out",

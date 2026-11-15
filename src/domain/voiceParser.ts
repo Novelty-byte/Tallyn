@@ -1,5 +1,7 @@
 /**
- * Deterministic voice-order parser for Checkout.
+ * Deterministic voice-order parser for Checkout — the instant, offline reader.
+ * The confirm sheet shows this first, then swaps in Gemini's reading when it arrives
+ * (services/voiceOrderAi); if the AI is unavailable this result stands.
  *
  * Understands English, Roman Urdu and Urdu script, e.g.
  *   "do kilo cheeni aur ek ghee udhaar Asif"

@@ -42,7 +42,7 @@ export const TallynAiDrawer: React.FC = () => {
   // ── Initial greeting message ───────────────────────────────────────────────
   const makeGreeting = () => ({
     sender: "tallyn" as const,
-    text: `Assalam-o-Alaikum! I'm **Tallyn AI** — your store advisor for **${shop.name}**.\n\nI can see your full inventory (${products.length} products), customer ledger, and sales data. Ask me anything about your store, how to use a feature, or get retail advice!`,
+    text: `Assalam-o-Alaikum! I'm **Tallyn AI** — your store advisor for **${shop.name}**.\n\nI can see your full inventory (${products.length} products), customer ledger, and sales data. Ask me about your store, how to use Tallyn, or anything about running your business: what to stock for Ramadan or Eid, pricing, suppliers, collecting udhaar and more.`,
   });
 
   const [messages, setMessages] = useState<Message[]>([makeGreeting()]);
@@ -102,6 +102,7 @@ export const TallynAiDrawer: React.FC = () => {
   };
 
   const quickChips = [
+    "What should I stock before Ramadan?",
     "Which items didn't sell this month?",
     "Who has the most udhaar?",
     "Which items are low on stock?",
@@ -235,7 +236,7 @@ export const TallynAiDrawer: React.FC = () => {
               type="text"
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
-              placeholder={isThinking ? "Tallyn AI is thinking..." : "Ask anything about your store..."}
+              placeholder={isThinking ? "Tallyn AI is thinking..." : "Ask about your store or business..."}
               disabled={isThinking}
               className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs focus:border-emerald-600 focus:outline-hidden disabled:bg-slate-50 disabled:text-slate-400 min-h-[44px]"
             />
